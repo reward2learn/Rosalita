@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f14">
+<title>Rosalita Cantina — Business Review</title>
+<meta name="description" content="Rosalita Cantina — Business Review & Turnaround Strategy. From +IDR 434K/month to IDR 100-200M+/month EBITDA within 12 months.">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body class="theme-dark">
+
+<nav class="top-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">  <img  src="images/logo.svg" alt="Rosalita's Cantina" class="hero-logo"></a>
+    <a href="index.html" class="nav-brand"><span class="ember">Rosalita</span> Cantina</a>
+    <button class="nav-toggle" aria-label="Toggle menu">&#x22EE;</button>
+  </div>
+</nav>
+
+<!-- Side Drawer -->
+<div id="sideDrawer" class="side-drawer">
+  <div class="drawer-user-badge" id="drawerUserBadge" style="display:none;">
+    <img id="drawerAvatar" src="" alt="" class="drawer-avatar">
+    <div class="drawer-user-info">
+      <div id="drawerUserName" class="drawer-user-name">Admin</div>
+      <div id="drawerUserEmail" class="drawer-user-email">Signed in</div>
+    </div>
+    <a href="/api/auth?action=logout" class="drawer-signout" title="Sign out">&#10140;</a>
+  </div>
+  <div class="drawer-links">
+    <a href="index.html" class="active">Dashboard</a>
+    <a href="summary.html" class="google-only">Summary</a>
+    <a href="review.html" class="google-only">Analysis</a>
+    <a href="ops-admin.html">Ops Admin</a>
+    <a href="ops-tracking.html" class="google-only">Ops Tracking</a>
+    <a href="ops-chat.html" class="google-only">AI Chat</a>
+  </div>
+  <div class="drawer-legal">
+    <a href="#" id="navPdf" 
+      onclick="downloadPDF();return false;" 
+      style="margin-left:auto;color:#fff;text-decoration:none;font-weight:600;">PDF
+    </a>
+    <a href="privacy-policy.html">Privacy</a>
+    <a href="terms-of-service.html">Terms</a>
+  </div>
+</div>
+<div id="drawerOverlay" class="drawer-overlay"></div>
+
+<!-- ── PDF Capture Wrapper (hero + content + footer) ── -->
+<div id="pdfCapture">
+
+<!-- ── Hero with BG Image ────────────────────────── -->
+<section class="hero hero-image" style="background-image: url('images/hero-bg.jpg');">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+     
+    <div class="badge" style=" color: var(--text)">June 2026 &middot; 12-Month Plan</div>
+    <h1>Business Review<br><span class="ember">&amp; Turnaround Strategy</span></h1>
+    <p class="subtitle">From +IDR 434K/month to IDR 100-200M+/month EBITDA within 12 months.</p>
+    <div class="report-cards" id="reportCardsGrid" style="margin-top: 48px;">
+      <a href="summary.html" class="report-card" id="cardSummary"> 
+        <h3>Executive Summary</h3>
+      </a>
+      <a href="review.html" class="report-card" id="cardReview"> 
+        <h3>Full Business Review</h3>
+      </a>
+    </div>
+  </div>
+</section>
+
+  <!-- Report Cards -->
+  
+
+<!-- ── Profitability Overview Chart ───────────────── -->
+<section class="section" id="sectionProfitChart" style="padding: 24px 0 0 0; margin-bottom: 48px;">
+  <div class="section-header">
+    <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">Profitability Overview</h2>
+    <p style="color:var(--muted);font-size:0.78rem;margin-bottom:12px;">Monthly performance — Actual vs Forecast</p>
+
+    <!-- KPI Filter Buttons -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      <div class="kpi-filter" style="display:inline-flex;background:rgba(255,255,255,0.03);border-radius:8px;padding:3px;gap:2px;">
+        <button class="period-btn active" data-kpi="ebitda">EBITDA</button>
+        <button class="period-btn" data-kpi="revenue">Revenue</button>
+        <button class="period-btn" data-kpi="net_income">Net Profit</button>
+        <button class="period-btn" data-kpi="guests">Guests</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Target Cards -->
+  <div id="targetCards" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:130px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;">
+      <div style="font-size:0.65rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Conservative</div>
+      <div id="targetConservative" style="font-weight:700;font-size:1.05rem;color:#f59e0b;">IDR 101M</div>
+      <div style="font-size:0.65rem;color:var(--muted);">Target EBITDA</div>
+    </div>
+    <div style="flex:1;min-width:130px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;">
+      <div style="font-size:0.65rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Realistic</div>
+      <div id="targetRealistic" style="font-weight:700;font-size:1.05rem;color:#22c55e;">IDR 150-200M</div>
+      <div style="font-size:0.65rem;color:var(--muted);">Target EBITDA</div>
+    </div>
+    <div style="flex:1;min-width:130px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;">
+      <div style="font-size:0.65rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Aspirational</div>
+      <div id="targetAspirational" style="font-weight:700;font-size:1.05rem;color:#3b82f6;">IDR 298M</div>
+      <div style="font-size:0.65rem;color:var(--muted);">Target EBITDA</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div style="background:#1a1a22;border:1px solid rgba(255,255,255,0.05);border-radius:16px;padding:16px; margin-bottom: 48px;">
+    <canvas id="profitChart" style="width:100%;height:300px;"></canvas>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--muted);flex-wrap:wrap;">
+    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#22c55e;"></span> Actual</span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f59e0b;"></span> Forecast</span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3b82f6;"></span> Cumulative</span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(255,255,255,0.08);"></span> Current month</span>
+    <span id="selectedMonthLabel" style="margin-left:auto;font-size:0.72rem;color:var(--ember);"></span>
+  </div>
+</section>
+
+<!-- Sign-in Prompt (unauthenticated users) -->
+<section class="section" id="sectionSignIn" style="display:none; text-align:center; padding: 48px 24px;">
+  <div style="max-width: 420px; margin: 0 auto;">
+    <div class="card-icon" style="margin: 0 auto 16px; width: 56px; height: 56px; font-size: 24px;">&#9733;</div>
+    <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; color: var(--text);">Sign in to Access</h2>
+    <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 24px;">Sign in with Google to view the full business review, AI chat, and operations tracking.</p>
+    <a href="/api/auth?action=google" style="display: inline-flex; align-items: center; gap: 10px; background: #fff; color: #1a1a22; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: opacity 0.2s;">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Sign in with Google
+    </a>
+  </div>
+</section>
+
+<div class="container">
+  <!-- Key Metrics -->
+  <!-- <div class="metrics" id="sectionMetrics">
+    <div class="metric-card">
+      <div class="number">IDR 443M</div>
+      <div class="label">Lost Jan&ndash;Apr</div>
+      <div class="change down">Staff at 54-68% of revenue</div>
+    </div>
+    <div class="metric-card">
+      <div class="number">+IDR 434K</div>
+      <div class="label">May EBITDA</div>
+      <div class="change up">First profitable month</div>
+    </div>
+    <div class="metric-card">
+      <div class="number">IDR 101M</div>
+      <div class="label">Conservative Target</div>
+      <div class="change up">Cost-cutting + menu fixes</div>
+    </div>
+    <div class="metric-card">
+      <div class="number">IDR 298M</div>
+      <div class="label">Aspirational</div>
+      <div class="change up">With AI + partnerships</div>
+    </div>
+  </div> -->
+
+  <!-- 5 Levers (Clickable Accordion) -->
+  <section class="section" id="sectionLevers">
+    <h2 class="section-title">The 5 Levers</h2>
+    <p class="section-sub">Click each lever to see the actionable steps. Five interconnected strategies driving the turnaround.</p>
+
+    <div class="levers-grid" id="leversGrid">
+      <div class="lever-item" onclick="toggleLever(this)">
+        <span class="expand-icon">+</span>
+        <div class="lever-num">1</div>
+        <h4>Staff Costs</h4>
+        <p>54-68% &rarr; 22% of revenue &middot; IDR 50-80M/mo</p>
+        <div class="lever-details">
+          <div class="lever-details-inner">
+            <p>Reduce core FTE from 22 &rarr; 16 (waitstaff 5&rarr;4, bar 3&rarr;2, kitchen 6&rarr;5)</p>
+            <p>Use part-time/casual staff for Fri-Sat peaks (pay per shift, no fixed cost)</p>
+            <p>Implement 7shifts AI scheduling to predict staffing needs from sales data</p>
+            <p>Cross-train staff for multi-role capability (FOH can bar, kitchen can prep)</p>
+            <p>Hold weekly 15-min standup to maintain morale through restructuring</p>
+            <p>Track hours worked vs. revenue daily &mdash; flag any day above 25% labor ratio</p>
+          </div>
+        </div>
+      </div>
+      <div class="lever-item" onclick="toggleLever(this)">
+        <span class="expand-icon">+</span>
+        <div class="lever-num">2</div>
+        <h4>Menu Fixes</h4>
+        <p>60 &rarr; 48 items, remove Asian Corner, fix promos &middot; IDR 10-20M/mo</p>
+        <div class="lever-details">
+          <div class="lever-details-inner">
+            <p>Remove Asian Corner (6 items: Nasi Goreng, Mie Ayam, Tom Yam Gai, etc.) &mdash; brand mismatch</p>
+            <p>Remove duplicate Chicken Wings listings (keep smoked + fried option only)</p>
+            <p>Merge Nachos &amp; Mexi Fries into one menu line (&ldquo;choose your base: chips or fries&rdquo;)</p>
+            <p>Fix Monday: replace 25% off with &ldquo;Buy 1 Main, Get 1 Dessert for 20K&rdquo; bundle</p>
+            <p>Fix Wednesday: replace 67% off wings with &ldquo;6 Wings + Beer for 89K&rdquo; bundle</p>
+            <p>Reduce taco/burrito fillings from 7 to 4-5 based on 4-week POS sales data</p>
+            <p>Increase prices on underpriced items: Chicken Fingers 59K&rarr;68K, Cobb Salad 99K&rarr;108K, Churros 49K&rarr;55K</p>
+          </div>
+        </div>
+      </div>
+      <div class="lever-item" onclick="toggleLever(this)">
+        <span class="expand-icon">+</span>
+        <div class="lever-num">3</div>
+        <h4>Revenue Windows</h4>
+        <p>Happy Hour, Brunch, Late-night &middot; IDR 50-100M/mo</p>
+        <div class="lever-details">
+          <div class="lever-details-inner">
+            <p>Launch daily Happy Hour (4-7PM): 20% off cocktails, half-price appetizers, beer IDR 35K</p>
+            <p>Launch weekend brunch (Sat-Sun 10AM-2PM): Build-Your-Own-Taco bar + bottomless mimosas</p>
+            <p>Create lunch combo deal (11AM-4PM): any main + drink for IDR 20K off</p>
+            <p>Partner with 5 nearby 5-star hotels: concierge referrals with 10% guest discount</p>
+            <p>Track revenue by time period weekly &mdash; cut any window not hitting minimum covers</p>
+          </div>
+        </div>
+      </div>
+      <div class="lever-item" onclick="toggleLever(this)">
+        <span class="expand-icon">+</span>
+        <div class="lever-num">4</div>
+        <h4>AI Automation</h4>
+        <p>ChatGPT, 7shifts, Winnow &middot; IDR 20-50M/mo</p>
+        <div class="lever-details">
+          <div class="lever-details-inner">
+            <p>Create ChatGPT account (free, 2min): generate 30 Instagram captions, respond to all reviews</p>
+            <p>Create Canva account (free, 2min): design menu template + 5 social media post templates</p>
+            <p>Set up Meta Business Suite (free, 5min): link Instagram, schedule weekly posts</p>
+            <p>Sign up for 7shifts AI scheduling ($29/mo): auto-generate optimized staff schedules</p>
+            <p>Implement Winnow food waste AI (IDR 3-8M/mo): camera tracks waste, suggests purchasing cuts</p>
+            <p>Set up WhatsApp Business direct ordering: bypass 20-30% GoFood commission</p>
+            <p>Deploy Hostie AI phone assistant ($200/mo): 24/7 reservations in 20+ languages</p>
+          </div>
+        </div>
+      </div>
+      <div class="lever-item" onclick="toggleLever(this)">
+        <span class="expand-icon">+</span>
+        <div class="lever-num">5</div>
+        <h4>Partnerships &amp; Ecosystem Hub</h4>
+        <p>Red Ruby, Prestix, StarPOINTS, ecosystem events &middot; IDR 34-115M/mo</p>
+        <div class="lever-details">
+          <div class="lever-details-inner">
+            <p>Verify 5AM alcohol licensing with local authorities (unlocks Red Ruby breakfast partnership)</p>
+            <p>Set up Rosalita&rsquo;s profile on Prestix.vip (2hrs): activate table booking channel</p>
+            <p>Create Red Ruby cross-promotion flyers in Canva (1hr): &ldquo;Dinner here = VIP entry to Red Ruby&rdquo;</p>
+            <p>Launch &ldquo;Dinner + Red Ruby VIP&rdquo; package: IDR 50K upcharge for combined experience</p>
+            <p>Contact StarWORKS about bonus StarPOINTS program for Rosalita&rsquo;s customers</p>
+            <p>Implement StarXP payment acceptance (up to 30% of bill) &mdash; integrate with Prestix Find a Date commissions</p>
+            <p><strong>NEW &mdash; Host sector-specific ecosystem events</strong>: Monthly Massage &amp; Spa, Villa, Tour, Wellness, F&amp;B industry nights at Rosalita&rsquo;s (Tue/Wed slow nights). Venue hire + F&amp;B + platform signups = IDR 14-75M/mo additional EBITDA. See Part N.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- P0 Actions -->
+  <section class="section" id="sectionActions">
+    <h2 class="section-title">Step-by-Step Action Plan</h2>
+    <p class="section-sub">Three phases from survival to sustainable profitability. Click each phase to expand.</p>
+
+    <!-- Phase 1 -->
+    <div class="step-accordion active" onclick="if(event.target.closest('h2, .step-expand-icon'))this.classList.toggle('active')">
+      <div class="step-header">
+        <span class="step-expand-icon">+</span>
+        <h2>Phase 1: Stop the Bleeding <span style="font-weight:400;color:var(--muted);font-size:0.85rem;">&mdash; July &ndash; September 2026</span></h2>
+        <span class="step-impact none">Zero cost</span>
+      </div>
+      <div class="step-content">
+        <div class="step-content-inner">
+          <p style="color:var(--muted2);margin-bottom:16px;font-size:0.88rem;">Immediate cost structure fixes that require no investment. Sorted by revenue impact, highest first.</p>
+          <ul class="action-list">
+            <li>Fix loss-leading promotions (Monday 25% off &rarr; bundle, Wednesday 67% off wings &rarr; wing+beer) <span class="tag">IDR 10-18M/mo</span></li>
+            <li>Complete staff restructuring: 22 &rarr; 16 core FTE + casuals for peaks <span class="tag">IDR 13.5M/mo</span></li>
+            <li>Lock in lower rent at IDR 30M/month through December 2027 <span class="tag">up to IDR 13M/mo</span></li>
+            <li>Deploy free AI tools (ChatGPT, Canva, Meta Business Suite) for marketing <span class="tag">IDR 5-10M/mo</span></li>
+            <li>Menu cleanup: remove Asian Corner, duplicate Chicken Wings, merge Nachos &amp; Mexi Fries <span class="tag">Enabling</span></li>
+            <li>Analyse 4-week sales mix to identify low performers <span class="tag">Data</span></li>
+            <li>Track profitability by day of week to evaluate promotions <span class="tag">Data</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="step-accordion active" onclick="if(event.target.closest('h2, .step-expand-icon'))this.classList.toggle('active')">
+      <div class="step-header">
+        <span class="step-expand-icon">+</span>
+        <h2>Phase 2: Menu &amp; Revenue Optimization <span style="font-weight:400;color:var(--muted);font-size:0.85rem;">&mdash; October &ndash; December 2026</span></h2>
+        <span class="step-impact">IDR 130-210M/mo</span>
+      </div>
+      <div class="step-content">
+        <div class="step-content-inner">
+          <p style="color:var(--muted2);margin-bottom:16px;font-size:0.88rem;">Requires sales mix data from Phase 1 and some investment in menu redesign and staff training. Sorted by revenue impact, highest first.</p>
+          <ul class="action-list">
+            <li>Upselling training for staff: 3-step upsell (starter, drink pairing, dessert) <span class="tag">IDR 60M/mo</span></li>
+            <li>Launch weekend brunch Sat-Sun 10AM-2PM (Build-Your-Own-Taco bar + bottomless drinks) <span class="tag">IDR 30-50M/mo</span></li>
+            <li>Selective price increases on underpriced items (Chicken Fingers, Cobb Salad, Churros, etc.) <span class="tag">IDR 20-30M/mo</span></li>
+            <li>Launch daily Happy Hour 4-7PM (20% off cocktails, half-price apps, beer specials) <span class="tag">IDR 15-30M/mo</span></li>
+            <li>Hotel concierge partnerships with 5 five-star hotels within 1km <span class="tag">IDR 10-20M/mo</span></li>
+            <li>Menu pruning based on 4-week sales data: 62 &rarr; 48-52 items <span class="tag">IDR 5-15M/mo</span></li>
+            <li>Cocktail menu pricing &amp; optimization (document recipes, create Margarita Flight) <span class="tag">IDR 5-10M/mo</span></li>
+            <li>Implement 7shifts AI scheduling to reduce labor cost <span class="tag">IDR 4-7M/mo</span></li>
+            <li>Introduce combo bundles (Lunch Deal, Rosalita&rsquo;s Fiesta, Date Night) <span class="tag">Enabling</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="step-accordion active" onclick="if(event.target.closest('h2, .step-expand-icon'))this.classList.toggle('active')">
+      <div class="step-header">
+        <span class="step-expand-icon">+</span>
+        <h2>Phase 3: Growth &amp; Sustainable Profitability <span style="font-weight:400;color:var(--muted);font-size:0.85rem;">&mdash; January &ndash; June 2027</span></h2>
+        <span class="step-impact">IDR 27-48M/mo</span>
+      </div>
+      <div class="step-content">
+        <div class="step-content-inner">
+          <p style="color:var(--muted2);margin-bottom:16px;font-size:0.88rem;">Build on Phase 1 &amp; 2 foundations. Some technology investment required. Sorted by revenue impact, highest first.</p>
+          <ul class="action-list">
+            <li>Deploy Winnow food waste AI (AI vision over kitchen bins, 15-25% waste reduction) <span class="tag">IDR 12-20M/mo</span></li>
+            <li>Launch direct WhatsApp ordering to save GoFood/Grab commissions <span class="tag">IDR 5-8M/mo</span></li>
+            <li>Target 85+ guests/day average (brunch + happy hour + late-night + hotel partnerships) <span class="tag">Target</span></li>
+            <li>Hostie AI phone assistant for 24/7 reservations in 20+ languages <span class="tag">Referrals</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12-Month Target -->
+  <section class="section" id="sectionTarget">
+    <h2 class="section-title">12-Month Target</h2>
+    <p class="section-sub">From barely breaking even to industry-leading margins.</p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>May 2026</th>
+          <th>Conservative</th>
+          <th>Realistic</th>
+          <th>Aspirational</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Monthly Revenue</strong></td>
+          <td>IDR 411M</td>
+          <td>IDR 615M</td>
+          <td>IDR 699M</td>
+          <td>IDR 819M+</td>
+        </tr>
+        <tr>
+          <td><strong>Monthly EBITDA</strong></td>
+          <td style="color: var(--ember);">+IDR 434K</td>
+          <td style="color: var(--text);">+IDR 101M</td>
+          <td style="color: var(--text);">IDR 150-200M</td>
+          <td style="color: var(--text);">IDR 298M</td>
+        </tr>
+        <tr>
+          <td><strong>EBITDA Margin</strong></td>
+          <td>0.1%</td>
+          <td>16.5%</td>
+          <td>~25%</td>
+          <td>~32%</td>
+        </tr>
+        <tr>
+          <td><strong>Guests/Day</strong></td>
+          <td>56</td>
+          <td>82</td>
+          <td>88-100</td>
+          <td>100+</td>
+        </tr>
+        <tr>
+          <td><strong>Avg Spend</strong></td>
+          <td>~IDR 220K</td>
+          <td>IDR 250K</td>
+          <td>IDR 265K</td>
+          <td>IDR 275K+</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Gallery -->
+  <section class="section" id="sectionGallery">
+    <h2 class="section-title">Rosalita&rsquo;s Cantina</h2>
+    <p class="section-sub">Tex-Mex in the heart of Seminyak &middot; Seminyak Square</p>
+    <div class="gallery">
+      <div class="gallery-item"><img src="images/about-1.jpg" alt="Rosalita's Cantina Interior"></div>
+      <div class="gallery-item"><img src="images/about-3.jpg" alt="Rosalita's Cantina Food"></div>
+      <div class="gallery-item"><img src="images/about-5.jpg" alt="Rosalita's Cantina Drinks"></div>
+      <div class="gallery-item"><img src="images/about-7.jpg" alt="Rosalita's Cantina Atmosphere"></div>
+    </div>
+  </section>
+
+
+</div>
+
+<footer class="doc-footer">
+  <div class="footer-links">
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <span class="footer-sep">&middot;</span>
+    <a href="terms-of-service.html">Terms of Service</a>
+  </div>
+  Rosalita Cantina &mdash; Business Review &amp; Turnaround Plan
+  <div class="footer-small">Analysis based on cashflow workbook, menu data, website review, competitive research, and AI industry benchmarks.</div>
+</footer>
+
+</div><!-- /#pdfCapture -->
+
+<script>
+function applyPdfExportMode() {
+  if (new URLSearchParams(location.search).get('pdf') !== '1') return false;
+  document.body.setAttribute('data-pdf-export', '1');
+  document.querySelectorAll('.lever-item').forEach(function(el) { el.classList.add('active'); });
+  var showIds = ['sectionMetrics','sectionCards','sectionLevers','sectionActions','sectionTarget','sectionGallery'];
+  showIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
+  ['cardSummary','cardReview','cardOpsAdmin','cardTracking','cardChat'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
+  var grid = document.getElementById('reportCardsGrid');
+  if (grid) grid.classList.remove('single-col');
+  return true;
+}
+
+// ── Auth Gate: show/hide sections based on user ──
+(function() {
+  if (applyPdfExportMode()) return;
+  var sections = {
+    metrics:    document.getElementById('sectionMetrics'),
+    cards:      document.getElementById('sectionCards'),
+    levers:     document.getElementById('sectionLevers'),
+    actions:    document.getElementById('sectionActions'),
+    target:     document.getElementById('sectionTarget'),
+    gallery:    document.getElementById('sectionGallery'),
+
+    signIn:     document.getElementById('sectionSignIn'),
+  };
+  // Cards within the documents section
+  var cardSummary  = document.getElementById('cardSummary');
+  var cardReview   = document.getElementById('cardReview');
+
+  function hide(el) { if (el) el.style.display = 'none'; }
+  function show(el) { if (el) el.style.display = ''; }
+
+  // Hide all gated content initially (prevents flash)
+  for (var k in sections) { if (sections[k] && k !== 'gallery') hide(sections[k]); }
+
+  fetch('/api/auth?action=me', { credentials: 'include' }).then(function(r){return r.json()}).then(function(data){
+    var user = data.user;
+
+    // ── Filter drawer links ──
+    var googleLinks = document.querySelectorAll('.drawer-links .google-only');
+    function showGoogleLinks() { for (var i=0;i<googleLinks.length;i++) googleLinks[i].style.display=''; }
+    function hideGoogleLinks() { for (var i=0;i<googleLinks.length;i++) googleLinks[i].style.display='none'; }
+
+    if (!user) {
+      // ── Unauthenticated: hero + gallery + sign-in prompt ──
+      show(sections.gallery);
+      show(sections.signIn);
+      showGoogleLinks();
+    } else if (user.authMethod === 'pin') {
+      // ── PIN user: hero + metrics + Ops Admin card + P0 actions + daily tasks + gallery ──
+      show(sections.metrics);
+      show(sections.cards);
+      show(sections.actions);
+      show(sections.gallery);
+      // PIN users see all document cards
+      hideGoogleLinks();
+      // Show nav menu
+      var nt = document.querySelector('.nav-toggle'); if (nt) nt.style.display = '';
+    } else {
+      // ── Google user: everything except sign-in prompt ──
+      for (var k in sections) { if (k !== 'signIn') show(sections[k]); }
+      hide(sections.signIn);
+      showGoogleLinks();
+      // Show nav menu
+      var nt = document.querySelector('.nav-toggle'); if (nt) nt.style.display = '';
+    }
+  }).catch(function(){
+    // On error, show unauthenticated view
+    show(sections.gallery);
+    show(sections.signIn);
+  });
+})();
+
+function toggleLever(el) {
+  el.classList.toggle('active');
+}
+function downloadPDF() {
+    var card = document.getElementById('cardPDF');
+    var spinner = document.getElementById('pdfSpinner');
+    if (card) card.style.opacity = '0.6';
+    if (spinner) spinner.style.display = 'flex'; // show spinner
+
+
+    // Step 1: Initiate PDF job
+    var pagePath = window.location.pathname + window.location.search;
+    fetch('/api/auth?action=pdf&page=' + encodeURIComponent(pagePath), { credentials: 'include' })
+      .then(function(res) {
+        if (!res.ok) throw new Error('PDF request failed (' + res.status + ')');
+        return res.json();
+      })
+      .then(function(data) {
+        if (!data.jobId || !data.statusCheckUrl) throw new Error('Invalid job response from server.');
+        // Poll for completion
+        var poll = function() {
+          fetch(data.statusCheckUrl, { credentials: 'include' })
+            .then(function(r) {
+              if (!r.ok) {
+                return r.text().then(function(text) {
+                  throw new Error('Status check failed (' + r.status + '): ' + text.slice(0, 120));
+                });
+              }
+              return r.json();
+            })
+            .then(function(statusData) {
+              if (statusData.status === 'COMPLETED') {
+                // The API returns Base64 PDF data in `resultUrl` or `pdfBase64`
+                var base64 = statusData.completed_data?.pdfBase64 || statusData.pdfBase64;
+                if (!base64) throw new Error('PDF data missing from completed job.');
+                var binary = atob(base64);
+                var len = binary.length;
+                var buffer = new Uint8Array(len);
+                for (var i = 0; i < len; i++) buffer[i] = binary.charCodeAt(i);
+                var blob = new Blob([buffer], { type: 'application/pdf' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'Rosalita-Business-Review-June-2026.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+              } else if (statusData.status === 'FAILED') {
+                throw new Error('PDF generation failed: ' + (statusData.details || 'unknown error'));
+              } else {
+                // Still pending – poll again after short delay
+                setTimeout(poll, 2000);
+              }
+            })
+            .catch(err => { console.error('[pdf poll]', err); alert('Error while checking PDF status: '+err.message); });
+        };
+        poll();
+      })
+      .catch(function(err) {
+        console.error('[pdf]', err);
+        alert(err.message || 'PDF export failed. Please try again.');
+      })
+      .finally(function() {         if (card) card.style.opacity = '';
+        if (spinner) spinner.style.display = 'none'; // hide spinner
+ });
+}
+
+// Side drawer toggle
+document.querySelector('.nav-toggle')?.addEventListener('click', function() {
+  document.getElementById('sideDrawer')?.classList.toggle('open');
+  document.getElementById('drawerOverlay')?.classList.toggle('open');
+  document.body.style.overflow = document.getElementById('sideDrawer')?.classList.contains('open') ? 'hidden' : '';
+  updateDrawerBadge();
+});
+document.getElementById('drawerOverlay')?.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('sideDrawer')?.classList.contains('open')) closeDrawer();
+});
+function closeDrawer() {
+  document.getElementById('sideDrawer')?.classList.remove('open');
+  document.getElementById('drawerOverlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function updateDrawerBadge() {
+  var badge = document.getElementById('drawerUserBadge');
+  if (!badge) return;
+  fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+    if (data.user) {
+      document.getElementById('drawerAvatar').src = data.user.picture || 'images/default-avatar.svg';
+      document.getElementById('drawerAvatar').alt = data.user.name || 'User';
+      document.getElementById('drawerUserName').textContent = data.user.name || 'Admin';
+      document.getElementById('drawerUserEmail').textContent = data.user.email || (data.user.authMethod === 'pin' ? 'Signed in with PIN' : 'Signed in');
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }).catch(function(){ badge.style.display = 'none'; });
+}
+/* ══════════════════════════════════════════════════
+   Profitability Chart (from P&L data)
+   ══════════════════════════════════════════════════ */
+var financialData = null;
+var financialChart = null;
+var selectedMonthIdx = -1;
+
+// Target values from the 12-Month Target table
+var TARGETS = {
+  ebitda:     { conservative: 'IDR 101M',    realistic: 'IDR 150M',     aspirational: 'IDR 298M',    label: 'EBITDA' },
+  revenue:    { conservative: 'IDR 613M',    realistic: 'IDR 873M',     aspirational: 'IDR 1,053M',  label: 'Revenue' },
+  net_income: { conservative: 'IDR 507M',    realistic: 'IDR 722M',     aspirational: 'IDR 870M',    label: 'Net Profit' },
+  guests:     { conservative: '78/day',      realistic: '93/day',       aspirational: '103/day',     label: 'Guests' },
+};
+
+function formatChartVal(kpi, val) {
+  if (val == null || isNaN(val)) return '—';
+  if (kpi === 'guests') {
+    if (Math.abs(val) >= 1000) return (val / 1000).toFixed(1) + 'K';
+    return val.toFixed(0);
+  }
+  var abs = Math.abs(val);
+  var sign = val < 0 ? '-' : '+';
+  if (abs >= 1000000000) return sign + 'IDR ' + (abs / 1000000000).toFixed(1) + 'B';
+  if (abs >= 1000000) return sign + 'IDR ' + (abs / 1000000).toFixed(0) + 'M';
+  if (abs >= 1000) return sign + 'IDR ' + (abs / 1000).toFixed(0) + 'K';
+  return sign + 'IDR ' + abs.toFixed(0);
+}
+
+function renderFinancialChart(kpi) {
+  if (!financialData || !financialData.labels) return;
+  var canvas = document.getElementById('profitChart');
+  if (!canvas) return;
+  if (financialChart) { financialChart.destroy(); financialChart = null; }
+
+  var labels = financialData.labels;
+  var actualArr = financialData.actual[kpi];
+  var forecastArr = financialData.forecast[kpi];
+
+  // Build bar data
+  var barData = [];
+  var barColors = [];
+  var cumulative = 0;
+  var cumulativeData = [];
+
+  // Find current month index
+  var now = new Date();
+  var currentMonthIdx = -1;
+
+  for (var i = 0; i < labels.length; i++) {
+    var act = actualArr != null ? actualArr[i] : null;
+    var fct = forecastArr != null ? forecastArr[i] : null;
+    var val = (act !== null && act !== undefined) ? act : (fct !== null && fct !== undefined ? fct : 0);
+    barData.push(val);
+    barColors.push((act !== null && act !== undefined) ? '#22c55e' : '#f59e0b');
+    cumulative += val;
+    cumulativeData.push(cumulative);
+
+    // Check if this label matches current month/year
+    if (currentMonthIdx < 0) {
+      var parts = labels[i].split(' ');
+      if (parts.length === 2) {
+        var mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var mIdx = mNames.indexOf(parts[0]);
+        var y = parseInt(parts[1], 10);
+        if (mIdx === now.getMonth() && y === now.getFullYear()) currentMonthIdx = i;
+      }
+    }
+  }
+
+  // Update target cards
+  var t = TARGETS[kpi] || TARGETS.ebitda;
+  document.getElementById('targetConservative').textContent = t.conservative;
+  document.getElementById('targetRealistic').textContent = t.realistic;
+  document.getElementById('targetAspirational').textContent = t.aspirational;
+  // Update subtitle on each card
+  var subs = document.querySelectorAll('#targetCards > div > div:last-child');
+  subs.forEach(function(el) {
+    el.textContent = 'Target ' + t.label;
+  });
+
+  // Update subtitle
+  var subEl = document.querySelector('#sectionProfitChart .section-header p');
+  if (subEl) {
+    var labelMap = { ebitda: 'EBITDA', revenue: 'Revenue', net_income: 'Net Profit', guests: 'Guests' };
+    subEl.textContent = 'Monthly ' + (labelMap[kpi] || kpi) + ' (IDR) — Actual vs Forecast';
+  }
+
+  // Current-month vertical indicator
+  var currentMonthPlugin = {
+    id: 'currentMonthLine',
+    afterDraw: function(chart) {
+      if (currentMonthIdx < 0) return;
+      var meta = chart.getDatasetMeta(0);
+      if (!meta || !meta.data || !meta.data[currentMonthIdx]) return;
+      var x = meta.data[currentMonthIdx].x;
+      var yScale = chart.scales.y;
+      if (!yScale) return;
+      var ctx = chart.ctx;
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      var barWidth = meta.data[currentMonthIdx].width || 12;
+      ctx.fillRect(x - barWidth, yScale.top, barWidth * 2, yScale.bottom - yScale.top);
+      ctx.restore();
+    }
+  };
+
+  var ctx = canvas.getContext('2d');
+  financialChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Monthly',
+          data: barData,
+          backgroundColor: barColors,
+          borderColor: barColors,
+          borderWidth: 1,
+          borderRadius: 3,
+          order: 2,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Cumulative',
+          data: cumulativeData,
+          type: 'line',
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.1)',
+          borderWidth: 2,
+          pointRadius: 2,
+          pointBackgroundColor: '#3b82f6',
+          tension: 0.3,
+          fill: true,
+          order: 1,
+          yAxisID: 'y1',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      onClick: function(e) {
+        var els = financialChart.getElementsAtEventForMode(e, 'index', { intersect: true });
+        if (els && els.length) {
+          var idx = els[0].index;
+          setUrlMonth(financialData.labels[idx]);
+          selectedMonthIdx = idx;
+          financialChart.setActiveElements([{ datasetIndex: 0, index: idx }]);
+          financialChart.update('none');
+          showMonthTooltip(idx);
+        } else {
+          setUrlMonth('');
+          selectedMonthIdx = -1;
+          financialChart.setActiveElements([]);
+          financialChart.update('none');
+          clearMonthTooltip();
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              var val = context.parsed.y;
+              if (context.dataset.label === 'Cumulative') {
+                return 'Cumulative: ' + formatChartVal(kpi, val);
+              }
+              return formatChartVal(kpi, val);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#8888a0', font: { size: 9 }, maxRotation: 45 }
+        },
+        y: {
+          position: 'left',
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#8888a0',
+            font: { size: 9 },
+            callback: function(val) {
+              if (kpi === 'guests') {
+                if (Math.abs(val) >= 1000) return (val/1000).toFixed(1)+'K';
+                return val.toFixed(0);
+              }
+              if (Math.abs(val) >= 1000000000) return (val/1000000000).toFixed(1)+'B';
+              if (Math.abs(val) >= 1000000) return (val/1000000).toFixed(0)+'M';
+              if (Math.abs(val) >= 1000) return (val/1000).toFixed(0)+'K';
+              return val;
+            }
+          }
+        },
+        y1: {
+          position: 'right',
+          grid: { display: false },
+          ticks: {
+            color: '#8888a0',
+            font: { size: 9 },
+            callback: function(val) {
+              if (kpi === 'guests') {
+                if (Math.abs(val) >= 1000) return (val/1000).toFixed(1)+'K';
+                return val.toFixed(0);
+              }
+              if (Math.abs(val) >= 1000000000) return (val/1000000000).toFixed(1)+'B';
+              if (Math.abs(val) >= 1000000) return (val/1000000).toFixed(0)+'M';
+              if (Math.abs(val) >= 1000) return (val/1000).toFixed(0)+'K';
+              return val;
+            }
+          }
+        }
+      }
+    },
+    plugins: [currentMonthPlugin]
+  });
+
+  // Re-apply selection highlight
+  if (selectedMonthIdx >= 0 && financialChart) {
+    financialChart.setActiveElements([{ datasetIndex: 0, index: selectedMonthIdx }]);
+    financialChart.update('none');
+  }
+}
+
+function showMonthTooltip(idx) {
+  if (!financialData || !financialData.labels) return;
+  var label = financialData.labels[idx] || '';
+  var el = document.getElementById('selectedMonthLabel');
+  if (el) el.textContent = '\u25B6 ' + label;
+}
+
+function clearMonthTooltip() {
+  var el = document.getElementById('selectedMonthLabel');
+  if (el) el.textContent = '';
+}
+
+function setUrlMonth(label) {
+  if (label) {
+    var url = new URL(window.location);
+    url.searchParams.set('month', label.replace(' ', '+'));
+    history.replaceState(null, '', url);
+  } else {
+    var url = new URL(window.location);
+    url.searchParams.delete('month');
+    history.replaceState(null, '', url);
+  }
+}
+
+function initFinancialChart() {
+  fetch('/api/financial-overview')
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d) {
+      financialData = d;
+
+      // Restore KPI from URL param
+      var paramKpi = new URLSearchParams(window.location.search).get('kpi');
+      var validKpis = ['ebitda','revenue','net_income','guests'];
+      var initialKpi = (paramKpi && validKpis.indexOf(paramKpi) >= 0) ? paramKpi : 'ebitda';
+      // Activate the correct button
+      document.querySelectorAll('#sectionProfitChart .kpi-filter .period-btn').forEach(function(b) { b.classList.remove('active'); });
+      var targetBtn = document.querySelector('#sectionProfitChart .kpi-filter .period-btn[data-kpi="' + initialKpi + '"]');
+      if (targetBtn) targetBtn.classList.add('active');
+      renderFinancialChart(initialKpi);
+
+      // Check URL for ?month= param
+      var params = new URLSearchParams(window.location.search);
+      var monthParam = params.get('month');
+      if (monthParam && d.labels) {
+        var needle = monthParam.replace(/\+/g, ' ');
+        for (var i = 0; i < d.labels.length; i++) {
+          if (d.labels[i] === needle) {
+            selectedMonthIdx = i;
+            if (financialChart) {
+              financialChart.setActiveElements([{ datasetIndex: 0, index: i }]);
+              financialChart.update('none');
+              showMonthTooltip(i);
+            }
+            break;
+          }
+        }
+      }
+    })
+    .catch(function(err) { console.warn('[financialChart]', err.message); });
+}
+
+// ── KPI filter toggle ──
+document.querySelectorAll('#sectionProfitChart .kpi-filter .period-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#sectionProfitChart .kpi-filter .period-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    btn.classList.add('active');
+    var kpi = btn.getAttribute('data-kpi');
+    // Persist KPI in URL
+    var url = new URL(window.location);
+    url.searchParams.set('kpi', kpi);
+    history.replaceState(null, '', url);
+    renderFinancialChart(kpi);
+  });
+});
+
+// ── Preserve ?month= & ?kpi= across page nav ──
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var monthParam = params.get('month');
+  var kpiParam = params.get('kpi');
+  if (!monthParam && !kpiParam) return;
+  function enhanceLinks() {
+    var qs = [];
+    if (monthParam) qs.push('month=' + encodeURIComponent(monthParam));
+    if (kpiParam) qs.push('kpi=' + encodeURIComponent(kpiParam));
+    var suffix = qs.join('&');
+    document.querySelectorAll('.drawer-links a, .report-card, .nav-brand').forEach(function(a) {
+      var href = a.getAttribute('href');
+      if (href && !href.startsWith('#') && !href.includes('://') && href.indexOf('=') < 0) {
+        a.setAttribute('href', href + (href.includes('?') ? '&' : '?') + suffix);
+      }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', enhanceLinks);
+  else enhanceLinks();
+})();
+
+// ── Init chart on page load ──
+if (document.getElementById('profitChart')) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFinancialChart);
+  } else {
+    initFinancialChart();
+  }
+}
+
+// Auto-wrap tables in .table-responsive and add data-label from th
+document.querySelectorAll('.doc-content table, .data-table').forEach(function(table) {
+  // Wrap in responsive container
+  if (!table.parentElement.classList.contains('table-responsive')) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'table-responsive';
+    table.parentNode.insertBefore(wrapper, table);
+    wrapper.appendChild(table);
+  }
+  // Add data-label attributes
+  var headers = [];
+  table.querySelectorAll('thead th').forEach(function(th) {
+    headers.push(th.textContent.trim());
+  });
+  if (headers.length > 2) {
+    table.querySelectorAll('tbody tr').forEach(function(tr) {
+      tr.querySelectorAll('td').forEach(function(td, i) {
+        if (headers[i]) td.setAttribute('data-label', headers[i]);
+      });
+    });
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+{
+  "provider": {
+    "ollama": {
+      "name": "Ollama (local)",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "gemma3:1b": {
+          "id": "gemma3:1b",
+          "name": "gemma3:1b",
+          "tool_call": true
+        },
+        "gemma4:e2b": {
+          "id": "gemma4:e2b",
+          "name": "gemma4:e2b",
+          "tool_call": true
+        },
+        "gemma4:e4b": {
+          "id": "gemma4:e4b",
+          "name": "gemma4:e4b",
+          "tool_call": true
+        },
+        "gpt-oss:120b": {
+          "id": "gpt-oss:120b",
+          "name": "gpt-oss:120b",
+          "tool_call": true
+        },
+        "gpt-oss:20b": {
+          "id": "gpt-oss:20b",
+          "name": "gpt-oss:20b",
+          "tool_call": true
+        },
+        "minicpm-v4.6:latest": {
+          "id": "minicpm-v4.6:latest",
+          "name": "minicpm-v4.6:latest",
+          "tool_call": true
+        },
+        "qwen2.5:3b": {
+          "id": "qwen2.5:3b",
+          "name": "qwen2.5:3b",
+          "tool_call": true
+        },
+        "qwen3-embedding:0.6b": {
+          "id": "qwen3-embedding:0.6b",
+          "name": "qwen3-embedding:0.6b",
+          "tool_call": true
+        },
+        "translategemma:12b": {
+          "id": "translategemma:12b",
+          "name": "translategemma:12b",
+          "tool_call": true
+        },
+        "liyishanthu/minicpm4.1-custom:latest": {
+          "id": "liyishanthu/minicpm4.1-custom:latest",
+          "name": "liyishanthu/minicpm4.1-custom:latest",
+          "tool_call": true
+        }
+      }
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}

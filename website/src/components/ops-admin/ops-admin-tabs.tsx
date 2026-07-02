@@ -1,0 +1,1080 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import type { ReactNode, SyntheticEvent } from 'react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
+import Grid from '@mui/material/Grid';
+import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Tab from '@mui/material/Tab';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Tabs from '@mui/material/Tabs';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setActiveTab } from '@/store/ui-slice';
+import {
+  useDeleteZReportMutation,
+  useGetCalendarQuery,
+  useGetSchemaQuery,
+  useImportMetricsMutation,
+  useListMetricsQuery,
+  useSaveZReportMutation,
+} from '@/store/apis/metrics-api';
+import {
+  useGetMonthlyActualsQuery,
+  useLazyGetMonthlyActualsQuery,
+  useSaveMonthlyActualsMutation,
+} from '@/store/apis/monthly-actuals-api';
+import {
+  useParseExpenseTextMutation,
+  useParsePosTextMutation,
+  useScanExpenseReceiptMutation,
+  useScanPosReceiptMutation,
+} from '@/store/apis/pos-api';
+
+type OpsTab = 'day-pos' | 'costs-payroll' | 'fill-missing' | 'recent';
+type ActualsSubtab = 'submit' | 'prefill';
+
+const TOUCH_TARGET_SX = { minHeight: 48 };
+
+interface ImportPreviewPayload {
+  mode: 'daily' | 'monthly_prorate';
+  period: string;
+  rows?: Record<string, unknown>[];
+  monthly?: Record<string, unknown>;
+  summary: string;
+}
+
+interface ReceiptImagePayload {
+  dataUrl: string;
+  mime: string;
+  name: string;
+  captured_at: string;
+}
+
+interface ZReportField {
+  key: string;
+  label: string;
+  type: 'date' | 'time' | 'text' | 'int' | 'amount' | 'datetime';
+  required?: boolean;
+}
+
+interface ZReportSection {
+  id: string;
+  title: string;
+  fields: ZReportField[];
+}
+
+interface ZReportDepartment {
+  id: string;
+  label: string;
+  shortLabel?: string;
+}
+
+interface ZReportSchemaPayload {
+  departments?: ZReportDepartment[];
+  form_sections?: ZReportSection[];
+}
+
+interface MonthlyDepartment {
+  id: string;
+  label: string;
+  shortLabel?: string;
+}
+
+interface ManualField {
+  key: string;
+  label: string;
+  type: string;
+}
+
+interface MonthlyActualsPayload {
+  departments?: MonthlyDepartment[];
+  department_detail?: {
+    inputs?: Record<string, unknown>;
+    section?: { fields?: ManualField[] };
+    notes?: string;
+  } | null;
+  computed_preview?: Record<string, unknown>;
+  excel_locked?: boolean;
+}
+
+interface CalendarPayload {
+  period?: string;
+  days_in_month?: number;
+  filled?: { date: string; entry_source: string }[];
+  missing?: string[];
+  manual_count?: number;
+  imported_count?: number;
+}
+
+interface MetricsRow {
+  report_date?: string;
+  date?: string;
+  department?: string;
+  nett_sales?: number;
+  total_covers?: number;
+  receipt_image_count?: number;
+  entry_source?: string;
+}
+
+interface MonthlyRecentRow {
+  period?: string;
+  kind?: string;
+  department_label?: string;
+  input_count?: number;
+  input_total?: number;
+  receipt_count?: number;
+}
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function currentPeriod(): string {
+  return new Date().toISOString().slice(0, 7);
+}
+
+function priorPeriod(period: string): string {
+  const [year, month] = period.split('-').map(Number);
+  const date = new Date(year, month - 2, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function buildImportPreview(
+  period: string,
+  rows: Record<string, unknown>[],
+): ImportPreviewPayload | null {
+  const monthlyRow = rows.find((row) => row.period && !row.report_date && !row.date);
+  if (monthlyRow) {
+    const monthlyPeriod = String(monthlyRow.period).slice(0, 7) || period;
+    const monthly: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(monthlyRow)) {
+      if (key !== 'period' && value !== '') monthly[key] = value;
+    }
+    return {
+      mode: 'monthly_prorate',
+      period: monthlyPeriod,
+      monthly,
+      summary: `Monthly prorate for ${monthlyPeriod} across missing days`,
+    };
+  }
+
+  const dailyRows = rows.filter((row) => {
+    const date = String(row.report_date ?? row.date ?? '').slice(0, 10);
+    if (!date) return false;
+    const hasSales = (row.nett_sales != null && row.nett_sales !== '')
+      || (row.total_sales != null && row.total_sales !== '');
+    const hasCovers = row.total_covers != null && row.total_covers !== '';
+    return hasSales && hasCovers;
+  });
+
+  if (!dailyRows.length) return null;
+
+  const inMonth = dailyRows.filter((row) =>
+    String(row.report_date ?? row.date).slice(0, 7) === period,
+  );
+  const useRows = inMonth.length ? inMonth : dailyRows;
+
+  return {
+    mode: 'daily',
+    period,
+    rows: useRows,
+    summary: `${useRows.length} daily row(s) for import`,
+  };
+}
+
+function toNumberOrString(value: string): string | number {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const normalized = trimmed.replace(/,/g, '');
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) && /^-?\d+(\.\d+)?$/.test(normalized) ? numeric : trimmed;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null ? value as Record<string, unknown> : {};
+}
+
+function formatIdr(value: unknown): string {
+  const number = Number(value ?? 0);
+  if (!Number.isFinite(number)) return '-';
+  return `IDR ${Math.round(number).toLocaleString('id-ID')}`;
+}
+
+async function readReceiptFiles(files: FileList | null): Promise<ReceiptImagePayload[]> {
+  const selected = Array.from(files ?? []).slice(0, 3);
+  return Promise.all(selected.map((file) => new Promise<ReceiptImagePayload>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({
+      dataUrl: String(reader.result ?? ''),
+      mime: file.type || 'image/jpeg',
+      name: file.name,
+      captured_at: new Date().toISOString(),
+    });
+    reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
+    reader.readAsDataURL(file);
+  })));
+}
+
+function buildPayload(values: Record<string, unknown>, extra: Record<string, unknown> = {}) {
+  const payload: Record<string, unknown> = { ...extra };
+  for (const [key, value] of Object.entries(values)) {
+    const coerced = typeof value === 'string' ? toNumberOrString(value) : value;
+    if (coerced !== '') payload[key] = coerced;
+  }
+  return payload;
+}
+
+function dataFromEnvelope<T>(value: unknown): T {
+  return asRecord(value).data as T;
+}
+
+function SectionShell({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <Paper elevation={0} sx={{ p: 2.5, border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
+      <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>{title}</Typography>
+      {children}
+    </Paper>
+  );
+}
+
+function PosOcrPanel({ onParsed }: { onParsed: (values: Record<string, string>) => void }) {
+  const [images, setImages] = useState<ReceiptImagePayload[]>([]);
+  const [text, setText] = useState('');
+  const [scan, scanState] = useScanPosReceiptMutation();
+  const [parse, parseState] = useParsePosTextMutation();
+
+  const handleScan = async () => {
+    const payload = await scan({ images: images.map((image) => image.dataUrl) }).unwrap();
+    setText(payload.data?.text ?? '');
+  };
+
+  const handleParse = async () => {
+    const payload = await parse({ text, useAi: true }).unwrap();
+    const parsed = asRecord(payload.data);
+    onParsed(Object.fromEntries(Object.entries(parsed).map(([key, value]) => [key, String(value ?? '')])));
+  };
+
+  return (
+    <SectionShell title="POS OCR Prefill">
+      <Stack spacing={2}>
+        <Button component="label" variant="outlined">
+          Attach POS Receipt Photos
+          <input
+            hidden
+            multiple
+            accept="image/*"
+            type="file"
+            onChange={(event) => {
+              void readReceiptFiles(event.target.files).then(setImages);
+            }}
+          />
+        </Button>
+        {images.length ? <Typography variant="caption">{images.length} image(s) ready for OCR.</Typography> : null}
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <Button onClick={handleScan} disabled={!images.length || scanState.isLoading} variant="contained">
+            {scanState.isLoading ? 'Scanning...' : 'Scan'}
+          </Button>
+          <Button onClick={handleParse} disabled={!text.trim() || parseState.isLoading} variant="outlined">
+            {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
+          </Button>
+        </Stack>
+        <TextField
+          label="Receipt text"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          multiline
+          minRows={6}
+          fullWidth
+        />
+      </Stack>
+    </SectionShell>
+  );
+}
+
+function DayPosTab() {
+  const [department, setDepartment] = useState('all_pos');
+  const [values, setValues] = useState<Record<string, string>>({ report_date: today() });
+  const [receiptImages, setReceiptImages] = useState<ReceiptImagePayload[]>([]);
+  const [save, saveState] = useSaveZReportMutation();
+  const { data, isFetching } = useGetSchemaQuery(department);
+  const schema = dataFromEnvelope<ZReportSchemaPayload>(data);
+  const departments = schema?.departments ?? [];
+  const sections = schema?.form_sections ?? [];
+
+  const handleChange = (key: string, value: string) => {
+    setValues((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleSave = async () => {
+    await save(buildPayload(values, {
+      department,
+      receipt_images: receiptImages,
+    })).unwrap();
+  };
+
+  return (
+    <Grid container spacing={2.5}>
+      <Grid size={{ xs: 12, lg: 7 }}>
+        <SectionShell title="Day POS Upload">
+          <Stack spacing={2}>
+            <TextField
+              select
+              label="Department"
+              value={department}
+              onChange={(event) => setDepartment(event.target.value)}
+              fullWidth
+            >
+              {departments.map((dept) => (
+                <MenuItem key={dept.id} value={dept.id}>{dept.label}</MenuItem>
+              ))}
+            </TextField>
+
+            {isFetching ? <CircularProgress size={24} /> : null}
+            {sections.map((section) => (
+              <Box key={section.id}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>{section.title}</Typography>
+                <Grid container spacing={1.5}>
+                  {section.fields.map((field) => (
+                    <Grid key={field.key} size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        label={field.label}
+                        type={field.type === 'date' ? 'date' : field.type === 'time' ? 'time' : field.type === 'text' ? 'text' : 'number'}
+                        value={values[field.key] ?? ''}
+                        onChange={(event) => handleChange(field.key, event.target.value)}
+                        required={field.required}
+                        slotProps={{ inputLabel: { shrink: true } }}
+                        fullWidth
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            ))}
+
+            <Button component="label" variant="outlined">
+              Attach Verification Receipts
+              <input
+                hidden
+                multiple
+                accept="image/*"
+                type="file"
+                onChange={(event) => {
+                  void readReceiptFiles(event.target.files).then(setReceiptImages);
+                }}
+              />
+            </Button>
+            {receiptImages.length ? <Typography variant="caption">{receiptImages.length} receipt image(s) attached.</Typography> : null}
+
+            <Button onClick={handleSave} disabled={saveState.isLoading} variant="contained">
+              {saveState.isLoading ? 'Saving...' : 'Save Z-report'}
+            </Button>
+            {saveState.isSuccess ? <Typography role="status" color="success.main">Z-report saved.</Typography> : null}
+          </Stack>
+        </SectionShell>
+      </Grid>
+      <Grid size={{ xs: 12, lg: 5 }}>
+        <PosOcrPanel
+          onParsed={(parsed) => setValues((current) => ({ ...current, ...parsed }))}
+        />
+      </Grid>
+    </Grid>
+  );
+}
+
+function ExpenseOcrPanel({
+  department,
+  onParsed,
+}: {
+  department: string;
+  onParsed: (inputs: Record<string, string>) => void;
+}) {
+  const [images, setImages] = useState<ReceiptImagePayload[]>([]);
+  const [text, setText] = useState('');
+  const [scan, scanState] = useScanExpenseReceiptMutation();
+  const [parse, parseState] = useParseExpenseTextMutation();
+
+  const handleScan = async () => {
+    const payload = await scan({ images: images.map((image) => image.dataUrl) }).unwrap();
+    setText(payload.data?.text ?? '');
+  };
+
+  const handleParse = async () => {
+    const payload = await parse({ text, department, useAi: true }).unwrap();
+    const inputs = asRecord(payload.data?.inputs);
+    onParsed(Object.fromEntries(Object.entries(inputs).map(([key, value]) => [key, String(value ?? '')])));
+  };
+
+  return (
+    <SectionShell title="Expense Receipt OCR">
+      <Stack spacing={2}>
+        <Button component="label" variant="outlined">
+          Attach Expense Receipts
+          <input
+            hidden
+            multiple
+            accept="image/*"
+            type="file"
+            onChange={(event) => {
+              void readReceiptFiles(event.target.files).then(setImages);
+            }}
+          />
+        </Button>
+        {images.length ? <Typography variant="caption">{images.length} receipt image(s) attached.</Typography> : null}
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <Button onClick={handleScan} disabled={!images.length || scanState.isLoading} variant="contained">
+            {scanState.isLoading ? 'Scanning...' : 'Scan'}
+          </Button>
+          <Button onClick={handleParse} disabled={!text.trim() || parseState.isLoading} variant="outlined">
+            {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
+          </Button>
+        </Stack>
+        <TextField
+          label="Receipt text"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          multiline
+          minRows={6}
+          fullWidth
+        />
+      </Stack>
+    </SectionShell>
+  );
+}
+
+function CostsPayrollTab() {
+  const [period, setPeriod] = useState(currentPeriod());
+  const [department, setDepartment] = useState('direct');
+  const [actualsSubtab, setActualsSubtab] = useState<ActualsSubtab>('submit');
+  const [prefillFrom, setPrefillFrom] = useState(priorPeriod(currentPeriod()));
+  const [inputs, setInputs] = useState<Record<string, string>>({});
+  const [receiptImages, setReceiptImages] = useState<ReceiptImagePayload[]>([]);
+  const [notes, setNotes] = useState('');
+  const [prefillMessage, setPrefillMessage] = useState<string | null>(null);
+  const { data, isFetching } = useGetMonthlyActualsQuery({ period, department });
+  const [triggerPrefill, prefillState] = useLazyGetMonthlyActualsQuery();
+  const [save, saveState] = useSaveMonthlyActualsMutation();
+  const payload = dataFromEnvelope<MonthlyActualsPayload>(data);
+  const departments = payload?.departments ?? [];
+  const fields = payload?.department_detail?.section?.fields ?? [];
+
+  const mergedInputs = useMemo(() => {
+    const existing = asRecord(payload?.department_detail?.inputs);
+    return { ...existing, ...inputs };
+  }, [inputs, payload]);
+
+  const applyPrefillPayload = (prefillPayload: MonthlyActualsPayload & {
+    inputs?: Record<string, unknown>;
+    department_detail?: MonthlyActualsPayload['department_detail'];
+    prefill?: { prior_label?: string };
+  }) => {
+    const deptInputs = asRecord(prefillPayload.department_detail?.inputs);
+    const monthInputs = asRecord(prefillPayload.inputs);
+    const nextInputs = Object.keys(deptInputs).length ? deptInputs : monthInputs;
+    setInputs(Object.fromEntries(
+      Object.entries(nextInputs).map(([key, value]) => [key, String(value ?? '')]),
+    ));
+    if (prefillPayload.department_detail?.notes) {
+      setNotes(String(prefillPayload.department_detail.notes));
+    }
+    const label = prefillPayload.prefill?.prior_label ?? 'source month';
+    setPrefillMessage(`Prefilled from ${label}. Review values and save.`);
+  };
+
+  const handlePrefill = async (scope: 'month' | 'dept') => {
+    if (payload?.excel_locked) return;
+    if (scope === 'dept' && department === 'all') {
+      setPrefillMessage('Select a single cost account for Prefill by Account.');
+      return;
+    }
+
+    const hasValues = Object.values(mergedInputs).some((value) => String(value).trim());
+    const replace = hasValues && globalThis.window.confirm(
+      scope === 'month'
+        ? 'Replace all cost lines with prefill from source month? Cancel to merge with current values.'
+        : 'Replace this account\'s fields with prefill? Cancel to merge.',
+    );
+
+    const result = await triggerPrefill({
+      period,
+      department: scope === 'dept' ? department : undefined,
+      prefill: true,
+      prefill_from: prefillFrom,
+      scope,
+      ...(replace ? { prefill_mode: 'replace' } : {}),
+    }).unwrap();
+
+    applyPrefillPayload(dataFromEnvelope<MonthlyActualsPayload & {
+      inputs?: Record<string, unknown>;
+      prefill?: { prior_label?: string };
+    }>(result));
+  };
+
+  const handleSave = async () => {
+    await save({
+      period,
+      department,
+      inputs: buildPayload(mergedInputs),
+      receipt_images: receiptImages,
+      notes,
+    }).unwrap();
+    setPrefillMessage(null);
+  };
+
+  return (
+    <Grid container spacing={2.5}>
+      <Grid size={{ xs: 12, lg: 7 }}>
+        <SectionShell title="Costs & Payroll">
+          <Stack spacing={2}>
+            <Grid container spacing={1.5}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Period"
+                  type="month"
+                  value={period}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setPeriod(next);
+                    setPrefillFrom(priorPeriod(next));
+                    setInputs({});
+                    setPrefillMessage(null);
+                  }}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  fullWidth
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  select
+                  label="Cost Department"
+                  value={department}
+                  onChange={(event) => {
+                    setDepartment(event.target.value);
+                    setInputs({});
+                    setPrefillMessage(null);
+                  }}
+                  fullWidth
+                >
+                  {departments.map((dept) => (
+                    <MenuItem key={dept.id} value={dept.id}>{dept.label}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+
+            <Tabs
+              value={actualsSubtab}
+              onChange={(_event, value: ActualsSubtab) => setActualsSubtab(value)}
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              <Tab value="submit" label="Submit Cost" />
+              <Tab value="prefill" label="Prefill Cost" />
+            </Tabs>
+
+            {actualsSubtab === 'prefill' ? (
+              <Stack spacing={2}>
+                <TextField
+                  label="Copy costs from month"
+                  type="month"
+                  value={prefillFrom}
+                  onChange={(event) => setPrefillFrom(event.target.value)}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  helperText="Defaults to the month before your target. Pick any month with saved costs."
+                  sx={{ maxWidth: 320 }}
+                />
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                  <Button
+                    variant="contained"
+                    onClick={() => void handlePrefill('month')}
+                    disabled={prefillState.isFetching || payload?.excel_locked}
+                    sx={TOUCH_TARGET_SX}
+                  >
+                    {prefillState.isFetching ? 'Prefilling…' : 'Prefill All Accounts'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => void handlePrefill('dept')}
+                    disabled={prefillState.isFetching || payload?.excel_locked || department === 'all'}
+                    sx={TOUCH_TARGET_SX}
+                  >
+                    Prefill by Account
+                  </Button>
+                </Stack>
+              </Stack>
+            ) : null}
+
+            {isFetching ? <CircularProgress size={24} /> : null}
+            {payload?.excel_locked ? (
+              <Typography color="warning.main">This month is locked to the source Excel ledger.</Typography>
+            ) : null}
+            {prefillMessage ? (
+              <Typography role="status" color="success.main" variant="body2">{prefillMessage}</Typography>
+            ) : null}
+            {prefillState.isError ? (
+              <Typography role="alert" color="error.main" variant="body2">
+                Prefill failed. Check source month and try again.
+              </Typography>
+            ) : null}
+
+            <Grid container spacing={1.5}>
+              {fields.map((field) => (
+                <Grid key={field.key} size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label={field.label}
+                    type={field.type === 'int' || field.type === 'amount' ? 'number' : 'text'}
+                    value={String(mergedInputs[field.key] ?? '')}
+                    onChange={(event) => setInputs((current) => ({ ...current, [field.key]: event.target.value }))}
+                    fullWidth
+                  />
+                </Grid>
+              ))}
+            </Grid>
+
+            {actualsSubtab === 'submit' ? (
+              <>
+                <TextField
+                  label="Notes"
+                  value={notes || payload?.department_detail?.notes || ''}
+                  onChange={(event) => setNotes(event.target.value)}
+                  multiline
+                  minRows={2}
+                  fullWidth
+                />
+
+                <Button component="label" variant="outlined" sx={TOUCH_TARGET_SX}>
+                  Attach Cost Receipts
+                  <input
+                    hidden
+                    multiple
+                    accept="image/*"
+                    type="file"
+                    onChange={(event) => {
+                      void readReceiptFiles(event.target.files).then(setReceiptImages);
+                    }}
+                  />
+                </Button>
+              </>
+            ) : null}
+
+            <Button
+              onClick={handleSave}
+              disabled={saveState.isLoading || payload?.excel_locked}
+              variant="contained"
+              sx={TOUCH_TARGET_SX}
+            >
+              {saveState.isLoading ? 'Saving...' : actualsSubtab === 'prefill' ? 'Save & Sync' : 'Save Monthly Actuals'}
+            </Button>
+            {saveState.isSuccess ? <Typography role="status" color="success.main">Monthly actuals saved.</Typography> : null}
+
+            {payload?.computed_preview ? (
+              <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+                {Object.entries(payload.computed_preview).slice(0, 6).map(([key, value]) => (
+                  <Chip key={key} label={`${key.replaceAll('_', ' ')}: ${formatIdr(value)}`} />
+                ))}
+              </Stack>
+            ) : null}
+          </Stack>
+        </SectionShell>
+      </Grid>
+      <Grid size={{ xs: 12, lg: 5 }}>
+        {actualsSubtab === 'submit' ? (
+          <ExpenseOcrPanel
+            department={department}
+            onParsed={(parsed) => setInputs((current) => ({ ...current, ...parsed }))}
+          />
+        ) : (
+          <SectionShell title="Prefill Notes">
+            <Typography variant="body2" color="text.secondary">
+              Prefill copies saved or Excel-sourced costs from another month into the fields on the left.
+              Review totals, then save to sync Ops Tracking.
+            </Typography>
+          </SectionShell>
+        )}
+      </Grid>
+    </Grid>
+  );
+}
+
+function FillMissingTab() {
+  const [period, setPeriod] = useState(currentPeriod());
+  const [parsedRows, setParsedRows] = useState<Record<string, unknown>[]>([]);
+  const [importPreview, setImportPreview] = useState<ImportPreviewPayload | null>(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [monthlyTotals, setMonthlyTotals] = useState<Record<string, string>>({});
+  const { data, isFetching } = useGetCalendarQuery(period);
+  const calendar = dataFromEnvelope<CalendarPayload>(data);
+  const [importMetrics, importState] = useImportMetricsMutation();
+  const [deleteZReport, deleteState] = useDeleteZReportMutation();
+
+  const handleXlsx = async (file: File) => {
+    const XLSX = await import('xlsx');
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer);
+    const sheet = workbook.Sheets[workbook.SheetNames[0] ?? ''];
+    if (!sheet) return;
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+    setParsedRows(rows);
+    setImportPreview(null);
+    setImportMessage('File loaded. Click Preview to validate rows before import.');
+  };
+
+  const handlePreview = () => {
+    if (!parsedRows.length) {
+      setImportMessage('Choose an XLSX file first.');
+      setImportPreview(null);
+      return;
+    }
+    const preview = buildImportPreview(period, parsedRows);
+    if (!preview) {
+      setImportMessage('No importable rows found. Ensure report date, nett sales, and covers are filled.');
+      setImportPreview(null);
+      return;
+    }
+    setImportPreview(preview);
+    setImportMessage(`Preview: ${preview.summary} (${preview.mode})`);
+  };
+
+  const handleRunImport = async () => {
+    if (!importPreview) {
+      handlePreview();
+      return;
+    }
+    if (!globalThis.window.confirm(`Import ${importPreview.summary}?`)) return;
+
+    if (importPreview.mode === 'monthly_prorate') {
+      await importMetrics({
+        mode: 'monthly_prorate',
+        period: importPreview.period,
+        monthly: importPreview.monthly,
+        fill_missing_only: true,
+      }).unwrap();
+    } else {
+      await importMetrics({
+        mode: 'daily',
+        rows: importPreview.rows,
+        fill_missing_only: true,
+      }).unwrap();
+    }
+
+    setImportMessage('Import completed.');
+    setImportPreview(null);
+    setParsedRows([]);
+  };
+
+  const handleExportTemplate = async () => {
+    const XLSX = await import('xlsx');
+    const rows = calendar?.missing?.map((date) => ({
+      report_date: date,
+      nett_sales: '',
+      total_covers: '',
+      total_bills: '',
+      gofood_amount: '',
+      dine_in_amount: '',
+    })) ?? [];
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'missing-days');
+    XLSX.writeFile(workbook, `rosalita-missing-${period}.xlsx`);
+  };
+
+  const previewRows = importPreview?.mode === 'daily'
+    ? (importPreview.rows ?? []).slice(0, 12)
+    : [];
+
+  return (
+    <SectionShell title="Fill Missing Days">
+      <Stack spacing={2.5}>
+        <TextField
+          label="Period"
+          type="month"
+          value={period}
+          onChange={(event) => {
+            setPeriod(event.target.value);
+            setImportPreview(null);
+          }}
+          slotProps={{ inputLabel: { shrink: true } }}
+          sx={{ maxWidth: 260 }}
+        />
+        {isFetching ? <CircularProgress size={24} /> : null}
+        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+          <Chip label={`Filled: ${calendar?.filled?.length ?? 0}`} />
+          <Chip label={`Missing: ${calendar?.missing?.length ?? 0}`} color={(calendar?.missing?.length ?? 0) ? 'warning' : 'success'} />
+          <Chip label={`Manual: ${calendar?.manual_count ?? 0}`} />
+          <Chip label={`Imported: ${calendar?.imported_count ?? 0}`} />
+        </Stack>
+
+        <Typography variant="body2" color="text.secondary">
+          Upload a completed template, preview parsed rows, then confirm import to save missing days.
+        </Typography>
+
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <Button component="label" variant="outlined" sx={TOUCH_TARGET_SX}>
+            Load XLSX Daily Rows
+            <input
+              hidden
+              accept=".xlsx,.xls,.csv"
+              type="file"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void handleXlsx(file);
+              }}
+            />
+          </Button>
+          <Button onClick={handleExportTemplate} variant="outlined" disabled={!calendar?.missing?.length} sx={TOUCH_TARGET_SX}>
+            Export Missing Template
+          </Button>
+          <Button
+            onClick={handlePreview}
+            disabled={!parsedRows.length}
+            variant="outlined"
+            sx={TOUCH_TARGET_SX}
+          >
+            Preview
+          </Button>
+          <Button
+            onClick={() => void handleRunImport()}
+            disabled={!importPreview || importState.isLoading}
+            variant="contained"
+            sx={TOUCH_TARGET_SX}
+          >
+            {importState.isLoading ? 'Importing…' : 'Run Import'}
+          </Button>
+        </Stack>
+
+        {importMessage ? (
+          <Typography
+            role="status"
+            color={importPreview || importMessage.startsWith('Preview:') || importMessage.includes('completed') ? 'success.main' : 'text.secondary'}
+            variant="body2"
+          >
+            {importMessage}
+          </Typography>
+        ) : null}
+
+        {importPreview ? (
+          <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.02)' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+              Import preview — {importPreview.summary}
+            </Typography>
+            {importPreview.mode === 'monthly_prorate' ? (
+              <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+                {Object.entries(importPreview.monthly ?? {}).map(([key, value]) => (
+                  <Chip key={key} label={`${key.replaceAll('_', ' ')}: ${value}`} size="small" />
+                ))}
+              </Stack>
+            ) : (
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Nett Sales</TableCell>
+                    <TableCell>Covers</TableCell>
+                    <TableCell>Bills</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {previewRows.map((row, index) => (
+                    <TableRow key={`${String(row.report_date ?? row.date)}-${index}`}>
+                      <TableCell>{String(row.report_date ?? row.date ?? '').slice(0, 10)}</TableCell>
+                      <TableCell>{String(row.nett_sales ?? row.total_sales ?? '')}</TableCell>
+                      <TableCell>{String(row.total_covers ?? '')}</TableCell>
+                      <TableCell>{String(row.total_bills ?? '')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {(importPreview.rows?.length ?? 0) > previewRows.length ? (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                Showing {previewRows.length} of {importPreview.rows?.length} rows.
+              </Typography>
+            ) : null}
+          </Paper>
+        ) : null}
+
+        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Monthly prorate fallback</Typography>
+        <Grid container spacing={1.5}>
+          {['nett_sales', 'total_covers', 'total_bills', 'gofood_amount', 'dine_in_amount'].map((key) => (
+            <Grid key={key} size={{ xs: 12, sm: 6, md: 4 }}>
+              <TextField
+                label={key.replaceAll('_', ' ')}
+                type="number"
+                value={monthlyTotals[key] ?? ''}
+                onChange={(event) => setMonthlyTotals((current) => ({ ...current, [key]: event.target.value }))}
+                fullWidth
+              />
+            </Grid>
+          ))}
+        </Grid>
+        <Button
+          onClick={() => importMetrics({
+            mode: 'monthly_prorate',
+            period,
+            monthly: buildPayload(monthlyTotals),
+            fill_missing_only: true,
+          })}
+          disabled={importState.isLoading}
+          variant="outlined"
+          sx={TOUCH_TARGET_SX}
+        >
+          Prorate Monthly Totals Across Missing Days
+        </Button>
+
+        <Divider />
+        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Missing dates</Typography>
+        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+          {(calendar?.missing ?? []).map((date) => <Chip key={date} label={date} size="small" />)}
+        </Stack>
+        <Button
+          color="warning"
+          variant="outlined"
+          disabled={deleteState.isLoading}
+          sx={TOUCH_TARGET_SX}
+          onClick={() => {
+            if (globalThis.window.confirm(`Delete imported rows for ${period}? Manual entries are preserved.`)) {
+              void deleteZReport({ period, scope: 'imported' });
+            }
+          }}
+        >
+          Delete Imported Rows for Month
+        </Button>
+      </Stack>
+    </SectionShell>
+  );
+}
+
+function RecentEntries() {
+  const { data: metricsPayload } = useListMetricsQuery({ page: 1, limit: 8 });
+  const { data: actualsPayload } = useGetMonthlyActualsQuery({ period: currentPeriod(), recent: true, page: 1, limit: 8 });
+  const [deleteZReport] = useDeleteZReportMutation();
+  const metricsRows = asRecord(metricsPayload).rows as MetricsRow[] | undefined;
+  const actualsData = dataFromEnvelope<{ rows?: MonthlyRecentRow[] }>(actualsPayload);
+
+  return (
+    <Grid container spacing={2.5}>
+      <Grid size={{ xs: 12, lg: 7 }}>
+        <SectionShell title="Recent Z-reports">
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Date</TableCell>
+                <TableCell>Dept</TableCell>
+                <TableCell>Nett Sales</TableCell>
+                <TableCell>Covers</TableCell>
+                <TableCell>Receipts</TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(metricsRows ?? []).map((row) => {
+                const date = row.report_date ?? row.date ?? '';
+                return (
+                  <TableRow key={`${date}-${row.department ?? 'all'}`}>
+                    <TableCell>{date}</TableCell>
+                    <TableCell>{row.department ?? 'all_pos'}</TableCell>
+                    <TableCell>{formatIdr(row.nett_sales)}</TableCell>
+                    <TableCell>{row.total_covers ?? '-'}</TableCell>
+                    <TableCell>{row.receipt_image_count ?? 0}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        color="error"
+                        onClick={() => {
+                          if (globalThis.window.confirm(`Delete Z-report for ${date}?`)) {
+                            void deleteZReport({ report_date: date });
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </SectionShell>
+      </Grid>
+      <Grid size={{ xs: 12, lg: 5 }}>
+        <SectionShell title="Recent Actuals">
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Period</TableCell>
+                <TableCell>Scope</TableCell>
+                <TableCell>Total</TableCell>
+                <TableCell>Receipts</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(actualsData?.rows ?? []).map((row, index) => (
+                <TableRow key={`${row.period}-${row.department_label}-${index}`}>
+                  <TableCell>{row.period}</TableCell>
+                  <TableCell>{row.department_label ?? row.kind}</TableCell>
+                  <TableCell>{formatIdr(row.input_total)}</TableCell>
+                  <TableCell>{row.receipt_count ?? 0}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </SectionShell>
+      </Grid>
+    </Grid>
+  );
+}
+
+export function OpsAdminTabs({ initialTab = 'day-pos' }: { initialTab?: OpsTab }) {
+  const dispatch = useAppDispatch();
+  const activeTab = useAppSelector((s) => s.ui.activeTab);
+  const tab = (['day-pos', 'costs-payroll', 'fill-missing', 'recent'].includes(activeTab)
+    ? activeTab
+    : initialTab) as OpsTab;
+
+  const handleTabChange = (_event: SyntheticEvent, value: OpsTab) => {
+    dispatch(setActiveTab(value));
+  };
+
+  return (
+    <Box component="section" sx={{ maxWidth: 1180, mx: 'auto', px: 3, py: 4 }}>
+      <Stack spacing={3}>
+        <Box>
+          <Typography variant="overline" color="primary.main" sx={{ fontWeight: 700 }}>
+            Ops Admin
+          </Typography>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 800 }}>
+            Daily POS, Costs, and Missing Days
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            PIN or Google session required. Data writes use the JWT cookie tier, not client-side admin keys.
+          </Typography>
+        </Box>
+
+        <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
+          <Tabs value={tab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+            <Tab value="day-pos" label="Day POS" />
+            <Tab value="costs-payroll" label="Costs & Payroll" />
+            <Tab value="fill-missing" label="Fill Missing Days" />
+            <Tab value="recent" label="Recent Entries" />
+          </Tabs>
+        </Paper>
+
+        {tab === 'day-pos' ? <DayPosTab /> : null}
+        {tab === 'costs-payroll' ? <CostsPayrollTab /> : null}
+        {tab === 'fill-missing' ? <FillMissingTab /> : null}
+        {tab === 'recent' ? <RecentEntries /> : null}
+      </Stack>
+    </Box>
+  );
+}

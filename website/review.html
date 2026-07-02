@@ -1,0 +1,5344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f14">
+<title>Business Review — Rosalita Cantina</title>
+<meta name="description" content="Rosalita Cantina — Business Review & Turnaround Strategy. Comprehensive analysis and 12-month action plan.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Auth Gate Overlay -->
+<div id="authGateOverlay" style="display:none; position:fixed; inset:0; z-index:10000; background:#0f0f14; align-items:center; justify-content:center;">
+  <div id="authGateInner" style="max-width:420px; text-align:center; padding:32px 24px;"></div>
+</div>
+
+<nav class="top-nav">
+  <div class="nav-inner">
+    <img src="images/logo.svg" alt="Rosalita's Cantina" class="hero-logo">
+    <a href="index.html" class="nav-brand"><span class="ember">Rosalita</span> Cantina</a>
+    <button class="nav-toggle" aria-label="Toggle menu">&#x22EE;</button>
+  </div>
+</nav>
+
+<!-- Side Drawer -->
+<div id="sideDrawer" class="side-drawer">
+  <div class="drawer-user-badge" id="drawerUserBadge" style="display:none;">
+    <img id="drawerAvatar" src="" alt="" class="drawer-avatar">
+    <div class="drawer-user-info">
+      <div id="drawerUserName" class="drawer-user-name">Admin</div>
+      <div id="drawerUserEmail" class="drawer-user-email">Signed in</div>
+    </div>
+    <a href="/api/auth?action=logout" class="drawer-signout" title="Sign out">&#10140;</a>
+  </div>
+  <div class="drawer-links">
+    <a href="index.html">Dashboard</a>
+    <a href="summary.html" class="google-only">Summary</a>
+    <a href="review.html" class="active google-only">Analysis</a>
+    <a href="ops-admin.html">Ops Admin</a>
+    <a href="ops-tracking.html" class="google-only">Ops Tracking</a>
+    <a href="ops-chat.html" class="google-only">AI Chat</a>
+  </div>
+  <div class="drawer-legal">
+    <a href="#" id="navPdf" 
+      onclick="downloadPDF();return false;" 
+      style="margin-left:auto;color:#fff;text-decoration:none;font-weight:600;">PDF
+    </a>
+    <a href="privacy-policy.html">Privacy</a>
+    <a href="terms-of-service.html">Terms</a>
+  </div>
+</div>
+<div id="drawerOverlay" class="drawer-overlay"></div>
+
+<!-- ── PDF Capture Wrapper ── -->
+<div id="pdfCapture">
+
+<main class="doc-container">
+  <article class="doc-content">
+    <h1>Rosalita Cantina — Business Review &amp; Turnaround Plan</h1>
+<p><strong>Prepared</strong>: June 28, 2026
+<strong>For</strong>: Owner / Management Review
+<strong>Data Period</strong>: January–May 2026 (actuals) with projections through June 2027
+<strong>Data Source</strong>: <code>Rosallita Cashflow May 24th 2026.xlsx</code>, <code>menu.txt</code>, <code>rosalitasbali.com</code>, competitive research, AI industry data</p>
+<hr>
+<h2>Executive Summary</h2>
+<p>Rosalita Cantina is at a critical inflection point. The first five months of 2026 resulted in a cumulative EBITDA loss of approximately <strong>‑IDR 443 million</strong>. However, the trajectory has been sharply improving:</p>
+<ul>
+<li>January: <strong>‑IDR 129.9M</strong> ← crisis</li>
+<li>April: <strong>‑IDR 43.9M</strong> ← improving</li>
+<li>May: <strong>+IDR 434K</strong> ← <strong>first profitable month</strong></li>
+</ul>
+<p><strong>The business model works.</strong> The positive EBITDA in May proves it. The problem was that the business was severely overstaffed and over-complicated for its current revenue volume. Corrective action has already begun (staff reduced from 34 → 22 between January and May) and must continue methodically.</p>
+<h3>The Five Levers to Sustainable Profitability</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Lever</th>
+<th>EBITDA Impact</th>
+<th>Timeline</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>1</strong></td>
+<td><strong>Fix loss-leading promotions</strong> — Monday 25% off and Wednesday 67% off wings are destroying margin. Restructure to bundles.</td>
+<td><strong>Protects IDR 10–18M/month</strong> (immediate, zero cost)</td>
+<td><strong>This week</strong></td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>Deploy free AI tools</strong> — ChatGPT + Canva AI for marketing, social media, review responses, SOPs. Saves 15–20 hrs/week.</td>
+<td><strong>Adds IDR 5–10M/month</strong> (free to start)</td>
+<td><strong>This week</strong></td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td><strong>Complete staff restructuring</strong> — 22 → 16 FTE + 7shifts AI scheduling to optimize further</td>
+<td><strong>Saves IDR 50–70M/month</strong></td>
+<td><strong>3 months</strong></td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td><strong>Launch new revenue streams</strong> — daily Happy Hour (4-7PM), weekend brunch, late-night weekend hours, hotel concierge partnerships</td>
+<td><strong>Adds IDR 60–130M/month new revenue</strong></td>
+<td><strong>2–6 months</strong></td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td><strong>Increase average spend</strong> — upsell training, combo bundles, cocktail menu optimization, price adjustments on under-priced items</td>
+<td><strong>Adds IDR 80–120M/month revenue lift</strong></td>
+<td><strong>6–12 months</strong></td>
+</tr>
+</tbody></table>
+<p>With all five levers in place by June 2027, the business should generate <strong>IDR 150–200M+/month EBITDA</strong> (conservative floor: IDR 101M; aspirational: IDR 258M) on <strong>IDR 700–820M/month revenue</strong> — a sustainable 20–30%+ EBITDA margin.</p>
+<hr>
+<h2 id="part-a">Part A: Current Situation — The Numbers That Matter</h2>
+<h3>A.1 Revenue &amp; Guests (Jan–May 2026 Actuals)</h3>
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Guests (actual)</th>
+<th>Guests (budget)</th>
+<th>Variance</th>
+<th>Spend/Guest</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Jan</td>
+<td>2,155</td>
+<td>1,860</td>
+<td><strong>+16%</strong></td>
+<td>IDR 206,881</td>
+</tr>
+<tr>
+<td>Feb</td>
+<td>1,759</td>
+<td>1,624</td>
+<td><strong>+8%</strong></td>
+<td>IDR 199,873</td>
+</tr>
+<tr>
+<td>Mar</td>
+<td>1,703</td>
+<td>1,798</td>
+<td><strong>-5%</strong></td>
+<td>IDR 222,304</td>
+</tr>
+<tr>
+<td>Apr</td>
+<td>2,120</td>
+<td>1,770</td>
+<td><strong>+20%</strong></td>
+<td>IDR 198,725</td>
+</tr>
+<tr>
+<td>May</td>
+<td>1,996</td>
+<td>1,891</td>
+<td><strong>+6%</strong></td>
+<td>IDR 229,282</td>
+</tr>
+</tbody></table>
+<p><strong>Key takeaway:</strong> Guest counts are above or near budget. The business does not have a traffic problem — it has a <strong>cost structure problem</strong> and a <strong>spend-per-guest problem</strong>.</p>
+<h3>A.2 The Burn: Staff Costs</h3>
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Staff Count</th>
+<th>Staff Cost</th>
+<th>% of Revenue</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Jan</td>
+<td>34</td>
+<td>IDR 240.2M</td>
+<td><strong>54%</strong></td>
+<td>22%</td>
+</tr>
+<tr>
+<td>Feb</td>
+<td>34</td>
+<td>IDR 240.2M</td>
+<td><strong>68%</strong></td>
+<td>22%</td>
+</tr>
+<tr>
+<td>Mar</td>
+<td>32</td>
+<td>IDR 228.1M</td>
+<td><strong>60%</strong></td>
+<td>22%</td>
+</tr>
+<tr>
+<td>Apr</td>
+<td>28</td>
+<td>IDR 191.8M</td>
+<td><strong>46%</strong></td>
+<td>22%</td>
+</tr>
+<tr>
+<td>May</td>
+<td>22</td>
+<td>IDR 160.9M</td>
+<td><strong>40%</strong></td>
+<td>22%</td>
+</tr>
+</tbody></table>
+<p><strong>This is the single most important chart in this document.</strong> The gap between current staff cost (40% of revenue) and the target (22%) is approximately <strong>IDR 60–80M/month</strong> in unnecessary expense.</p>
+<p><strong>What changed (Jan → May):</strong></p>
+<ul>
+<li>Management: 4 people → 3 → 2 (saving IDR 16.5M/month)</li>
+<li>Music/DJ: eliminated (saving IDR 6M/month)</li>
+<li>Reception: 3 → 2 (saving IDR 6M/month)</li>
+<li>Waiters: 6 → 5 (saving IDR 4M/month)</li>
+<li>Bar: 6 → 4 (saving IDR 9M/month)</li>
+<li>Kitchen: 11 → 6 (saving IDR 27.5M/month)</li>
+<li>Cleaning: 3 → 1 (saving IDR 7.7M/month)</li>
+</ul>
+<h3>A.3 The Opportunity: Spend Per Guest</h3>
+<p>Current spend: <strong>IDR 199K–229K/guest</strong>
+Healthy target: <strong>IDR 250K–270K/guest</strong>
+Untapped potential: <strong>IDR 7–12M/month</strong> for every 1,000 guests</p>
+<p>With ~2,000 guests/month, increasing spend by IDR 40K/guest = <strong>IDR 80M/month additional revenue</strong> — almost entirely at high margin (70%+ flows to gross profit).</p>
+<hr>
+<h2 id="part-b">Part B: Step-by-Step Action Plan</h2>
+
+<script>
+// ── Auth Gate ──
+(function() {
+  var overlay = document.getElementById('authGateOverlay');
+  var inner = document.getElementById('authGateInner');
+  if (!overlay || !inner) return;
+
+  function showSignIn() {
+    overlay.style.display = 'flex';
+    inner.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(235,61,40,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;">&#9733;</div>' +
+      '<h2 style="font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#f0f0f5;">Sign in Required</h2>' +
+      '<p style="color:#8888a0;font-size:0.9rem;margin-bottom:24px;">Sign in with Google to access this page.</p>' +
+      '<a href="/api/auth?action=google" style="display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1a1a22;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>' +
+      'Sign in with Google</a>';
+  }
+
+  function showDenied() {
+    overlay.style.display = 'flex';
+    inner.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(235,61,40,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#eb3d28;">&#9888;</div>' +
+      '<h2 style="font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#f0f0f5;">Access Denied</h2>' +
+      '<p style="color:#8888a0;font-size:0.9rem;margin-bottom:24px;">PIN-authenticated users can only access the Ops Admin page. Sign in with Google for full access.</p>' +
+      '<a href="/api/auth?action=google" style="display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1a1a22;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>' +
+      'Sign in with Google</a>' +
+      '<p style="margin-top:16px;"><a href="index.html" style="color:var(--ember);text-decoration:none;font-size:0.85rem;">&larr; Back to Dashboard</a></p>';
+  }
+
+  fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+    if (!data.user) { showSignIn(); }
+    else if (data.user.authMethod === 'pin') {
+      showDenied();
+      var gl = document.querySelectorAll('.drawer-links .google-only');
+      for (var i=0;i<gl.length;i++) gl[i].style.display='none';
+    }
+  }).catch(function(){ showSignIn(); });
+})();
+
+function toggleStep(el) {
+  el.classList.toggle('active');
+}
+// Side drawer toggle
+document.querySelector('.nav-toggle')?.addEventListener('click', function() {
+  document.getElementById('sideDrawer')?.classList.toggle('open');
+  document.getElementById('drawerOverlay')?.classList.toggle('open');
+  document.body.style.overflow = document.getElementById('sideDrawer')?.classList.contains('open') ? 'hidden' : '';
+  updateDrawerBadge();
+});
+document.getElementById('drawerOverlay')?.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('sideDrawer')?.classList.contains('open')) closeDrawer();
+});
+function closeDrawer() {
+  document.getElementById('sideDrawer')?.classList.remove('open');
+  document.getElementById('drawerOverlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function downloadPDF() {
+    var card = document.getElementById('cardPDF');
+    var spinner = document.getElementById('pdfSpinner');
+    if (card) card.style.opacity = '0.6';
+    if (spinner) spinner.style.display = 'flex'; // show spinner
+
+
+    // Step 1: Initiate PDF job
+    var pagePath = window.location.pathname + window.location.search;
+    fetch('/api/auth?action=pdf&page=' + encodeURIComponent(pagePath), { credentials: 'include' })
+      .then(function(res) {
+        if (!res.ok) throw new Error('PDF request failed (' + res.status + ')');
+        return res.json();
+      })
+      .then(function(data) {
+        if (!data.jobId || !data.statusCheckUrl) throw new Error('Invalid job response from server.');
+        // Poll for completion
+        var poll = function() {
+          fetch(data.statusCheckUrl, { credentials: 'include' })
+            .then(function(r) {
+              if (!r.ok) {
+                return r.text().then(function(text) {
+                  throw new Error('Status check failed (' + r.status + '): ' + text.slice(0, 120));
+                });
+              }
+              return r.json();
+            })
+            .then(function(statusData) {
+              if (statusData.status === 'COMPLETED') {
+                // The API returns Base64 PDF data in `resultUrl` or `pdfBase64`
+                var base64 = statusData.completed_data?.pdfBase64 || statusData.pdfBase64;
+                if (!base64) throw new Error('PDF data missing from completed job.');
+                var binary = atob(base64);
+                var len = binary.length;
+                var buffer = new Uint8Array(len);
+                for (var i = 0; i < len; i++) buffer[i] = binary.charCodeAt(i);
+                var blob = new Blob([buffer], { type: 'application/pdf' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'Rosalita-Business-Review-June-2026.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+              } else if (statusData.status === 'FAILED') {
+                throw new Error('PDF generation failed: ' + (statusData.details || 'unknown error'));
+              } else {
+                // Still pending – poll again after short delay
+                setTimeout(poll, 2000);
+              }
+            })
+            .catch(err => { console.error('[pdf poll]', err); alert('Error while checking PDF status: '+err.message); });
+        };
+        poll();
+      })
+      .catch(function(err) {
+        console.error('[pdf]', err);
+        alert(err.message || 'PDF export failed. Please try again.');
+      })
+      .finally(function() {         if (card) card.style.opacity = '';
+        if (spinner) spinner.style.display = 'none'; // hide spinner
+ });
+}
+
+function updateDrawerBadge() {
+  var badge = document.getElementById('drawerUserBadge');
+  if (!badge) return;
+  fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+    if (data.user) {
+      document.getElementById('drawerAvatar').src = data.user.picture || 'images/default-avatar.svg';
+      document.getElementById('drawerAvatar').alt = data.user.name || 'User';
+      document.getElementById('drawerUserName').textContent = data.user.name || 'Admin';
+      document.getElementById('drawerUserEmail').textContent = data.user.email || (data.user.authMethod === 'pin' ? 'Signed in with PIN' : 'Signed in');
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }).catch(function(){ badge.style.display = 'none'; });
+}
+// Auto-wrap tables in .table-responsive and add data-label from th
+document.querySelectorAll('.doc-content table, .data-table').forEach(function(table) {
+  if (!table.parentElement.classList.contains('table-responsive')) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'table-responsive';
+    table.parentNode.insertBefore(wrapper, table);
+    wrapper.appendChild(table);
+  }
+  var headers = [];
+  table.querySelectorAll('thead th').forEach(function(th) {
+    headers.push(th.textContent.trim());
+  });
+  if (headers.length > 2) {
+    table.querySelectorAll('tbody tr').forEach(function(tr) {
+      tr.querySelectorAll('td').forEach(function(td, i) {
+        if (headers[i]) td.setAttribute('data-label', headers[i]);
+      });
+    });
+  }
+});
+</script>
+
+<h3 id="phase-1">Phase 1: Stop the Bleeding (July – September 2026)</h3>
+<p>These actions address the immediate cost structure and require no investment. Steps sorted by revenue impact, highest first.</p>
+
+<!-- Step 1.5 — Fix Loss-Leading Promotions: IDR 10-18M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 1.5 — Fix Loss-Leading Promotions (Immediate Margin Protection)</h4>
+    <span class="step-impact">IDR 10-18M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>Analysis found two promotions that are destroying margin:</strong></p>
+      <table>
+      <thead>
+      <tr>
+      <th>Day</th>
+      <th>Current Promotion</th>
+      <th>Problem</th>
+      <th>Restructured To</th>
+      <th>Margin Protected</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Monday</strong></td>
+      <td>25% OFF all Mexican food</td>
+      <td>Food margin is 30% COGS → 25% discount leaves only 45% gross margin. Only profitable if volume doubles AND drink sales spike.</td>
+      <td>Replace with: <strong>&quot;Buy 1 Main, Get 1 Dessert for 20K&quot;</strong> — drives higher check while protecting food margin</td>
+      <td><strong>IDR 5–10M/month</strong></td>
+      </tr>
+      <tr>
+      <td><strong>Wednesday</strong></td>
+      <td>6 Smoked Wings for <strong>29K</strong> (normally 89K = <strong>67% off</strong>)</td>
+      <td>Wings cost ~20–25K to make. Selling at 29K means below-cost or near-zero margin. Entirely dependent on drink upsells to break even.</td>
+      <td>Replace with: <strong>&quot;6 Wings + Beer for 89K&quot;</strong> or <strong>&quot;Buy 12 Wings, Get 6 Free&quot;</strong> — bundles protect margin and drive check</td>
+      <td><strong>IDR 5–8M/month</strong></td>
+      </tr>
+      <tr>
+      <td><strong>Sunday</strong></td>
+      <td>Tacomania: AYCE + Unlimited Drinks for <strong>399K++</strong> (2-4PM)</td>
+      <td>All-you-can-eat tacos (food cost ~30-40%) + unlimited drinks. A pair eating 8 tacos + 4 margaritas could cost more than 399K.</td>
+      <td><strong>Add controls:</strong> 2-hour time limit, 4 taco varieties max per person, unlimited = house margaritas/mocktails only (exclude premium), track per-table cost weekly</td>
+      <td><strong>Protects against loss</strong></td>
+      </tr>
+      </tbody></table>
+      <p><strong>Action this week:</strong> Update all digital marketing (Instagram, website, GoFood) with new structures. Reprint any physical promo materials.</p>
+      <p><strong>Total margin protected: IDR 10–18M/month</strong> at zero cost.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 1.1 — Staff Restructuring: IDR 13.5M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 1.1 — Complete Staff Restructuring</h4>
+    <span class="step-impact">IDR 13.5M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>Current (May):</strong> 22 staff across all roles
+      <strong>Target by September 2026:</strong> 16–17 core FTE + casuals for peaks</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Role</th>
+      <th>Current</th>
+      <th>Target</th>
+      <th>Monthly Saving</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Management</td>
+      <td>1 (from Jul)</td>
+      <td>1</td>
+      <td>—</td>
+      </tr>
+      <tr>
+      <td>Shift Supervisor</td>
+      <td>0</td>
+      <td>1</td>
+      <td>(reallocate)</td>
+      </tr>
+      <tr>
+      <td>Reception/Cashier</td>
+      <td>2</td>
+      <td>2</td>
+      <td>—</td>
+      </tr>
+      <tr>
+      <td>Waiters/Waitresses</td>
+      <td>5</td>
+      <td>4</td>
+      <td>IDR 4M</td>
+      </tr>
+      <tr>
+      <td>Bar Staff</td>
+      <td>3 (from Jul)</td>
+      <td>2</td>
+      <td>IDR 4.5M</td>
+      </tr>
+      <tr>
+      <td>Kitchen</td>
+      <td>6</td>
+      <td>5</td>
+      <td>IDR 5M</td>
+      </tr>
+      <tr>
+      <td>Cleaning/GRO</td>
+      <td>1</td>
+      <td>1</td>
+      <td>—</td>
+      </tr>
+      <tr>
+      <td><strong>Total</strong></td>
+      <td><strong>22</strong></td>
+      <td><strong>16</strong></td>
+      <td><strong>IDR ~13.5M/month</strong></td>
+      </tr>
+      </tbody></table>
+      <p><strong>Total monthly staff cost target:</strong> ~IDR 107M (from current IDR 161M)</p>
+      <p><strong>How to get there:</strong></p>
+      <ul>
+      <li>Reduce waitstaff from 5 → 4 (one leaves naturally or moves to part-time)</li>
+      <li>Reduce bar from 3 → 2 (consolidate with FOH during slow shifts)</li>
+      <li>Kitchen from 6 → 5 (combine prep/cook roles)</li>
+      <li>Use 2–3 part-time/casual staff for Friday/Saturday peak periods (pay per shift, no fixed cost)</li>
+      </ul>
+      <p><strong>Risk warning:</strong> Do not cut below 16 core. Service quality will suffer and repeat business will decline. The goal is efficiency, not starvation.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 1.2 — Lock In Lower Rent: up to IDR 13M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 1.2 — Lock In Lower Rent</h4>
+    <span class="step-impact">UP TO IDR 13M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p>April&#39;s rent was renegotiated to IDR 30M (from IDR 60M in Jan–Mar).</p>
+      <p><strong>Recommended action:</strong> Approach the landlord with a proposal to lock in <strong>IDR 30M/month through December 2027</strong> in exchange for a longer lease commitment or a revenue-share clause.</p>
+      <p>At IDR 30M/month on IDR 500M revenue, rent = 6%, which is healthy for this market.
+      The 2026–2027 projection shows rent climbing back to IDR 40M+ — this will undo progress.</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Rent Scenario</th>
+      <th>Annual Cost</th>
+      <th>Difference vs IDR 30M</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>IDR 30M fixed (target)</td>
+      <td>IDR 360M</td>
+      <td>—</td>
+      </tr>
+      <tr>
+      <td>IDR 30M escalating to IDR 43M (current plan)</td>
+      <td>IDR 440M</td>
+      <td><strong>+IDR 80M/year</strong></td>
+      </tr>
+      </tbody></table>
+      <blockquote>
+      <p><strong>Bottom line</strong>: Every IDR 1M reduction in monthly rent = IDR 12M/year directly to EBITDA.</p>
+      </blockquote>
+    </div>
+  </div>
+</div>
+
+<!-- Step 1.6 — Deploy Free AI Tools: IDR 5-10M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 1.6 — Deploy Free AI Tools (Immediate Productivity Gain)</h4>
+    <span class="step-impact">IDR 5-10M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>The single highest-ROI action in this entire plan:</strong> Free AI tools that save 15–20 hours/week starting today.</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Tool</th>
+      <th>Cost</th>
+      <th>Setup Time</th>
+      <th>First Task</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>ChatGPT</strong> (chat.openai.com)</td>
+      <td>Free</td>
+      <td>2 minutes</td>
+      <td>&quot;Write 30 Instagram captions for Rosalita&#39;s Cantina. Use a fun, festive tone. Tag each with 5 relevant hashtags.&quot;</td>
+      </tr>
+      <tr>
+      <td><strong>Canva AI</strong> (canva.com)</td>
+      <td>Free / $15/mo Pro</td>
+      <td>2 minutes</td>
+      <td>&quot;Design Instagram story template for Taco Tuesday&quot;</td>
+      </tr>
+      <tr>
+      <td><strong>Meta Business Suite</strong> (business.facebook.com)</td>
+      <td>Free</td>
+      <td>5 minutes</td>
+      <td>Link Instagram + Facebook, schedule this week&#39;s posts</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Weekly AI workflow (1–2 hours instead of 15–20 hours):</strong></p>
+      <table>
+      <thead>
+      <tr>
+      <th>Task</th>
+      <th>Before</th>
+      <th>After with AI</th>
+      <th>Time Saved</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Social media captions</td>
+      <td>3 hrs/week</td>
+      <td>ChatGPT → 15 mins</td>
+      <td>2.75 hrs</td>
+      </tr>
+      <tr>
+      <td>Social media graphics</td>
+      <td>4 hrs/week</td>
+      <td>Canva AI → 30 mins</td>
+      <td>3.5 hrs</td>
+      </tr>
+      <tr>
+      <td>Google/TripAdvisor review responses</td>
+      <td>2 hrs/week</td>
+      <td>ChatGPT → 10 mins</td>
+      <td>1.8 hrs</td>
+      </tr>
+      <tr>
+      <td>Menu descriptions / updates</td>
+      <td>3 hrs/month</td>
+      <td>ChatGPT → 20 mins</td>
+      <td>2.7 hrs/month</td>
+      </tr>
+      <tr>
+      <td>Staff training materials / SOPs</td>
+      <td>8 hrs/quarter</td>
+      <td>ChatGPT → 1 hr</td>
+      <td>7 hrs/quarter</td>
+      </tr>
+      <tr>
+      <td>Event promo copy</td>
+      <td>2 hrs/event</td>
+      <td>ChatGPT + Canva → 20 mins</td>
+      <td>1.7 hrs</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Total value:</strong> Saves 15–20 hrs/week of owner/manager time worth <strong>IDR 5–10M/month</strong> when redirected to guest experience and operations.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 1.4 — Menu Cleanup (Quick Wins): enabling -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 1.4 — Menu Cleanup (Quick Wins)</h4>
+    <span class="step-impact none">Enabling</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p>Before the full Phase 2 analysis, do these immediately:</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Action</th>
+      <th>Why</th>
+      <th>Impact</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Remove duplicate Chicken Wings listing</strong></td>
+      <td>Same product, two menu lines — confuses guests</td>
+      <td>Simplifies ordering, no revenue loss</td>
+      </tr>
+      <tr>
+      <td><strong>Combine Nachos &amp; Mexi Fries into one menu line</strong> with &quot;choose your base: chips or fries&quot;</td>
+      <td>Two virtually identical items at same price</td>
+      <td>Reduces menu length, no revenue loss</td>
+      </tr>
+      <tr>
+      <td><strong>Remove Asian Corner items</strong></td>
+      <td>Nasi Goreng, Mie Ayam, Tom Yam Gai — brand mismatch, low price, uses expensive specialty ingredients</td>
+      <td>Frees kitchen space, eliminates ingredient SKUs (lemongrass, kafir lime, etc.)</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Expected impact:</strong> Reduction of ~10 menu lines, ingredient SKU reduction of ~15–20 items, kitchen prep time reduced.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 1.3 — Analyse Sales Mix: (data) -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 1.3 — Analyse Sales Mix &amp; Identify Low Performers</h4>
+    <span class="step-impact none">Data</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>Action:</strong> For the next 4 weeks, track every item sold. Use the POS system to generate:</p>
+      <ul>
+      <li>Quantity sold per item (weekly)</li>
+      <li>Revenue per item</li>
+      <li>Time of day for each item</li>
+      </ul>
+      <p><strong>This data is essential for Phase 2 decisions.</strong> Do not cut items from the menu until you have 4 weeks of sales data.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 1.7 — Track Profitability by Day: (data) -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 1.7 — Track Profitability by Day of Week</h4>
+    <span class="step-impact none">Data</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>Critical for evaluating the events program.</strong> Without this data, you cannot know which promotions are profitable.</p>
+      <p><strong>Action:</strong> For the next 4 weeks, track for each day:</p>
+      <ul>
+      <li>Total revenue</li>
+      <li>Total guests</li>
+      <li>Average spend</li>
+      <li>Food vs. beverage split</li>
+      <li>Staff hours worked</li>
+      <li>Promotional discounts given (IDR value)</li>
+      </ul>
+      <p><strong>Monday–Wednesday are the highest-risk days</strong> (deepest discounts). If any day shows negative contribution margin after accounting for promotions, restructure or eliminate that day&#39;s event.</p>
+    </div>
+  </div>
+</div>
+
+<h3 id="phase-2">Phase 2: Menu &amp; Revenue Optimization (October – December 2026)</h3>
+<p>These actions require your sales mix data from Phase 1 and some investment in menu redesign and staff training. Steps sorted by revenue impact, highest first.</p>
+
+<!-- Step 2.3 — Upselling Training: IDR 60M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 2.3 — Upselling &amp; Average Check Growth (Staff Training)</h4>
+    <span class="step-impact">IDR 60M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>The single highest-ROI action in this entire plan.</strong> Most guests currently spend IDR 200–230K for a main + drink. With simple techniques, this can reach IDR 250–260K.</p>
+      <p><strong>Training Module: The 3-Step Upsell</strong></p>
+      <table>
+      <thead>
+      <tr>
+      <th>Step</th>
+      <th>Script</th>
+      <th>Target Sale</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>1. &quot;Would you like to start with something?&quot;</td>
+      <td>Nachos, Chips &amp; Dip, or Chicken Fingers</td>
+      <td>+IDR 45–98K</td>
+      </tr>
+      <tr>
+      <td>2. &quot;Can I recommend a drink with that?&quot;</td>
+      <td>Pairing suggestion (cocktail, beer, mocktail)</td>
+      <td>+IDR 35–85K</td>
+      </tr>
+      <tr>
+      <td>3. &quot;Save room for dessert?&quot;</td>
+      <td>Churros, Brownie, Key Lime Pie</td>
+      <td>+IDR 49–59K</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Target: 30% of guests order a starter + 40% order a dessert + 60% accept a drink pairing</strong></p>
+      <p><strong>Staff incentive:</strong> Create a small bonus or competition for the highest average check per shift (IDR 50K bonus for the winning server each week) — this pays for itself many times over.</p>
+      <p><strong>Expected impact on average spend:</strong></p>
+      <table>
+      <thead>
+      <tr>
+      <th>Current spend</th>
+      <th>After training</th>
+      <th>Lift</th>
+      <th>Revenue impact (2,000 guests/mo)</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>IDR 210K</td>
+      <td>IDR 240K</td>
+      <td>+IDR 30K</td>
+      <td><strong>IDR 60M/month</strong></td>
+      </tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2.6 — Weekend Brunch: IDR 30-50M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 2.6 — Launch Weekend Brunch (Sat–Sun, 10AM–2PM)</h4>
+    <span class="step-impact">IDR 30-50M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p>Seminyak has a <strong>thriving brunch culture</strong> and Rosalita&#39;s is missing it entirely. Every competitor from Taco Casa to Motel Mexicola offers brunch. The restaurant is currently closed before 11AM — this is zero-revenue time.</p>
+      <p><strong>Brunch Concept: &quot;Rosalita&#39;s Weekend Fiesta Brunch&quot;</strong></p>
+      <ul>
+      <li><strong>Hours:</strong> Saturday–Sunday, 10AM–2PM</li>
+      <li><strong>Format:</strong> Build-Your-Own-Taco bar + Bottomless Mimosas/Margaritas</li>
+      <li><strong>Price:</strong> IDR 199K per person (food only) or IDR 299K with bottomless drinks</li>
+      <li><strong>Menu:</strong> 4 taco filling stations, Mexican rice &amp; beans, churros station, fresh fruit</li>
+      </ul>
+      <p><strong>Why this works:</strong></p>
+      <ul>
+      <li>Incremental revenue on currently-zero-revenue hours</li>
+      <li>High-margin bottomless drinks drive profitability</li>
+      <li>Differentiates from brunch competition (unique Mexican brunch angle)</li>
+      <li>Uses existing kitchen capacity during off-peak morning hours</li>
+      </ul>
+      <p><strong>Staffing:</strong> 2-3 additional part-time staff (not core FTE) — paid per shift
+      <strong>Marketing:</strong> Instagram posts, hotel concierge flyers, Google Business Profile event</p>
+      <p><strong>Expected revenue: IDR 30–50M/month new revenue</strong> (assuming 40-60 covers per brunch day at IDR 250K avg)</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2.2 — Price Optimization: IDR 20-30M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 2.2 — Price Optimization (Selective Increases)</h4>
+    <span class="step-impact">IDR 20-30M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p>Based on the menu analysis, these items appear <strong>underpriced</strong> relative to their value:</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Item</th>
+      <th>Current Price</th>
+      <th>Suggested Price</th>
+      <th>% Increase</th>
+      <th>Est. Annual Impact</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Chicken Fingers (4pcs)</td>
+      <td>59K</td>
+      <td>68K</td>
+      <td>+15%</td>
+      <td>IDR 9–15M</td>
+      </tr>
+      <tr>
+      <td>Fish Fingers (4pcs)</td>
+      <td>69K</td>
+      <td>78K</td>
+      <td>+13%</td>
+      <td>IDR 5–10M</td>
+      </tr>
+      <tr>
+      <td>Cobb Salad</td>
+      <td>99K</td>
+      <td>108K</td>
+      <td>+9%</td>
+      <td>IDR 5–10M</td>
+      </tr>
+      <tr>
+      <td>Nasi Goreng (Chicken)</td>
+      <td>65K</td>
+      <td>78K (or delete)</td>
+      <td>+20%</td>
+      <td>IDR 3–8M</td>
+      </tr>
+      <tr>
+      <td>Mie Ayam</td>
+      <td>65K</td>
+      <td>78K (or delete)</td>
+      <td>+20%</td>
+      <td>IDR 2–5M</td>
+      </tr>
+      <tr>
+      <td>Churros (6pcs)</td>
+      <td>49K</td>
+      <td>55K</td>
+      <td>+12%</td>
+      <td>IDR 3–6M</td>
+      </tr>
+      <tr>
+      <td>Gelato/Scoop</td>
+      <td>25K</td>
+      <td>30K</td>
+      <td>+20%</td>
+      <td>IDR 2–4M</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Strategy:</strong> Implement price increases in <strong>two waves</strong> (October and January) to avoid sticker shock. Lead with a menu redesign that frames increases as &quot;menu refresh&quot; with updated descriptions.</p>
+      <blockquote>
+      <p><strong>Rule of thumb:</strong> A 5% price increase on 50% of the menu flows approximately 85% to profit (since fixed costs don&#39;t change). This alone could add IDR 20–30M/month to EBITDA at current volumes.</p>
+      </blockquote>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2.5 — Happy Hour: IDR 15-30M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 2.5 — Launch Daily Happy Hour (4–7PM)</h4>
+    <span class="step-impact">IDR 15-30M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>This is the single biggest untapped time slot.</strong> Currently Rosalita&#39;s generates little revenue between lunch and dinner. The Thursday 5-8PM promo (shots + DJ) already proves there&#39;s demand for early-evening drinking.</p>
+      <p><strong>Happy Hour Offer (daily, 4–7PM):</strong></p>
+      <ul>
+      <li><strong>20% off all signature cocktails and margaritas</strong> (Rosaritas, classic margs)</li>
+      <li><strong>Half-price selected appetizers</strong> (Chips &amp; Dip, Nachos Queso, Chicken Fingers)</li>
+      <li><strong>Beer special:</strong> Bintang or Singaraja for IDR 35K (normally 60K/45K)</li>
+      </ul>
+      <p><strong>Why this works:</strong></p>
+      <ul>
+      <li>Drinks have 75-85% margin — even at 20% off, they still have 55-65% margin</li>
+      <li>Half-price appetizers drive food revenue at marginal cost</li>
+      <li>Creates a &quot;pre-dinner&quot; occasion — guests often stay for dinner after happy hour</li>
+      <li>Competes directly with Potato Head&#39;s and KU DE TA&#39;s late afternoon crowd</li>
+      </ul>
+      <p><strong>Target metrics:</strong></p>
+      <ul>
+      <li>15–25 happy hour covers/day (currently ~0)</li>
+      <li>Average spend IDR 120–180K per HH guest</li>
+      <li>20% conversion of HH guests to staying for dinner</li>
+      </ul>
+      <p><strong>Expected revenue: IDR 15–30M/month new revenue at 60%+ margin</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2.9 — Hotel Concierge: IDR 10-20M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 2.9 — Hotel Concierge Partnerships</h4>
+    <span class="step-impact">IDR 10-20M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>Finding from area analysis:</strong> 5 five-star hotels within 1km of Rosalita&#39;s (Oberoi 4.8★, Legian 4.9★, Courtyard Marriott 4.5★, The Seminyak Beach Resort 4.8★, The Club by The Legian 5.0★). These generate thousands of affluent tourist guests nightly.</p>
+      <p><strong>Action Plan:</strong></p>
+      <table>
+      <thead>
+      <tr>
+      <th>Step</th>
+      <th>Action</th>
+      <th>Timeline</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>1</td>
+      <td>Print professional flyers/coupon cards (&quot;10% off for [Hotel Name] guests&quot;)</td>
+      <td>Oct 2026</td>
+      </tr>
+      <tr>
+      <td>2</td>
+      <td>Visit each hotel concierge desk, introduce Rosalita&#39;s, leave flyers</td>
+      <td>Nov 2026</td>
+      </tr>
+      <tr>
+      <td>3</td>
+      <td>Offer hotel staff a referral bonus (IDR 50K per referred table)</td>
+      <td>Nov 2026</td>
+      </tr>
+      <tr>
+      <td>4</td>
+      <td>Propose &quot;exclusive&quot; menu insert for hotel guests</td>
+      <td>Dec 2026</td>
+      </tr>
+      <tr>
+      <td>5</td>
+      <td>Track referral codes per hotel to measure ROI</td>
+      <td>Ongoing</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Expected impact:</strong> 5–15 additional covers/day from hotel guests = <strong>IDR 10–20M/month new revenue</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2.1 — Menu Pruning: IDR 5-15M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 2.1 — Menu Pruning (Based on 4-Week Sales Data)</h4>
+    <span class="step-impact">IDR 5-15M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p>Using the sales data collected in Phase 1:</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Category</th>
+      <th>Action</th>
+      <th>Criteria</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Filling options</strong> (7 → 4–5)</td>
+      <td>Remove bottom 2–3 fillings across all categories</td>
+      <td>Items with &lt;5% of category sales</td>
+      </tr>
+      <tr>
+      <td><strong>Big-ticket proteins</strong> (Rib Eye, Picanha, etc.)</td>
+      <td>Keep but review pricing</td>
+      <td>Keep high-margin items, consider +IDR 10–20K price increase</td>
+      </tr>
+      <tr>
+      <td><strong>Burger section</strong></td>
+      <td>Keep all (good price architecture)</td>
+      <td>4 burgers at IDR 120–149K covers the range well</td>
+      </tr>
+      <tr>
+      <td><strong>Sandwich section</strong></td>
+      <td>Consider merging with burger section</td>
+      <td>4 items (Smoked Chicken, Steak, Cubanos × 2)</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Target menu size after Phase 2:</strong> 48–52 items (reduced from current ~62)
+      <strong>Expected savings:</strong> IDR 5–15M/month in reduced food waste, labor, and ingredient purchases</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2.7 — Cocktail Menu: IDR 5-10M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 2.7 — Cocktail Menu Pricing &amp; Optimization</h4>
+    <span class="step-impact">IDR 5-10M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>Finding from website analysis:</strong> The cocktail menu (likely highest-margin items) is <strong>not visible on the website</strong> and <strong>not in menu.txt</strong>. Rosaritas (signature margarita) is mentioned as a brand element but no prices are published.</p>
+      <p><strong>Action:</strong></p>
+      <table>
+      <thead>
+      <tr>
+      <th>Task</th>
+      <th>Timeline</th>
+      <th>Impact</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Document all cocktail/margarita recipes, costs, and prices</td>
+      <td>By Oct 2026</td>
+      <td>Margin visibility</td>
+      </tr>
+      <tr>
+      <td>Set retail prices (estimated IDR 85–150K range based on competitors)</td>
+      <td>By Oct 2026</td>
+      <td>Revenue optimization</td>
+      </tr>
+      <tr>
+      <td>Create &quot;Flight of Margaritas&quot; — 3 mini margs for IDR 120K</td>
+      <td>By Oct 2026</td>
+      <td>Increases trial, higher check</td>
+      </tr>
+      <tr>
+      <td>Feature Rosaritas on website with pricing</td>
+      <td>By Oct 2026</td>
+      <td>SEO + conversion</td>
+      </tr>
+      <tr>
+      <td>Ensure cocktail menu is HTML (not JS/images) on website for Google indexing</td>
+      <td>By Oct 2026</td>
+      <td>SEO visibility</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Cocktails are likely the highest-margin item in the business (75-85%).</strong> Optimizing this category alone could add IDR 5–10M/month to EBITDA.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2.8 — 7shifts AI Scheduling: IDR 4-7M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 2.8 — Implement 7shifts AI Scheduling</h4>
+    <span class="step-impact">IDR 4-7M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <table>
+      <thead>
+      <tr>
+      <th>Item</th>
+      <th>Detail</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Tool</strong></td>
+      <td>7shifts (7shifts.com) — restaurant-specific AI scheduling platform</td>
+      </tr>
+      <tr>
+      <td><strong>Cost</strong></td>
+      <td>Free (1 location basic) / $29.99/mo (premium with AI features)</td>
+      </tr>
+      <tr>
+      <td><strong>What it does</strong></td>
+      <td>Analyzes historical sales data → predicts staffing needs → auto-generates optimized schedules</td>
+      </tr>
+      <tr>
+      <td><strong>ROI</strong></td>
+      <td>Industry average: <strong>3-5% reduction in labor cost</strong> — at Rosalita&#39;s ~IDR 135M/month target staff cost = <strong>IDR 4–7M/month saved</strong></td>
+      </tr>
+      <tr>
+      <td><strong>Setup time</strong></td>
+      <td>2 hours initial + 15 minutes/week ongoing vs. 2-3 hours/week manual scheduling</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Action:</strong> Sign up, connect to POS (or input sales data manually), let AI learn for 2-3 weeks, then switch to AI-generated schedules.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2.4 — Combo Bundles: enabling -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 2.4 — Introduce Combo Bundles</h4>
+    <span class="step-impact none">Enabling</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p>Create 2–3 combo deals that simplify choice and increase average check:</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Combo</th>
+      <th>Items</th>
+      <th>Price</th>
+      <th>vs. Buying Separately</th>
+      <th>Margin Note</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>&quot;Lunch Deal&quot;</strong> (11am–4pm)</td>
+      <td>Any main + drink</td>
+      <td>IDR 20K off</td>
+      <td>Discount on drink</td>
+      <td>Drives off-peak traffic</td>
+      </tr>
+      <tr>
+      <td><strong>&quot;Rosalita&#39;s Fiesta&quot;</strong></td>
+      <td>Starter + Main + Drink</td>
+      <td>IDR 250K</td>
+      <td>10–15% discount</td>
+      <td>Increases total spend</td>
+      </tr>
+      <tr>
+      <td><strong>&quot;Date Night&quot;</strong></td>
+      <td>2 Mains + 1 Dessert + 2 Drinks</td>
+      <td>IDR 450K (or 500K for steak option)</td>
+      <td>10–15% discount</td>
+      <td>Higher total ticket</td>
+      </tr>
+      </tbody></table>
+      <blockquote>
+      <p><strong>Important:</strong> Combos should NOT discount high-margin items. The discount comes from the drink/dessert (high margin) subsidizing the main (lower margin). Total profit per guest should increase, not decrease.</p>
+      </blockquote>
+    </div>
+  </div>
+</div>
+
+<h3 id="phase-3">Phase 3: Growth &amp; Sustainable Profitability (January – June 2027)</h3>
+<p>Steps sorted by revenue impact, highest first.</p>
+
+<!-- Step 3.3 — Winnow: IDR 12-20M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 3.3 — Deploy Winnow Food Waste AI</h4>
+    <span class="step-impact">IDR 12-20M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <table>
+      <thead>
+      <tr>
+      <th>Item</th>
+      <th>Detail</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Tool</strong></td>
+      <td>Winnow or equivalent AI food waste tracking system</td>
+      </tr>
+      <tr>
+      <td><strong>Cost</strong></td>
+      <td>Custom quote (typically IDR 3-8M/month for a restaurant of this size)</td>
+      </tr>
+      <tr>
+      <td><strong>What it does</strong></td>
+      <td>AI vision camera over kitchen bins → identifies everything thrown away → quantifies waste by category → suggests purchasing adjustments</td>
+      </tr>
+      <tr>
+      <td><strong>ROI</strong></td>
+      <td>Industry average: <strong>15-25% reduction in food waste</strong> — at Rosalita&#39;s IDR 82M/month food purchases = <strong>IDR 12–20M/month saved</strong></td>
+      </tr>
+      <tr>
+      <td><strong>Payback</strong></td>
+      <td>3-6 months</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Simpler alternative:</strong> If Winnow is too expensive initially, do manual waste tracking for 4 weeks: weigh trimmings, expired items, plate waste. Use ChatGPT to analyze patterns and suggest reductions.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 3.1 — Late-night Hours: IDR 10-20M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 3.1 — Extend Weekend Hours to Capture Late-Night Crowd</h4>
+    <span class="step-impact">IDR 10-20M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>Finding from area analysis:</strong> Potato Head Beach Club (closes midnight/2AM on weekends) and KU DE TA (late-night venue) are within 1km. Hundreds of tourists walk past Rosalita&#39;s after leaving beach clubs looking for late-night food.</p>
+      <p><strong>Action:</strong></p>
+      <table>
+      <thead>
+      <tr>
+      <th>Change</th>
+      <th>Details</th>
+      <th>Est. Impact</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Friday–Saturday: extend to 1AM</strong></td>
+      <td>Last food orders 12:30AM. Drinks until 1AM.</td>
+      <td>IDR 10–20M/month new revenue</td>
+      </tr>
+      <tr>
+      <td><strong>Late-night menu</strong></td>
+      <td>Simplified: 6 tacos/variations + 3 appetizers + full drinks. Makes kitchen operations easy with minimal extra staff.</td>
+      <td>Protects margin</td>
+      </tr>
+      <tr>
+      <td><strong>Staffing</strong></td>
+      <td>1 cook + 1 bar + 1 server + 1 security (4 staff, paid shift rate)</td>
+      <td>Cost: IDR 3-4M/month vs revenue</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Target:</strong> 20–40 late-night covers on Fri-Sat, avg spend IDR 150–200K (mostly drinks + small food)</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 3.4 — WhatsApp Ordering: IDR 5-8M/mo -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 3.4 — Launch Direct WhatsApp Ordering (Save GoFood Commission)</h4>
+    <span class="step-impact">IDR 5-8M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <table>
+      <thead>
+      <tr>
+      <th>Item</th>
+      <th>Detail</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Problem</strong></td>
+      <td>GoFood/Grab take <strong>20-30% commission</strong> on every delivery order. At IDR 75-102M/month delivery revenue, that&#39;s <strong>IDR 15-25M/month in commissions</strong></td>
+      </tr>
+      <tr>
+      <td><strong>Solution</strong></td>
+      <td>Set up WhatsApp Business catalog with full menu + ordering flow. Regular customers order direct → 0% commission</td>
+      </tr>
+      <tr>
+      <td><strong>Key features</strong></td>
+      <td>Menu catalog in WhatsApp, auto-reply for order confirmation, payment via QRIS/Bank Transfer</td>
+      </tr>
+      <tr>
+      <td><strong>Impact</strong></td>
+      <td>If 30% of delivery orders move from GoFood to WhatsApp = <strong>IDR 5-8M/month saved</strong> in commissions</td>
+      </tr>
+      <tr>
+      <td><strong>Implementation</strong></td>
+      <td>WhatsApp Business app is <strong>free</strong>. Set up product catalog (2 hours). Train one staff to manage incoming orders.</td>
+      </tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- Step 3.5 — Hostie AI: indirect -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 3.5 — Hostie AI Phone Assistant (Advanced)</h4>
+    <span class="step-impact none">Referrals</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <table>
+      <thead>
+      <tr>
+      <th>Item</th>
+      <th>Detail</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Tool</strong></td>
+      <td>Hostie AI (hostie.ai) — voice AI restaurant receptionist</td>
+      </tr>
+      <tr>
+      <td><strong>Cost</strong></td>
+      <td>From ~$200/month</td>
+      </tr>
+      <tr>
+      <td><strong>What it does</strong></td>
+      <td>Answers phone calls 24/7 in 20+ languages → takes reservations, answers FAQs (hours, menu, directions), transfers urgent calls to staff</td>
+      </tr>
+      <tr>
+      <td><strong>Why it matters for Rosalita&#39;s</strong></td>
+      <td>International tourists in Seminyak speak English, Chinese, Korean, Japanese, Russian, and more. Currently, phone calls during service go unanswered. Industry data: <strong>30-50% of restaurant calls are missed.</strong></td>
+      </tr>
+      <tr>
+      <td><strong>ROI</strong></td>
+      <td>More reservations captured = direct revenue. Frees staff from phone during peak service.</td>
+      </tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- Step 3.2 — 85+ Guests/Day: target -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 3.2 — Target 85+ Guests/Day Average (Upward Revision)</h4>
+    <span class="step-impact none">Target</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p>The original Phase 3 target was 80-88 guests/day. <strong>With brunch + happy hour + late-night added, revise upward.</strong></p>
+      <table>
+      <thead>
+      <tr>
+      <th>Month</th>
+      <th>2027 Target</th>
+      <th>Drivers</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Jan</td>
+      <td>80</td>
+      <td>Brunch launch + post-holiday</td>
+      </tr>
+      <tr>
+      <td>Feb</td>
+      <td>82</td>
+      <td>Valentine&#39;s, CNY promo + growing brunch</td>
+      </tr>
+      <tr>
+      <td>Mar</td>
+      <td>85</td>
+      <td>End of low season + happy hour established</td>
+      </tr>
+      <tr>
+      <td>Apr</td>
+      <td>88</td>
+      <td>Pre-peak + hotel partnerships ramping</td>
+      </tr>
+      <tr>
+      <td>May</td>
+      <td>92</td>
+      <td>Late-night Fri-Sat established</td>
+      </tr>
+      <tr>
+      <td>Jun</td>
+      <td>95</td>
+      <td>High season + all channels firing</td>
+      </tr>
+      </tbody></table>
+      <p><strong>How to get there (updated tactics):</strong></p>
+      <table>
+      <thead>
+      <tr>
+      <th>Tactic</th>
+      <th>Cost</th>
+      <th>Expected Impact</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Brunch</strong> (Sat-Sun 10AM-2PM, launched Phase 2)</td>
+      <td>Low (IDR 3-5M/month staff)</td>
+      <td><strong>+30–50M/month new revenue</strong></td>
+      </tr>
+      <tr>
+      <td><strong>Happy Hour</strong> (daily 4-7PM, launched Phase 2)</td>
+      <td>Low (discount on drinks)</td>
+      <td><strong>+15–30M/month new revenue</strong></td>
+      </tr>
+      <tr>
+      <td><strong>Late-night</strong> (Fri-Sat till 1AM)</td>
+      <td>Low (IDR 3-4M/month staff)</td>
+      <td><strong>+10–20M/month new revenue</strong></td>
+      </tr>
+      <tr>
+      <td><strong>Hotel concierge partnerships</strong> (launched Phase 2)</td>
+      <td>Very low (printed flyers)</td>
+      <td><strong>+10–20M/month new revenue</strong></td>
+      </tr>
+      <tr>
+      <td><strong>GoFood/delivery AI-optimized</strong></td>
+      <td>Low (IDR 3–5M/month ads)</td>
+      <td>+10–15 delivery orders/day</td>
+      </tr>
+      <tr>
+      <td><strong>AI-powered social media</strong> (ChatGPT + Canva)</td>
+      <td>Free</td>
+      <td>Organic reach, consistent posting</td>
+      </tr>
+      <tr>
+      <td><strong>Repeat customer program</strong></td>
+      <td>Very low</td>
+      <td>Increases frequency 15–25%</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Total marketing budget target:</strong> <del>2.5–3% of revenue (</del>IDR 15–20M/month by mid-2027)</p>
+    </div>
+  </div>
+</div>
+
+<!-- Step 3.6 — Financial Milestones: reference -->
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h4>Step 3.6 — Updated Financial Milestones</h4>
+    <span class="step-impact none">Reference</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <table>
+      <thead>
+      <tr>
+      <th>Milestone</th>
+      <th>Original Target</th>
+      <th>Revised Target</th>
+      <th>Metric</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Breakeven month</strong></td>
+      <td>Achieved May 2026</td>
+      <td>Achieved May 2026</td>
+      <td>EBITDA &gt; IDR 0</td>
+      </tr>
+      <tr>
+      <td><strong>Consistent positive EBITDA</strong></td>
+      <td>Jul 2026: IDR 30M/mo</td>
+      <td>Jul 2026: IDR 50M/mo</td>
+      <td>EBITDA</td>
+      </tr>
+      <tr>
+      <td><strong>Staff cost below 25%</strong></td>
+      <td>Sep 2026</td>
+      <td>Sep 2026</td>
+      <td>Staff cost ratio</td>
+      </tr>
+      <tr>
+      <td><strong>Menu reduction to ~50 items</strong></td>
+      <td>Oct 2026</td>
+      <td>Oct 2026</td>
+      <td>Menu item count</td>
+      </tr>
+      <tr>
+      <td><strong>Average spend &gt; IDR 240K</strong></td>
+      <td>Dec 2026</td>
+      <td>Dec 2026 (240K) → Jun 2027 (265K)</td>
+      <td>Spend/guest</td>
+      </tr>
+      <tr>
+      <td><strong>New revenue streams launched</strong></td>
+      <td>—</td>
+      <td>Happy Hour Oct 2026, Brunch Nov 2026, Late-night Jan 2027</td>
+      <td>Revenue/stream</td>
+      </tr>
+      <tr>
+      <td><strong>AI tools deployed</strong></td>
+      <td>—</td>
+      <td>ChatGPT/Canva by Jul 2026, 7shifts by Nov 2026, Winnow by Mar 2027</td>
+      <td>Tools active</td>
+      </tr>
+      <tr>
+      <td><strong>EBITDA target (conservative)</strong></td>
+      <td>IDR 101M/mo (Jun 2027)</td>
+      <td>IDR 101M/mo</td>
+      <td>EBITDA</td>
+      </tr>
+      <tr>
+      <td><strong>EBITDA target (aspirational)</strong></td>
+      <td>—</td>
+      <td>IDR 200M+/mo (Jun 2027)</td>
+      <td>EBITDA</td>
+      </tr>
+      <tr>
+      <td><strong>EBITDA margin</strong></td>
+      <td>~16.5%</td>
+      <td><strong>20–30%</strong></td>
+      <td>EBITDA/Revenue</td>
+      </tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+<hr>
+<h2 id="part-c">Part C: Financial Projection — The 12-Month Target</h2>
+<h3>Monthly P&amp;L: Current vs. Target</h3>
+<table>
+<thead>
+<tr>
+<th>Line Item</th>
+<th>May 2026 (Actual)</th>
+<th>Jun 2027 (Target)</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Revenue</strong></td>
+<td><strong>IDR 457.6M</strong></td>
+<td><strong>IDR 615M</strong></td>
+<td><strong>+34%</strong></td>
+</tr>
+<tr>
+<td>Guests/day</td>
+<td>65</td>
+<td>82</td>
+<td>+26%</td>
+</tr>
+<tr>
+<td>Average spend</td>
+<td>IDR 210K</td>
+<td>IDR 250K</td>
+<td>+19%</td>
+</tr>
+<tr>
+<td>Food revenue (60%)</td>
+<td>IDR 274.6M</td>
+<td>IDR 369M</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Beverage revenue (40%)</td>
+<td>IDR 183M</td>
+<td>IDR 246M</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Direct Costs</strong></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Food COGS (30%)</td>
+<td>-IDR 82.4M</td>
+<td>-IDR 110.7M</td>
+<td>Consistent %</td>
+</tr>
+<tr>
+<td>Beverage COGS (27%)</td>
+<td>-IDR 49.4M</td>
+<td>-IDR 66.4M</td>
+<td>Consistent %</td>
+</tr>
+<tr>
+<td>Entertainment (2%)</td>
+<td>-IDR 9.2M</td>
+<td>-IDR 12.3M</td>
+<td>Consistent %</td>
+</tr>
+<tr>
+<td>Other direct (2.2%)</td>
+<td>-IDR 10.1M</td>
+<td>-IDR 13.5M</td>
+<td>Consistent %</td>
+</tr>
+<tr>
+<td><strong>Gross Profit</strong></td>
+<td><strong>IDR 306.6M (67%)</strong></td>
+<td><strong>IDR 412.1M (67%)</strong></td>
+<td><strong>+34%</strong></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Overhead</strong></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Staff costs</td>
+<td>-IDR 160.9M (35%)</td>
+<td>-IDR 135.3M <strong>(22%)</strong></td>
+<td><strong>Cost ratio halves</strong></td>
+</tr>
+<tr>
+<td>Rent</td>
+<td>-IDR 30M</td>
+<td>-IDR 30M</td>
+<td>Locked</td>
+</tr>
+<tr>
+<td>Utilities (6%)</td>
+<td>-IDR 27.5M</td>
+<td>-IDR 36.9M</td>
+<td>Tied to revenue</td>
+</tr>
+<tr>
+<td>Marketing (2.5%)</td>
+<td>-IDR 11.4M</td>
+<td>-IDR 15.4M</td>
+<td>Tied to revenue</td>
+</tr>
+<tr>
+<td>Other overhead</td>
+<td>-IDR 23.5M</td>
+<td>-IDR 30.8M</td>
+<td>Tied to revenue</td>
+</tr>
+<tr>
+<td><strong>Total Overhead</strong></td>
+<td><strong>-IDR 253.3M</strong></td>
+<td><strong>-IDR 248.4M</strong></td>
+<td><strong>Flat despite revenue growth</strong></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Other Items</strong></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>StarCARD provision</td>
+<td>-IDR 45.8M</td>
+<td>-IDR 61.5M</td>
+<td>10% of GoFood</td>
+</tr>
+<tr>
+<td>Taxes &amp; service (21%)</td>
+<td>-IDR 96.1M</td>
+<td>-IDR 129.2M</td>
+<td>Flat %</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>EBITDA</strong></td>
+<td><strong>+IDR 434K</strong></td>
+<td><strong>+IDR 101.4M</strong></td>
+<td><strong>234x improvement</strong></td>
+</tr>
+<tr>
+<td><strong>EBITDA Margin</strong></td>
+<td><strong>~0%</strong></td>
+<td><strong>~16.5%</strong></td>
+<td><strong>Sustainable</strong></td>
+</tr>
+</tbody></table>
+<h3>Cumulative Recovery</h3>
+<ul>
+<li>Q1 2026 loss: approximately -IDR 400M</li>
+<li>Q2 2026 estimated: approximately -IDR 87M (Jan–May total -IDR 443M, plus June)</li>
+<li><strong>Breakeven achieved</strong>: May 2026</li>
+<li><strong>Cumulative losses recovered by</strong>: approximately Q2 2027 (if targets are met)</li>
+<li><strong>Sustainable profitability from</strong>: Q3 2027 onward</li>
+</ul>
+<hr>
+<h2 id="part-d">Part D: Risk Register</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Risk</th>
+<th>Likelihood</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Staff cuts hurt service quality</td>
+<td>Medium</td>
+<td>High</td>
+<td>Keep 16 core FTE; add PT for peaks; cross-train</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Price increases drive guests away</td>
+<td>Low–Med</td>
+<td>High</td>
+<td>Phase increases; test on low-sensitivity items first; add value perception through combos</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Rent increases at next renegotiation</td>
+<td>Medium</td>
+<td>High</td>
+<td>Lock IDR 30M as long as possible; consider revenue-share model</td>
+</tr>
+<tr>
+<td>4</td>
+<td>GoFood/delivery commissions erode margin (20–30% per order)</td>
+<td>High</td>
+<td>Medium</td>
+<td>Use delivery for volume/awareness; focus profitability on dine-in; create delivery-exclusive bundles with cost-optimized items</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Kitchen cannot handle reduced menu + higher volume</td>
+<td>Low–Med</td>
+<td>Medium</td>
+<td>Test new menu in soft launch; monitor ticket times; adjust staffing before peak season</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Seasonality — Jan–Mar low season</td>
+<td>High</td>
+<td>Medium</td>
+<td>Build cash reserves Oct–Dec; reduce to minimum staffing in Jan–Feb; run promotions</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Competition in Seminyak intensifies</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Build loyalty program; focus on quality consistency; develop unique selling points (1-Meter Burrito, signature cocktails, live events)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Key staff leave during restructuring</td>
+<td>Low–Med</td>
+<td>High</td>
+<td>Identify and retain top performers with small incentives; open communication about the turnaround plan</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Food cost creep from inflation</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Review supplier contracts quarterly; adjust menu prices annually; consider bulk purchasing on core items</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="part-e">Part E: Menu Consolidation Decision Matrix</h2>
+<p>Use this table to guide the October 2026 menu refresh. For each item, track:</p>
+<ul>
+<li><strong>Volume</strong>: % of category / total orders</li>
+<li><strong>Margin</strong>: Estimated contribution margin</li>
+<li><strong>Complexity</strong>: Ingredient prep / kitchen time (1–5 scale)</li>
+<li><strong>Verdict</strong>: Keep, Adjust, or Remove</li>
+</ul>
+<h3>Existing Items &amp; Recommendations</h3>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Item</th>
+<th>Current Price</th>
+<th>Verdict</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Snacks</strong></td>
+<td>Nachos Queso</td>
+<td>98K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Nachos Grande</td>
+<td>113K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Jalapeño Poppers (4pcs)</td>
+<td>92K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Chicken Wings (6pcs) — first listing</td>
+<td>89K</td>
+<td><strong>Remove</strong> (duplicate)</td>
+<td>Identical product listed twice</td>
+</tr>
+<tr>
+<td></td>
+<td>Chicken Wings (12pcs) — first listing</td>
+<td>129K</td>
+<td><strong>Remove</strong> (duplicate)</td>
+<td>Identical product listed twice</td>
+</tr>
+<tr>
+<td></td>
+<td>Mozzarella Marinara (6pcs)</td>
+<td>82K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Chicken Fingers (4pcs)</td>
+<td>59K</td>
+<td>Keep (review price)</td>
+<td>Underpriced at 59K</td>
+</tr>
+<tr>
+<td></td>
+<td>Fish Fingers (4pcs)</td>
+<td>69K</td>
+<td>Keep (review price)</td>
+<td>Underpriced at 69K</td>
+</tr>
+<tr>
+<td></td>
+<td>Mi Amigo Sharing Platter</td>
+<td>189K</td>
+<td>Keep</td>
+<td>Good high-ticket sharing item</td>
+</tr>
+<tr>
+<td></td>
+<td>Calamari Rings</td>
+<td>79K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Empanadas (2pcs)</td>
+<td>69K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Chips and Dip (3 salsas)</td>
+<td>45K</td>
+<td>Keep</td>
+<td>Low price point entry item</td>
+</tr>
+<tr>
+<td></td>
+<td>Chips and Dip Guacamole</td>
+<td>49K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Chips and Dip Queso dip</td>
+<td>59K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Chicken Wings (6pcs) — second listing</td>
+<td>89K</td>
+<td>Keep (consolidate here)</td>
+<td>Keep smoked + fried option</td>
+</tr>
+<tr>
+<td></td>
+<td>Chicken Wings (12pcs) — second listing</td>
+<td>129K</td>
+<td>Keep (consolidate here)</td>
+<td>Keep smoked + fried option</td>
+</tr>
+<tr>
+<td></td>
+<td>Corn Ribs</td>
+<td>49K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Mexi Fries Queso</td>
+<td>98K</td>
+<td><strong>Merge with Nachos</strong></td>
+<td>Same product, different base</td>
+</tr>
+<tr>
+<td></td>
+<td>Mexi Fries Grande</td>
+<td>113K</td>
+<td><strong>Merge with Nachos</strong></td>
+<td>Same product, different base</td>
+</tr>
+<tr>
+<td><strong>Soups &amp; Salads</strong></td>
+<td>Cobb Salad</td>
+<td>99K</td>
+<td>Keep (review price)</td>
+<td>Underpriced vs. ingredient cost</td>
+</tr>
+<tr>
+<td></td>
+<td>Tortilla Soup</td>
+<td>79K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Tostada Salad</td>
+<td>84K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Classic Caesar Salad</td>
+<td>89K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Tacos</strong></td>
+<td>All 14 variations (7 fillings × sizes)</td>
+<td>50–105K</td>
+<td><strong>Reduce fillings to 4–5</strong></td>
+<td>Track best-selling fillings, drop bottom 2–3</td>
+</tr>
+<tr>
+<td><strong>Birria Tacos</strong></td>
+<td>All 4 variations</td>
+<td>40–84K</td>
+<td>Keep</td>
+<td>Different enough from regular tacos</td>
+</tr>
+<tr>
+<td><strong>Burritos</strong></td>
+<td>All 8 variations</td>
+<td>88–128K</td>
+<td><strong>Reduce fillings</strong></td>
+<td>Match to best-selling fillings</td>
+</tr>
+<tr>
+<td></td>
+<td>1-Meter Burrito</td>
+<td>450K</td>
+<td><strong>Keep</strong></td>
+<td>Social media / novelty value</td>
+</tr>
+<tr>
+<td><strong>Quesadillas</strong></td>
+<td>All 6 variations</td>
+<td>88–128K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Mexi-Bowls</strong></td>
+<td>All 6 variations</td>
+<td>79–125K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Fajitas</strong></td>
+<td>All 3 variations</td>
+<td>90–135K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Enchiladas</strong></td>
+<td>All 6 variations</td>
+<td>85–125K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Mains/Burgers</strong></td>
+<td>All 10 items</td>
+<td>98–259K</td>
+<td>Keep (review pricing on premium items)</td>
+<td>Good price architecture</td>
+</tr>
+<tr>
+<td><strong>Asian Corner</strong></td>
+<td>Nasi Goreng (Chicken)</td>
+<td>65K</td>
+<td><strong>Remove</strong></td>
+<td>Brand mismatch, low price, specialty ingredients</td>
+</tr>
+<tr>
+<td></td>
+<td>Nasi Goreng (Seafood)</td>
+<td>85K</td>
+<td><strong>Remove</strong></td>
+<td>Same as above</td>
+</tr>
+<tr>
+<td></td>
+<td>Mie Ayam</td>
+<td>65K</td>
+<td><strong>Remove</strong></td>
+<td>Same as above</td>
+</tr>
+<tr>
+<td></td>
+<td>Chicken Curry</td>
+<td>79K</td>
+<td><strong>Remove</strong></td>
+<td>Same as above</td>
+</tr>
+<tr>
+<td></td>
+<td>Chicken Stir Fry</td>
+<td>79K</td>
+<td><strong>Remove</strong></td>
+<td>Same as above</td>
+</tr>
+<tr>
+<td></td>
+<td>Tom Yam Gai</td>
+<td>75K</td>
+<td><strong>Remove</strong></td>
+<td>Same as above</td>
+</tr>
+<tr>
+<td><strong>Desserts</strong></td>
+<td>Churros (6pcs)</td>
+<td>49K</td>
+<td>Keep (review price)</td>
+<td>Underpriced</td>
+</tr>
+<tr>
+<td></td>
+<td>Cheese Cake</td>
+<td>59K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Gelato/Scoop</td>
+<td>25K</td>
+<td>Keep (review price)</td>
+<td>Underpriced</td>
+</tr>
+<tr>
+<td></td>
+<td>Churros Split</td>
+<td>59K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Key Lime Pie</td>
+<td>59K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>Warm Brownie</td>
+<td>49K</td>
+<td>Keep</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<h3>Summary of Changes</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Count</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Remove duplicate</strong></td>
+<td>2 lines</td>
+<td>Eliminates confusion</td>
+</tr>
+<tr>
+<td><strong>Merge (Nachos/Mexi Fries)</strong></td>
+<td>2 lines</td>
+<td>Menu simplification</td>
+</tr>
+<tr>
+<td><strong>Remove Asian Corner</strong></td>
+<td>6 items</td>
+<td>Eliminates ~15 specialty ingredients</td>
+</tr>
+<tr>
+<td><strong>Reduce fillings</strong></td>
+<td>5–10 lines</td>
+<td>Reduces kitchen complexity</td>
+</tr>
+<tr>
+<td><strong>Total reduction</strong></td>
+<td><strong>15–20 lines</strong></td>
+<td><strong>Menu goes from ~62 → ~42–47 items</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="part-f">Part F: Timeline at a Glance</h2>
+<pre><code>  2026                                                   2027
+───────────────────────────────────────────────────────────────────────────────────
+Q3                              Q4                       Q1                  Q2
+┌──────────────────────────────┬────────────────────────┬───────────────────┬─────────────┐
+│ Stop the Bleeding            │ Revenue Stream Launch  │ Growth + AI       │ Profit      │
+│                              │                        │                   │             │
+│ ✓ Staff to 16–17            │ ✓ Happy Hour (daily    │ ✓ Late-night      │ ✓ 22%+      │
+│ ✓ Lock rent IDR 30M         │   4-7PM)               │   Fri-Sat to 1AM  │   EBITDA    │
+│ ✓ Fix Monday 25% off→bundle │ ✓ Weekend Brunch       │ ✓ Winnow food     │   margin    │
+│ ✓ Fix Wed 67% wings→bundle  │   (Sat-Sun 10AM-2PM)   │   waste AI        │             │
+│ ✓ Deploy ChatGPT + Canva AI │ ✓ 7shifts AI scheduling│ ✓ WhatsApp        │             │
+│ ✓ 4-week sales tracking     │ ✓ Hotel concierge      │   direct ordering │             │
+│ ✓ Remove Asian items        │   partnerships         │ ✓ Hostie AI phone │             │
+│ ✓ Menu cleanup              │ ✓ Cocktail menu        │ ✓ Revised price   │             │
+│                              │   pricing optimization│   wave 2          │             │
+└──────────────────────────────┴────────────────────────┴───────────────────┴─────────────┘
+   ↓                              ↓                        ↓                   ↓
+EBITDA:                       EBITDA:                  EBITDA:             EBITDA:
+~IDR 50–80M/mo                ~IDR 80–140M/mo           ~IDR 120–170M/mo    ~IDR 150–200M+/mo
+(margin ~10–15%)              (margin ~15–22%)          (margin ~18–24%)    (margin ~22–30%+)
+  (fixing promos + AI)          (all new streams live)    (AI savings +       (full potential)
+                                                           traffic growth)
+</code></pre>
+<hr>
+<h2 id="part-g">Part G: Immediate Actions — Next 7 Days</h2>
+<p><strong>Prioritized by impact.</strong> Do these in order. All are zero-cost and can be started today.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Priority</th>
+<th>Action</th>
+<th>Est. EBITDA Impact</th>
+<th>Time Required</th>
+<th>Done?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>P0</strong></td>
+<td>🔴 <strong>CRITICAL</strong></td>
+<td><strong>Fix Monday promotion</strong> — change from &quot;25% off all Mexican food&quot; to &quot;Buy 1 Main, Get 1 Dessert for 20K&quot;. Update website, Instagram, in-store signage.</td>
+<td><strong>Protects IDR 5–10M/month</strong></td>
+<td>30 min</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P0</strong></td>
+<td>🔴 <strong>CRITICAL</strong></td>
+<td><strong>Fix Wednesday promotion</strong> — change from &quot;6 wings for 29K&quot; to &quot;6 Wings + Beer for 89K&quot; or &quot;Buy 12 Get 6 Free&quot;. Update all channels.</td>
+<td><strong>Protects IDR 5–8M/month</strong></td>
+<td>30 min</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P0</strong></td>
+<td>🔴 <strong>CRITICAL</strong></td>
+<td><strong>Create ChatGPT account</strong> (chat.openai.com — free, 2 min). Prompt: &quot;Write 30 Instagram captions for Rosalita&#39;s Cantina, a Tex-Mex restaurant in Seminyak. Fun, festive tone. Include hashtags.&quot; Start posting daily.</td>
+<td><strong>Adds IDR 5–10M/month</strong> (time savings + marketing)</td>
+<td>1 hour</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>🟡 <strong>HIGH</strong></td>
+<td><strong>Create Canva account</strong> (canva.com — free, 2 min). Design 1 menu template + 5 social media post templates. Use AI &quot;Magic Write&quot; for captions.</td>
+<td><strong>Saves IDR 3–5M/month</strong> (no graphic designer needed)</td>
+<td>1 hour</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>🟡 <strong>HIGH</strong></td>
+<td><strong>Remove Asian Corner from digital menus</strong> (GoFood, website, Instagram). These 6 items are brand-diluting, low-margin, and use specialty ingredients.</td>
+<td><strong>Saves IDR 5–10M/month</strong> (waste + complexity)</td>
+<td>30 min</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>🟡 <strong>HIGH</strong></td>
+<td><strong>Download 4 weeks of POS sales data</strong> by item, by day, by time. Also extract by day-of-week to evaluate which event days are profitable.</td>
+<td>Data for all Phase 2 decisions</td>
+<td>1 hour</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>🟡 <strong>HIGH</strong></td>
+<td><strong>Hold a team meeting</strong> — explain the turnaround plan. Share that May was profitable. Get staff buy-in on upselling training coming in Phase 2.</td>
+<td>Staff retention + motivation</td>
+<td>1 hour</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>🟢 <strong>MEDIUM</strong></td>
+<td><strong>Contact landlord</strong> — propose IDR 30M fixed rent through Dec 2027. Every IDR 1M saved = IDR 12M/year to EBITDA.</td>
+<td>Up to IDR 13M/month saved vs. scheduled increases</td>
+<td>30 min</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>🟢 <strong>MEDIUM</strong></td>
+<td><strong>Remove duplicate Chicken Wings listing</strong> from website and menu (keep the smoked + fried version). Print new paper menu merging Nachos/Mexi Fries.</td>
+<td>Simplification</td>
+<td>2 hours</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>🟢 <strong>MEDIUM</strong></td>
+<td><strong>Begin tracking which fillings sell best</strong> across tacos, burritos, quesadillas, bowls, enchiladas — this determines Phase 2 pruning.</td>
+<td>Data for Phase 2 (IDR 5–15M/month savings)</td>
+<td>Ongoing</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>🟢 <strong>MEDIUM</strong></td>
+<td><strong>Sign up for Meta Business Suite</strong> (business.facebook.com — free, 5 min). Link Instagram + Facebook. Schedule this week&#39;s posts at optimal times.</td>
+<td>Consistent posting without daily effort</td>
+<td>30 min</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>🟢 <strong>MEDIUM</strong></td>
+<td><strong>Review staff schedule</strong> — can you reduce 1 person per shift without affecting service? Reduce one bar or waitstaff position starting next week.</td>
+<td>IDR 4–5M/month</td>
+<td>30 min</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P3</strong></td>
+<td>🔵 <strong>NICE TO HAVE</strong></td>
+<td><strong>Document cocktail menu with prices</strong> — Rosaritas, margaritas, signature cocktails. This is the highest-margin category and currently has no documented pricing.</td>
+<td>Margin visibility for pricing decisions</td>
+<td>1 hour</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P3</strong></td>
+<td>🔵 <strong>NICE TO HAVE</strong></td>
+<td><strong>Set up response templates</strong> for Google + TripAdvisor reviews using ChatGPT. Prompt: &quot;Write 5 response templates for positive reviews and 3 for negative reviews for a Tex-Mex restaurant.&quot;</td>
+<td>Maintains 4.8★ rating</td>
+<td>30 min</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>P3</strong></td>
+<td>🔵 <strong>NICE TO HAVE</strong></td>
+<td><strong>Check website copyright footer</strong> — update from &quot;©2023/©2025&quot; to &quot;©2026&quot;. Fix broken &quot;Download Menu&quot; link. Add opening hours to footer.</td>
+<td>Professional presentation (15 min fixes)</td>
+<td>15 min</td>
+<td>☐</td>
+</tr>
+</tbody></table>
+<hr>
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h2 id="appendix-definitions">Appendix: Key Financial Definitions</h2>
+    <span class="step-impact none">Reference</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <table>
+      <thead>
+      <tr>
+      <th>Term</th>
+      <th>Meaning</th>
+      <th>Target for Rosalita</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>EBITDA</strong></td>
+      <td>Earnings Before Interest, Tax, Depreciation, Amortization — the true operating profit of the restaurant</td>
+      <td>&gt;15% of revenue</td>
+      </tr>
+      <tr>
+      <td><strong>EBITDA Margin</strong></td>
+      <td>EBITDA ÷ Total Revenue — the efficiency of the business</td>
+      <td>15–20% (healthy casual dining)</td>
+      </tr>
+      <tr>
+      <td><strong>Food COGS</strong></td>
+      <td>Cost of Goods Sold for food — what you pay for ingredients</td>
+      <td>30% of food revenue</td>
+      </tr>
+      <tr>
+      <td><strong>Beverage COGS</strong></td>
+      <td>Cost of Goods Sold for drinks</td>
+      <td>27% of beverage revenue</td>
+      </tr>
+      <tr>
+      <td><strong>Gross Profit</strong></td>
+      <td>Revenue minus direct costs (food, beverage, entertainment)</td>
+      <td>67% of revenue</td>
+      </tr>
+      <tr>
+      <td><strong>Staff Cost Ratio</strong></td>
+      <td>Total staff costs ÷ Revenue</td>
+      <td>22% of revenue</td>
+      </tr>
+      <tr>
+      <td><strong>Breakeven</strong></td>
+      <td>Revenue level at which all costs are covered (EBITDA = 0)</td>
+      <td>Approximately IDR 540M/month at current cost structure</td>
+      </tr>
+      <tr>
+      <td><strong>Average Spend</strong></td>
+      <td>Total revenue ÷ Number of guests</td>
+      <td>IDR 250K+ target</td>
+      </tr>
+      <tr>
+      <td><strong>StarCARD</strong></td>
+      <td>Customer loyalty / cashback program — 10% provision on certain revenue</td>
+      <td>10% of GoFood revenue</td>
+      </tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+<hr>
+<hr>
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h2 id="part-h">Part H: Website Review — rosalitasbali.com</h2>
+    <span class="step-impact">Analysis</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <p><strong>Review Date</strong>: June 28, 2026
+      <strong>URL</strong>: <a href="https://www.rosalitasbali.com/">https://www.rosalitasbali.com/</a></p>
+      <h3>H.1 Overall Assessment</h3>
+      <p>The website is a functional, single-page brand site. It covers all essential information: brand story, full menu (food + drinks), events calendar, rewards program, delivery channels, blog, and contact. It works as a <strong>digital brochure</strong> but is not currently optimized as a <strong>revenue-generating or conversion-driving asset</strong>.</p>
+      <h3>H.2 Critical Discovery: Drink Menu Not in menu.txt</h3>
+      <p>The website reveals a <strong>complete drink menu</strong> that is entirely absent from the local <code>menu.txt</code> file. This is important because:</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Category</th>
+      <th>Items</th>
+      <th>Price Range</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Coffee</td>
+      <td>8 items</td>
+      <td>35K–50K</td>
+      </tr>
+      <tr>
+      <td>Tea</td>
+      <td>6 items</td>
+      <td>35K–50K</td>
+      </tr>
+      <tr>
+      <td>Fresh Juice</td>
+      <td>3 items</td>
+      <td>35K–55K</td>
+      </tr>
+      <tr>
+      <td>Smoothies &amp; Fresco</td>
+      <td>5 items</td>
+      <td>65K–80K</td>
+      </tr>
+      <tr>
+      <td>Soft Drinks</td>
+      <td>8 items</td>
+      <td>35K (flat)</td>
+      </tr>
+      <tr>
+      <td>Premium Mixers</td>
+      <td>4 items</td>
+      <td>50K–55K</td>
+      </tr>
+      <tr>
+      <td>Beer</td>
+      <td>5 items</td>
+      <td>45K–130K</td>
+      </tr>
+      <tr>
+      <td><strong>Cocktails / Margaritas</strong></td>
+      <td><strong>(Listed but not scraped — likely JS-rendered)</strong></td>
+      <td>Estimated 80K–150K</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Total drink items: 39+ across 8 categories.</strong></p>
+      <p><strong>Implication</strong>: The business generated approximately <strong>IDR 183M/month in beverage revenue</strong> (May actuals ~40% of total revenue). The missing cocktail/margarita list (likely the highest-margin category) needs to be documented in <code>menu.txt</code> and analyzed for pricing optimization. Rosaritas (signature margarita) is mentioned on the About page but no prices are visible.</p>
+      <h3>H.3 Events Calendar — Weekly Promotions (Mostly Positive, Some Concerns)</h3>
+      <p>The events schedule is the <strong>strongest asset</strong> on the website — it creates reasons for repeat visits:</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Day</th>
+      <th>Event</th>
+      <th>Offer</th>
+      <th>Assessment</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Monday</strong></td>
+      <td>Michelada Mondays</td>
+      <td><strong>25% OFF all Mexican food</strong></td>
+      <td>⚠️ <strong>Margin concern</strong>: 25% discount on food is steep — this should be analyzed for net profitability. If Monday is the slowest day, discount-driven traffic may not cover fixed costs.</td>
+      </tr>
+      <tr>
+      <td><strong>Tuesday</strong></td>
+      <td>Taco Tuesday Fest</td>
+      <td><strong>BOGO tacos</strong> all day</td>
+      <td>✅ Good: Tacos have good margins; BOGO drives traffic and drink sales.</td>
+      </tr>
+      <tr>
+      <td><strong>Wednesday</strong></td>
+      <td>Retro Wednesdays</td>
+      <td><strong>6 Smoked Wings for 29K++</strong> (normally 89K)</td>
+      <td>⚠️ <strong>Heavy discount</strong> (67% off). This is a significant margin hit. Ensure drink upsells cover the difference.</td>
+      </tr>
+      <tr>
+      <td><strong>Thursday</strong></td>
+      <td>Classic Thursday</td>
+      <td><strong>35K shots</strong> when bell rings + DJ 5–8PM</td>
+      <td>✅ Good: Shots are high-margin; creates a &quot;happy hour&quot; atmosphere.</td>
+      </tr>
+      <tr>
+      <td><strong>Saturday</strong></td>
+      <td>(Varies — Jul 4: 4th July Special)</td>
+      <td>2 Burgers + 2 Margaritas/Beers + 2 Apple Pies for <strong>450K++</strong></td>
+      <td>✅ Good bundling strategy: IDR 450K for what would cost ~550K+ separately. Drives group bookings.</td>
+      </tr>
+      <tr>
+      <td><strong>Sunday</strong></td>
+      <td>Tacomania</td>
+      <td><strong>All-you-can-eat tacos + unlimited margaritas/mocktails for 399K++</strong> (2–4PM)</td>
+      <td>⚠️ <strong>Risk</strong>: All-you-can-eat + unlimited drinks for 399K could lose money if guests eat/drink aggressively. Needs careful portion control. Good as a traffic driver if capped properly.</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Total assessment</strong>: The events program is ambitious and creates a reason to visit every day of the week. <strong>However, multiple events involve significant discounting (25% off, 67% off wings, all-you-can-eat).</strong> The net profitability of each event day should be measured separately from gross revenue. If Monday–Wednesday events are merely shifting demand from other days (cannibalization) rather than creating net-new traffic, they may be destroying margin.</p>
+      <p><strong>Recommendation</strong>: </p>
+      <ul>
+      <li>Track profitability <strong>by day of week</strong> for 4 weeks</li>
+      <li>Compare event-day margins vs. non-event days</li>
+      <li>Consider replacing deep-discount events with <strong>value-added bundles</strong> (e.g., &quot;Buy any main, get a dessert for 20K&quot;) rather than %-off discounts</li>
+      <li>The Tacomania (399K all-you-can-eat) should have a hard time limit and drink cap to prevent loss-leading</li>
+      </ul>
+      <h3>H.4 Delivery Channel Presence</h3>
+      <table>
+      <thead>
+      <tr>
+      <th>Channel</th>
+      <th>Link Status</th>
+      <th>Notes</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>WhatsApp</strong></td>
+      <td>✅ Working</td>
+      <td>Direct ordering via +62 8517-4223-347</td>
+      </tr>
+      <tr>
+      <td><strong>GoFood</strong></td>
+      <td>✅ Working</td>
+      <td>gofood.link/a/QNjNaud</td>
+      </tr>
+      <tr>
+      <td><strong>GrabFood</strong></td>
+      <td>✅ Working</td>
+      <td>Grab deep link</td>
+      </tr>
+      <tr>
+      <td><strong>Own website ordering</strong></td>
+      <td>❌ Not available</td>
+      <td>No online ordering or reservation system</td>
+      </tr>
+      </tbody></table>
+      <p><strong>The business is well-positioned on the 3 key Indonesian delivery platforms</strong>, which is critical for the GoFood revenue target (budgeted IDR 75M/month growing to IDR 102.5M in 2027).</p>
+      <p><strong>Missing opportunity</strong>: No direct online ordering through the website itself — all orders redirect to third-party platforms (which charge 20–30% commission). A direct ordering system (even simple WhatsApp integration) would retain the full margin.</p>
+      <h3>H.5 StarPOINTS Rewards Program</h3>
+      <p>The website prominently features the <strong>StarPOINTS Rewards Program</strong> — a blockchain-based loyalty system by StarWORKS. Members earn &quot;StarXP points&quot; on transactions that never expire and can be redeemed for food and beverages.</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Aspect</th>
+      <th>Assessment</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Branding</td>
+      <td>✅ Well-presented with 3-step graphic explainer</td>
+      </tr>
+      <tr>
+      <td>Value proposition</td>
+      <td>&quot;Non-expiring rewards points&quot; — strong retention hook</td>
+      </tr>
+      <tr>
+      <td>Technical complexity</td>
+      <td>⚠️ &quot;Blockchain-based&quot; may confuse some customers — the benefit should be explained in simpler terms</td>
+      </tr>
+      <tr>
+      <td>Distribution</td>
+      <td>Only available at Rosalita&#39;s + StarWORKS ecosystem merchants</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Business consideration</strong>: The cashflow workbook shows <strong>StarCARD/StarPOINTS provisions as a cost line</strong>: ~10% of certain revenue. This means 10% of every qualifying transaction is effectively earmarked as a future liability (points redemption). This should be tracked as a real cost — if redemption rates are high, it eats directly into margin.</p>
+      <h3>H.6 Website Strengths</h3>
+      <table>
+      <thead>
+      <tr>
+      <th>Strength</th>
+      <th>Detail</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Mobile-friendly</strong></td>
+      <td>Responsive design with hamburger menu, works well on phone</td>
+      </tr>
+      <tr>
+      <td><strong>Full menu online</strong></td>
+      <td>Complete food + drink menu with descriptions and prices</td>
+      </tr>
+      <tr>
+      <td><strong>Google Reviews integration</strong></td>
+      <td>Reviews section on homepage — important for social proof</td>
+      </tr>
+      <tr>
+      <td><strong>Instagram/Facebook/TikTok links</strong></td>
+      <td>Social media presence across 3 platforms</td>
+      </tr>
+      <tr>
+      <td><strong>WhatsApp click-to-chat</strong></td>
+      <td>Low-friction contact for reservations and delivery</td>
+      </tr>
+      <tr>
+      <td><strong>Events are up-to-date</strong></td>
+      <td>July 4th 2026 special is listed (next week!) — shows active management</td>
+      </tr>
+      <tr>
+      <td><strong>Chope booking integration</strong></td>
+      <td>&quot;BOOK NOW&quot; button links to Chope reservation platform</td>
+      </tr>
+      <tr>
+      <td><strong>SEO meta tags present</strong></td>
+      <td>Keywords include: Tex Mex, Seminyak, Mexican restaurant Bali</td>
+      </tr>
+      </tbody></table>
+      <h3>H.7 Website Weaknesses &amp; Action Items</h3>
+      <table>
+      <thead>
+      <tr>
+      <th>#</th>
+      <th>Issue</th>
+      <th>Severity</th>
+      <th>Action</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>1</td>
+      <td><strong>Copyright says &quot;©2023&quot; and &quot;©2025&quot;</strong> — inconsistent, should be 2026</td>
+      <td>Low</td>
+      <td>Update footer to ©2026</td>
+      </tr>
+      <tr>
+      <td>2</td>
+      <td><strong>Cocktail/margarita menu not indexed or scrapable</strong> — JS-rendered content may not be indexed by Google</td>
+      <td>Medium</td>
+      <td>Ensure cocktail menu is in HTML, not just JS/images, for SEO</td>
+      </tr>
+      <tr>
+      <td>3</td>
+      <td><strong>No pricing on cocktail menu</strong> (not visible in scrape)</td>
+      <td>Medium</td>
+      <td>All prices should be visible for customer decision-making</td>
+      </tr>
+      <tr>
+      <td>4</td>
+      <td><strong>Duplicate Chicken Wings listing on website</strong> (same issue as printed menu)</td>
+      <td>Low</td>
+      <td>Consolidate — same product, two entries, different descriptions</td>
+      </tr>
+      <tr>
+      <td>5</td>
+      <td><strong>No &quot;Order Online&quot; direct option</strong> — all orders through third-party (20–30% commission)</td>
+      <td>High</td>
+      <td>Add WhatsApp direct ordering flow with pre-built menu; test if it reduces commission costs vs. GoFood/Grab</td>
+      </tr>
+      <tr>
+      <td>6</td>
+      <td><strong>Email obfuscated by CloudFlare</strong></td>
+      <td>Low</td>
+      <td>Standard practice, no action needed</td>
+      </tr>
+      <tr>
+      <td>7</td>
+      <td><strong>&quot;Download Menu&quot; link is non-functional</strong> (javascript:void(0))</td>
+      <td>Medium</td>
+      <td>Fix or remove the broken link — sends wrong signal to customers</td>
+      </tr>
+      <tr>
+      <td>8</td>
+      <td><strong>Blog only has 3 posts, last one likely old</strong></td>
+      <td>Low-Medium</td>
+      <td>Commit to 1–2 blog posts/month for SEO value; content can be simple (event recaps, new menu items, staff spotlights)</td>
+      </tr>
+      <tr>
+      <td>9</td>
+      <td><strong>No reservation confirmation flow</strong> — Chope link goes to external booking</td>
+      <td>Low</td>
+      <td>Standard practice, acceptable</td>
+      </tr>
+      <tr>
+      <td>10</td>
+      <td><strong>No seasonal/holiday-specific landing pages</strong></td>
+      <td>Medium</td>
+      <td>For one-off events (July 4th), create a dedicated landing page for SEO + trackability</td>
+      </tr>
+      </tbody></table>
+      <h3>H.8 SEO &amp; Online Visibility Assessment</h3>
+      <table>
+      <thead>
+      <tr>
+      <th>Factor</th>
+      <th>Status</th>
+      <th>Notes</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Meta description</td>
+      <td>✅ Present</td>
+      <td>&quot;Best Tex-Mex Restaurant in Seminyak Bali&quot;</td>
+      </tr>
+      <tr>
+      <td>Keywords</td>
+      <td>✅ Present</td>
+      <td>texas steakhouse, fresh mexican, margarita bar, etc.</td>
+      </tr>
+      <tr>
+      <td>Google Maps listing</td>
+      <td>✅ Linked</td>
+      <td>goo.gl/maps/Xk2i5VBHd2eYSiUD8</td>
+      </tr>
+      <tr>
+      <td>Google Reviews</td>
+      <td>✅ Embedded</td>
+      <td>Social proof on homepage</td>
+      </tr>
+      <tr>
+      <td>Instagram</td>
+      <td>@rosalitascantina.bali</td>
+      <td>3,200+ posts visible in feed embed</td>
+      </tr>
+      <tr>
+      <td>Opening hours</td>
+      <td>⚠️ Not on homepage</td>
+      <td>Only mentioned on About page: 11AM–11PM daily. Should be in header/footer.</td>
+      </tr>
+      <tr>
+      <td>Menu schema (Schema.org)</td>
+      <td>❌ Likely not present</td>
+      <td>Adding Restaurant + MenuItem schema could improve Google visibility</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Recommendation</strong>: Add structured data (Schema.org <code>Restaurant</code>, <code>MenuItem</code>, <code>Event</code>) to improve Google search visibility for &quot;tacos seminyak&quot;, &quot;margarita bali&quot;, etc.</p>
+      <h3>H.9 Competitive Positioning from Website</h3>
+      <p>The website positions Rosalita&#39;s as:</p>
+      <blockquote>
+      <p><em>&quot;Texas Steakhouse meets Classic Mexican&quot; + &quot;fully stocked bar&quot; + &quot;live music/DJ&quot;</em></p>
+      </blockquote>
+      <p>This is a <strong>differentiated position</strong> in Seminyak — most restaurants are either pure Mexican or generic international. The Texas Steakhouse angle is distinctive.</p>
+      <p><strong>Challenges with this positioning:</strong></p>
+      <ol>
+      <li>The <strong>Asian Corner</strong> (Nasi Goreng, Mie Ayam, Tom Yam Gai) contradicts the brand story. A &quot;Texas Steakhouse + Mexican Cantina&quot; should not have Indonesian/Thai dishes.</li>
+      <li>The <strong>&quot;Since 2022&quot;</strong> timeline means the business is still young (4 years) — building brand recognition is still in progress.</li>
+      <li><strong>&quot;Best&quot; claims</strong> (&quot;best cuisine&quot;, &quot;best Tex Mex food&quot;) need Google Reviews and ratings to back them up — the Reviews section on the site should be monitored for consistent 4+ star ratings.</li>
+      </ol>
+      <h3>H.10 Website-Driven Revenue Opportunities</h3>
+      <table>
+      <thead>
+      <tr>
+      <th>Opportunity</th>
+      <th>Potential Impact</th>
+      <th>Effort</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Direct WhatsApp ordering</strong> (bypass 20-30% GoFood/Grab commission on repeat orders)</td>
+      <td>Save IDR 15–25M/month on commission at current delivery volume</td>
+      <td>Low (set up catalog + train staff)</td>
+      </tr>
+      <tr>
+      <td><strong>SEO for &quot;best tacos Seminyak&quot; / &quot;margarita Bali&quot;</strong></td>
+      <td>Long-term organic traffic</td>
+      <td>Medium (content + schema)</td>
+      </tr>
+      <tr>
+      <td><strong>Event page SEO</strong> — each event should be a trackable page</td>
+      <td>Understand which events drive traffic vs. walk-ins</td>
+      <td>Low (analytics + unique URLs)</td>
+      </tr>
+      <tr>
+      <td><strong>Google Business Profile optimization</strong> (posts, Q&amp;A, photos)</td>
+      <td>Direct traffic from Google Maps/Search</td>
+      <td>Low (weekly 5-min update)</td>
+      </tr>
+      <tr>
+      <td><strong>Email/SMS list from website visitors</strong> (offers, event reminders)</td>
+      <td>Recurring traffic without paid ads</td>
+      <td>Medium (add signup form)</td>
+      </tr>
+      </tbody></table>
+      <p><strong>Quick win</strong>: Fix the broken &quot;Download Menu&quot; link and add opening hours to the footer. These take 15 minutes and immediately improve customer experience.</p>
+    </div>
+  </div>
+</div>
+<hr>
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h2 id="appendix-sitemap">Appendix: Site Map Extracted from rosalitasbali.com</h2>
+    <span class="step-impact none">Reference</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <table>
+      <thead>
+      <tr>
+      <th>Page/Section</th>
+      <th>Path</th>
+      <th>Notes</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Home</td>
+      <td><code>/</code></td>
+      <td>Full single-page scroll</td>
+      </tr>
+      <tr>
+      <td>About Us</td>
+      <td><code>/#about</code> / <code>/about-rosalitas</code></td>
+      <td>Dedicated about page also exists</td>
+      </tr>
+      <tr>
+      <td>Menu — Food</td>
+      <td><code>/#menu-section</code> (Food tab)</td>
+      <td>Full food menu</td>
+      </tr>
+      <tr>
+      <td>Menu — Drinks</td>
+      <td><code>/#menu-section</code> (Drink tab)</td>
+      <td>Full drink menu (39+ items)</td>
+      </tr>
+      <tr>
+      <td>Events</td>
+      <td><code>/#events</code></td>
+      <td>Carousel of 6 weekly events</td>
+      </tr>
+      <tr>
+      <td>Event Detail — Michelada Mondays</td>
+      <td><code>/events-detail/11</code></td>
+      <td>25% off Mexican food</td>
+      </tr>
+      <tr>
+      <td>Event Detail — Taco Tuesdays</td>
+      <td><code>/events-detail/13</code></td>
+      <td>BOGO tacos</td>
+      </tr>
+      <tr>
+      <td>Event Detail — Retro Wednesdays</td>
+      <td><code>/events-detail/15</code></td>
+      <td>6 wings 29K</td>
+      </tr>
+      <tr>
+      <td>Event Detail — Classic Thursday</td>
+      <td><code>/events-detail/24</code></td>
+      <td>35K shots, DJ</td>
+      </tr>
+      <tr>
+      <td>Event Detail — July 4th Special</td>
+      <td><code>/events-detail/6</code></td>
+      <td>Bundle deal 450K++</td>
+      </tr>
+      <tr>
+      <td>Event Detail — Tacomania Sunday</td>
+      <td><code>/events-detail/21</code></td>
+      <td>AYCE 399K++</td>
+      </tr>
+      <tr>
+      <td>Rewards (StarPOINTS)</td>
+      <td><code>/#rewards</code> / <code>/starpoints-detail</code></td>
+      <td>Blockchain loyalty program</td>
+      </tr>
+      <tr>
+      <td>Delivery</td>
+      <td><code>/#delivery</code></td>
+      <td>WhatsApp, GoFood, GrabFood links</td>
+      </tr>
+      <tr>
+      <td>Blog</td>
+      <td><code>/#blog</code> / <code>/blog</code></td>
+      <td>3 articles</td>
+      </tr>
+      <tr>
+      <td>Google Reviews</td>
+      <td><code>/#google-review</code></td>
+      <td>Embedded reviews</td>
+      </tr>
+      <tr>
+      <td>Contact Us</td>
+      <td><code>/#contact</code></td>
+      <td>Phone, WhatsApp, email, map</td>
+      </tr>
+      <tr>
+      <td>Privacy Policy</td>
+      <td><code>/privacy-policy</code></td>
+      <td>Legal page</td>
+      </tr>
+      <tr>
+      <td>Booking</td>
+      <td>(Chope external)</td>
+      <td><code>book.chope.co/...</code></td>
+      </tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+<hr>
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h2 id="part-i">Part I: Revenue Driver Analysis — Menu, Time Periods &amp; Promotions</h2>
+    <span class="step-impact">Analysis</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <h3>I.1 Revenue Breakdown by Stream (from Cashflow Data)</h3>
+      <p>The cashflow workbook reveals how revenue is structured:</p>
+<table>
+<thead>
+<tr>
+<th>Revenue Stream</th>
+<th>Monthly (May 2026 Actual)</th>
+<th>% of Total</th>
+<th>Gross Margin</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Food (dine-in)</strong></td>
+<td>~IDR 274.6M</td>
+<td>~60%</td>
+<td>70% (COGS 30%)</td>
+</tr>
+<tr>
+<td><strong>Beverage (dine-in)</strong></td>
+<td>~IDR 183.0M</td>
+<td>~40%</td>
+<td>73% (COGS 27%)</td>
+</tr>
+<tr>
+<td>GoFood / Chickenria delivery</td>
+<td>~IDR 60.0M</td>
+<td>~13% of add-on</td>
+<td>~70% (before 20-30% platform commission)</td>
+</tr>
+<tr>
+<td>StarCARD provision cost</td>
+<td>-IDR 44.6M</td>
+<td>-9.7%</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p><strong>Key insight</strong>: Beverage at 40% of revenue is already healthy. The opportunity is not in changing the ratio but in <strong>growing total revenue</strong> while keeping beverage attachment high. Cocktails (Rosaritas, margaritas) and beer likely contribute the highest margins within beverage.</p>
+<p><strong>Estimated highest-margin menu items</strong> (typical restaurant benchmarks, verify with POS data):</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Est. Margin</th>
+<th>Revenue Driver Potential</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Cocktails / Margaritas</strong></td>
+<td>75–85%</td>
+<td>★★★★★ — highest margin item in any restaurant</td>
+</tr>
+<tr>
+<td><strong>Beer (bottled)</strong></td>
+<td>70–80%</td>
+<td>★★★★ — good margin, high volume potential</td>
+</tr>
+<tr>
+<td><strong>Desserts</strong> (Churros, Brownie, Gelato)</td>
+<td>75–85%</td>
+<td>★★★★★ — very high margin, low attachment rate</td>
+</tr>
+<tr>
+<td><strong>Coffee / Tea</strong></td>
+<td>80–90%</td>
+<td>★★★ — high margin but low price point</td>
+</tr>
+<tr>
+<td><strong>Soft Drinks</strong></td>
+<td>85–90%</td>
+<td>★★★ — highest margin, low price</td>
+</tr>
+<tr>
+<td><strong>Nachos / Chips &amp; Dip</strong></td>
+<td>65–75%</td>
+<td>★★★★ — good margin, good sharing item</td>
+</tr>
+<tr>
+<td><strong>Tacos</strong></td>
+<td>60–70%</td>
+<td>★★★★ — mid margin, high volume</td>
+</tr>
+<tr>
+<td><strong>Burritos / Quesadillas</strong></td>
+<td>60–68%</td>
+<td>★★★ — mid margin</td>
+</tr>
+<tr>
+<td><strong>Steaks (Rib Eye, Picanha)</strong></td>
+<td>45–55%</td>
+<td>★★ — lower margin but high check</td>
+</tr>
+<tr>
+<td><strong>Asian Corner items</strong></td>
+<td>60–65%</td>
+<td>★ — low price, low volume, specialty ingredients</td>
+</tr>
+<tr>
+<td><strong>Chicken Wings</strong></td>
+<td>55–65%</td>
+<td>★★★ — popular but heavily discounted on Wed</td>
+</tr>
+<tr>
+<td><strong>Burgers</strong></td>
+<td>55–65%</td>
+<td>★★★★ — good volume potential</td>
+</tr>
+</tbody></table>
+<p><strong>Critical finding</strong>: Cocktails/Margaritas are likely the single highest-margin and highest-potential revenue driver, yet they are <strong>not priced on the website</strong> and <strong>not listed in menu.txt</strong>. This is a blind spot.</p>
+<h3>I.2 Revenue by Time of Day (Inferred &amp; Estimated)</h3>
+<p>The website states hours: <strong>11 AM – 11 PM daily</strong>. No separate breakfast or lunch menu exists. Revenue periods:</p>
+<table>
+<thead>
+<tr>
+<th>Time Period</th>
+<th>Hours</th>
+<th>Typical % Daily Revenue</th>
+<th>Potential</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Lunch</strong></td>
+<td>11:00–15:00</td>
+<td>~20–25%</td>
+<td>Currently weak — no lunch-specific menu, no lunch combos formally advertised (only Monday 25% off)</td>
+</tr>
+<tr>
+<td><strong>Afternoon / Happy Hour</strong></td>
+<td>15:00–18:00</td>
+<td>~10–15%</td>
+<td><strong>Major untapped potential</strong> — no happy hour offering on the website or in promotions (only Thursday has 5-8PM shots + DJ)</td>
+</tr>
+<tr>
+<td><strong>Dinner Peak</strong></td>
+<td>18:00–21:00</td>
+<td>~45–55%</td>
+<td>Main revenue driver — live music, DJ, full dinner service</td>
+</tr>
+<tr>
+<td><strong>Late Night</strong></td>
+<td>21:00–23:00</td>
+<td>~10–15%</td>
+<td>Limited by 11PM closing</td>
+</tr>
+</tbody></table>
+<p><strong>Key gaps identified:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Impact</th>
+<th>Opportunity</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>No happy hour</strong> (4-7PM daily)</td>
+<td>Missed after-work / pre-dinner crowd</td>
+<td>20% off selected cocktails + half-price appetizers from 4-7PM daily would drive early traffic and increase average spend</td>
+</tr>
+<tr>
+<td><strong>No lunch combos</strong></td>
+<td>Underperforming lunch period</td>
+<td>IDR 99K &quot;Express Lunch&quot; (taco + drink + side) could drive 15-20 extra lunch covers/day</td>
+</tr>
+<tr>
+<td><strong>No breakfast/brunch</strong></td>
+<td>0 revenue before 11AM</td>
+<td>Seminyak has strong brunch culture — adding weekend brunch (10AM-2PM) with all-you-can-eat tacos or bottomless mimosas could be a significant new revenue stream</td>
+</tr>
+<tr>
+<td><strong>Late-night weekends only until 11PM</strong></td>
+<td>Losing post-dinner / clubbing crowd</td>
+<td>Current 11PM closing misses the post-beach club crowd walking home</td>
+</tr>
+</tbody></table>
+<h3>I.3 Weekday Promotion Performance Analysis</h3>
+<p><strong>Current promotional schedule:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Day</th>
+<th>Promotion</th>
+<th>Discount Depth</th>
+<th>Risk Level</th>
+<th>Revenue Potential</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Monday</strong></td>
+<td>25% OFF all Mexican food</td>
+<td>⚠️ <strong>Deep</strong></td>
+<td><strong>HIGH</strong> — 25% discount on food directly hits the already-thin food margin (30% COGS + 25% discount = only 45% retained). Only profitable if it doubles volume AND increases beverage sales.</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Tuesday</strong></td>
+<td>BOGO Tacos</td>
+<td>✅ <strong>Moderate</strong></td>
+<td><strong>LOW-MED</strong> — BOGO drives traffic, tacos have decent margins, guest almost always buys drinks alongside</td>
+<td><strong>HIGH</strong></td>
+</tr>
+<tr>
+<td><strong>Wednesday</strong></td>
+<td>6 Wings for 29K (67% off)</td>
+<td>❌ <strong>Extreme</strong></td>
+<td><strong>HIGH</strong> — Wings normally 89K → selling at 29K is below cost. COGS on 6 wings alone is probably 20-25K. This is a <strong>loss leader</strong> that depends entirely on beverage upsells to be profitable.</td>
+<td>Medium (if drinks sell well)</td>
+</tr>
+<tr>
+<td><strong>Thursday</strong></td>
+<td>35K Shots + DJ 5-8PM</td>
+<td>✅ <strong>Good</strong></td>
+<td><strong>LOW</strong> — Shots are high margin (75%+), 35K is a fair promo price. DJ creates atmosphere.</td>
+<td><strong>HIGH</strong></td>
+</tr>
+<tr>
+<td><strong>Saturday</strong></td>
+<td>Bundle deals (e.g., Jul 4: 450K for 2 burgers + 2 drinks + 2 pies)</td>
+<td>✅ <strong>Moderate</strong></td>
+<td><strong>LOW-MED</strong> — Bundling protects margin better than %-off discounts. The 450K bundle likely still has 50%+ margin.</td>
+<td><strong>HIGH</strong></td>
+</tr>
+<tr>
+<td><strong>Sunday</strong></td>
+<td>Tacomania: AYCE + unlimited drinks 399K++ (2-4PM)</td>
+<td>⚠️ <strong>Deep</strong></td>
+<td><strong>VERY HIGH</strong> — All-you-can-eat TACOS (food cost ~30-40%) + UNLIMITED drinks (alcohol cost). At 399K, if a table of 2 eats 8 tacos and has 4 margaritas, the cost could exceed 399K. <strong>This needs active management</strong> — set time limits, limited taco varieties, and drink menus.</td>
+<td><strong>HIGH risk / MEDIUM reward</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Ranked by cost-effectiveness</strong> (lowest risk per revenue dollar):</p>
+<ol>
+<li><strong>Thursday</strong> (shots promo + DJ) — low discount, high atmosphere value, good margin</li>
+<li><strong>Tuesday</strong> (BOGO tacos) — moderate discount, high drink attachment</li>
+<li><strong>Saturday</strong> (bundle deals) — protects margin, drives groups</li>
+<li><strong>Monday</strong> (25% off food) — too deep, consider restructuring</li>
+<li><strong>Wednesday</strong> (wings 67% off) — extreme discount, only works if drink sales per guest &gt; IDR 100K</li>
+<li><strong>Sunday</strong> (AYCE Tacomania) — highest risk, needs careful monitoring</li>
+</ol>
+<h3>I.4 Proposal Re-Evaluation: Changes Based on Analysis</h3>
+<p><strong>The original proposal in Part B recommends:</strong></p>
+<blockquote>
+<p>Remove Asian Corner, merge Nachos &amp; Mexi Fries, Chicken Wings duplicate consolidation, menu from 60→48 items, Staff 22→16, price increases, upsell training, combos</p>
+</blockquote>
+<p><strong>Re-evaluation score: The original proposal is largely sound, but needs these adjustments based on new findings:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Original Recommendation</th>
+<th>Revised Assessment</th>
+<th>Change Needed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Remove Asian Corner (6 items)</td>
+<td>✅ <strong>Confirmed</strong> — competitive analysis shows Seminyak has world-class Indonesian food (Merah Putih, Bambu, Sangsaka, Kaum, Waroeng Bernadette). Rosalita cannot compete on Indonesian dishes. Remove.</td>
+<td><strong>Keep as-is</strong></td>
+</tr>
+<tr>
+<td>Staff 22→16 FTE</td>
+<td>✅ <strong>Confirmed</strong> — industry data shows AI + lean teams are the 2026 trend. 16 FTE is achievable.</td>
+<td><strong>Add: Use 7shifts AI scheduling</strong> to optimize further</td>
+</tr>
+<tr>
+<td>Price increases 5-20%</td>
+<td>⚠️ <strong>Partially confirmed</strong> — competitors: Taco Casa (4.6★, $$), Motel Mexicola (4.1★, $$-$$$). Rosalita at 4.8★ is the #1 Mexican restaurant in Seminyak. This gives <strong>pricing power</strong>. Increases are justified.</td>
+<td><strong>BE ADVISED</strong>: Rosalita&#39;s premium positioning (4.8★, $$-$$$) supports moderate price increases, but don&#39;t out-price competitors like Taco Casa ($)</td>
+</tr>
+<tr>
+<td>Monday 25% off</td>
+<td>⚠️ <strong>Needs rethinking</strong> — this is too deep a discount.</td>
+<td><strong>Restructure</strong>: Replace 25% off with &quot;Buy 1 Main, Get 1 Dessert for 20K&quot; or &quot;20% off bottles of wine&quot; — protects margin</td>
+</tr>
+<tr>
+<td>Wednesday 6 wings 29K</td>
+<td>❌ <strong>Needs immediate review</strong> — 67% off is below cost</td>
+<td><strong>Restructure</strong>: Change to &quot;6 Wings + Beer for 99K&quot; (bundle protects margin) or &quot;Buy 12 Wings, Get 6 Free&quot; (higher check)</td>
+</tr>
+<tr>
+<td>Sunday Tacomania AYCE</td>
+<td>⚠️ <strong>Risk highlighted</strong> — all-you-can-eat + unlimited drinks at 399K</td>
+<td><strong>Add</strong>: Set 2-hour time limit, limit to 4 taco varieties per person, exclude premium drinks from &quot;unlimited&quot; (e.g., house margaritas only)</td>
+</tr>
+<tr>
+<td>Cocktail menu optimization</td>
+<td>🆕 <strong>Not in original proposal</strong> — the cocktail menu is missing from records and website pricing</td>
+<td><strong>ADD</strong>: Document cocktail menu with prices in menu.txt. Rosaritas should be the signature item. Consider a &quot;Flight of Margaritas&quot; 3-sampler for IDR 120K</td>
+</tr>
+<tr>
+<td>Happy Hour (daily 4-7PM)</td>
+<td>🆕 <strong>Not in original proposal</strong></td>
+<td><strong>ADD</strong>: 20% off selected cocktails + half-price appetizers from 4-7PM daily. This is the single biggest untapped time slot.</td>
+</tr>
+<tr>
+<td>Weekday event margin tracking</td>
+<td>🆕 <strong>Not in original proposal</strong></td>
+<td><strong>ADD</strong>: Track profitability BY DAY for 4 weeks using POS data. Some events may be losing money.</td>
+</tr>
+</tbody></table>
+    </div>
+  </div>
+</div>
+<hr>
+<h2 id="part-j">Part J: Area &amp; Competitive Analysis — Seminyak Square</h2>
+<h3>J.1 Location Profile</h3>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Address</strong></td>
+<td>Seminyak Square, Kompleks Units 1C &amp; 2C, Jl. Kayu Aya 100, Basangkasa, Seminyak 80361</td>
+</tr>
+<tr>
+<td><strong>Type</strong></td>
+<td>Strip mall / retail complex — &quot;Seminyak Square&quot; is a small commercial plaza</td>
+</tr>
+<tr>
+<td><strong>Rating</strong></td>
+<td>3.2 / 5 on TripAdvisor (746 reviews) — adequate but not a destination mall</td>
+</tr>
+<tr>
+<td><strong>Hours</strong></td>
+<td>Shops 10AM–10PM daily</td>
+</tr>
+<tr>
+<td><strong>Foot traffic</strong></td>
+<td>Moderate — Jl. Kayu Aya is a secondary street off the main Seminyak thoroughfares</td>
+</tr>
+<tr>
+<td><strong>Proximity</strong></td>
+<td>~1km from Double Six Beach, ~1km from Potato Head Beach Club, ~11km from airport</td>
+</tr>
+</tbody></table>
+<h3>J.2 Nearby Business Ecosystem</h3>
+<p>Within 1km of Rosalita&#39;s Cantina:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Examples</th>
+<th>Relevance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Beach Clubs</strong></td>
+<td>Potato Head Beach Club (4.3★), KU DE TA (4.2★, 11K+ reviews)</td>
+<td><strong>High</strong> — These generate massive tourist footfall. Post-beach-club dinner/drinks traffic is a key opportunity. Both close at midnight or later on weekends.</td>
+</tr>
+<tr>
+<td><strong>Fine Dining</strong></td>
+<td>Merah Putih, Bambu, Sangsaka, Kaum, The Plantation Grill</td>
+<td><strong>Medium</strong> — Rosalita&#39;s is positioned below these ($$-$$$ vs $$$$). They aren&#39;t direct competitors but they set the neighborhood standard.</td>
+</tr>
+<tr>
+<td><strong>Mexican Competitors</strong></td>
+<td>Taco Casa (4.6★, $), Taco Beach Grill (4.4★, $), Lacalita (4.3★, $$-$$$), Motel Mexicola (4.1★, 5,870 reviews, $$-$$$)</td>
+<td><strong>Direct</strong> — See detailed analysis below</td>
+</tr>
+<tr>
+<td><strong>Hotels</strong></td>
+<td>The Oberoi (4.8★), The Legian (4.9★), Courtyard Marriott (4.5★), The Seminyak Beach Resort (4.8★)</td>
+<td><strong>High</strong> — These 5-star hotels within walking distance represent a captive audience of affluent tourists</td>
+</tr>
+<tr>
+<td><strong>Villas</strong></td>
+<td>Annora Villas, Blue Karma Dijiwa, Uma Sapna</td>
+<td><strong>Medium</strong> — Villa guests are often looking for nearby dining</td>
+</tr>
+<tr>
+<td><strong>Retail</strong></td>
+<td>Seminyak Village mall (upscale shopping), boutiques, money changers</td>
+<td><strong>Low-Medium</strong> — Shopper traffic, but retail alone won&#39;t drive dinner covers</td>
+</tr>
+<tr>
+<td><strong>Nightlife</strong></td>
+<td>IZZI Bali Hookah Lounge (4.9★ rooftop), various bars on Eat Street</td>
+<td><strong>Medium</strong> — Late-night crowd potential</td>
+</tr>
+</tbody></table>
+<h3>J.3 Direct Competitor Analysis — Mexican Restaurants in Seminyak</h3>
+<table>
+<thead>
+<tr>
+<th>Competitor</th>
+<th>Rating</th>
+<th>Reviews</th>
+<th>Price</th>
+<th>Position</th>
+<th>Threat Level</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Rosalita&#39;s Cantina</strong></td>
+<td><strong>4.8★</strong></td>
+<td><strong>580</strong></td>
+<td><strong>$$-$$$</strong></td>
+<td><strong>Texas Steakhouse + Mexican + Cocktail Bar</strong></td>
+<td><strong>— (us)</strong></td>
+</tr>
+<tr>
+<td><strong>Taco Casa</strong></td>
+<td>4.6★</td>
+<td>1,248</td>
+<td>$</td>
+<td>Budget-friendly tacos, walk-up counter</td>
+<td>🟢 Low — different price point, less atmosphere</td>
+</tr>
+<tr>
+<td><strong>Taco Beach Grill</strong></td>
+<td>4.4★</td>
+<td>1,682</td>
+<td>$</td>
+<td>Casual beach tacos, low price</td>
+<td>🟢 Low — different segment</td>
+</tr>
+<tr>
+<td><strong>Lacalita Seminyak</strong></td>
+<td>4.3★</td>
+<td>1,138</td>
+<td>$$-$$$</td>
+<td>Mexican with Latin flair</td>
+<td>🟡 Medium — closest positioning to Rosalita&#39;s</td>
+</tr>
+<tr>
+<td><strong>Motel Mexicola</strong></td>
+<td>4.1★</td>
+<td>5,870</td>
+<td>$$-$$$</td>
+<td>Iconic Mexican bar/resto, wild parties</td>
+<td>🔴 <strong>High</strong> — larger, more established, massive review count, strong brand</td>
+</tr>
+<tr>
+<td><strong>Taco Island</strong></td>
+<td>4.7★</td>
+<td>28</td>
+<td>$</td>
+<td>New, small, budget</td>
+<td>🟢 Low — too new/small</td>
+</tr>
+<tr>
+<td><strong>El Patron Mexican</strong></td>
+<td>4.8★</td>
+<td>19</td>
+<td>$</td>
+<td>New, small</td>
+<td>🟢 Low</td>
+</tr>
+<tr>
+<td><strong>Calle Ocho</strong></td>
+<td>5.0★</td>
+<td>8</td>
+<td>$</td>
+<td>Tiny Cuban/Mexican</td>
+<td>🟢 Low — negligible</td>
+</tr>
+</tbody></table>
+<p><strong>Key competitive insight</strong>: Rosalita&#39;s <strong>#1 ranking</strong> (4.8★ among Mexican restaurants with 580 reviews) is a powerful asset. But <strong>Motel Mexicola</strong> (5,870 reviews, 4.1★) has 10x the mindshare. Motel Mexicola is the established brand; Rosalita&#39;s is the quality challenger.</p>
+<h3>J.4 Strategic Implications from Location Analysis</h3>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Implication</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>5-star hotels within 1km</strong> (Oberoi, Legian, Marriott, Seminyak Beach Resort)</td>
+<td>Thousands of affluent tourists walking distance from Rosalita&#39;s</td>
+<td>Partner with hotel concierges: offer 10% off for hotel guests, put flyers in hotel lobbies, join hotel dining programs</td>
+</tr>
+<tr>
+<td><strong>Potato Head &amp; KU DE TA close by</strong></td>
+<td>Hundreds of post-beach-club guests looking for dinner/drinks after 10PM</td>
+<td>Create a late-night snack menu (tacos + drinks) tailored to this crowd; hand out flyers/coupons outside beach clubs</td>
+</tr>
+<tr>
+<td><strong>Seminyak Square rated 3.2★</strong></td>
+<td>The plaza itself is not a destination; foot traffic is moderate</td>
+<td>Don&#39;t rely on walk-in traffic. Invest in online marketing, delivery, and event-driven visits.</td>
+</tr>
+<tr>
+<td><strong>Taco Casa (1,248 reviews) undercuts on price</strong></td>
+<td>There&#39;s a cheaper Mexican option nearby</td>
+<td>Don&#39;t compete on price. Compete on <strong>atmosphere, cocktails, service quality, and the Texas Steakhouse differentiator</strong>.</td>
+</tr>
+<tr>
+<td><strong>No breakfast/brunch in Seminyak&#39;s best brunch corridor</strong></td>
+<td>Every other restaurant in Seminyak has brunch</td>
+<td>Consider weekend brunch (Sat-Sun 10AM-2PM) — build-your-own-taco + bottomless mimosas for IDR 199K. This alone could add IDR 50-80M/month in incremental revenue.</td>
+</tr>
+<tr>
+<td><strong>Motel Mexicola is the 800-lb gorilla</strong> (4.1★, 5,870 reviews)</td>
+<td>They own &quot;Mexican party&quot; positioning</td>
+<td><strong>Don&#39;t try to out-party Mexicola.</strong> Double down on &quot;quality Tex-Mex + steakhouse&quot; positioning. Rosalita&#39;s 4.8★ rating proves quality wins.</td>
+</tr>
+</tbody></table>
+<hr>
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h2 id="part-k">Part K: AI &amp; Automation Strategy — Operational Efficiency &amp; Marketing</h2>
+    <span class="step-impact">Strategy</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <h3>K.1 Immediate-Return AI Tools (Implement Within 30 Days)</h3>
+      <p>These are low-cost or free AI tools that can be deployed immediately with minimal training:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Cost</th>
+<th>Application at Rosalita&#39;s</th>
+<th>Expected Savings/Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ChatGPT</strong> (chat.openai.com)</td>
+<td>Free / $20/mo Pro</td>
+<td>Write menu descriptions, Instagram captions, respond to Google reviews, draft SOPs, create staff training materials, write event promo copy</td>
+<td>5-10 hrs/week saved on admin writing tasks</td>
+</tr>
+<tr>
+<td><strong>Canva AI</strong> (canva.com)</td>
+<td>Free / $15/mo Pro</td>
+<td>Design social media posts, update menu graphics, create event flyers, resize for different platforms (Instagram, TikTok, Facebook)</td>
+<td>Eliminates need for graphic designer — IDR 3-5M/month saved</td>
+</tr>
+<tr>
+<td><strong>Meta Business Suite AI</strong> (free)</td>
+<td>Free</td>
+<td>Auto-schedule Instagram/Facebook posts, AI-generated suggested captions, best-time-to-post analytics</td>
+<td>3-5 hrs/week saved on social media management</td>
+</tr>
+</tbody></table>
+<p><strong>30-Day AI Launch Plan:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Action</th>
+<th>Tool</th>
+<th>Time Required</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>1</strong></td>
+<td>Create ChatGPT account, write 30 days of social media captions, draft 10 response templates for Google/TripAdvisor reviews</td>
+<td>ChatGPT</td>
+<td>2 hours</td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td>Create Canva account, design 1 menu template + 5 social post templates</td>
+<td>Canva AI</td>
+<td>2 hours</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>Write job descriptions for new hire positions (if needed)</td>
+<td>ChatGPT</td>
+<td>30 min</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>Create SOPs for upselling, opening/closing, event setup</td>
+<td>ChatGPT</td>
+<td>1 hour</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>Set up Meta Business Suite, link Instagram + Facebook, schedule posts</td>
+<td>Meta AI</td>
+<td>1 hour</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>Use AI to analyze 4 weeks of POS data (paste into ChatGPT)</td>
+<td>ChatGPT</td>
+<td>30 min</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>Generate weekly promotional email/social content using AI templates</td>
+<td>ChatGPT + Canva</td>
+<td>1 hr/week ongoing</td>
+</tr>
+</tbody></table>
+<p><strong>Total first-month time investment: ~8 hours once, then 1-2 hrs/week ongoing</strong></p>
+<h3>K.2 Intermediate AI Investments (Implement Month 2-3)</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Cost</th>
+<th>Application</th>
+<th>ROI</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>7shifts</strong> (7shifts.com)</td>
+<td>Free (1 location) / $29.99/mo</td>
+<td>AI-powered staff scheduling. Analyzes historical sales data to predict staffing needs. Automated schedule building. Reduces overstaffing and understaffing.</td>
+<td>Reduces labor cost by <strong>3-5% typically</strong> — at Rosalita&#39;s ~IDR 160M/month staff cost, that&#39;s <strong>IDR 5-8M/month saved</strong>.</td>
+</tr>
+<tr>
+<td><strong>Popmenu</strong> or similar</td>
+<td>From ~$99/mo</td>
+<td>AI marketing automation: personalized email/SMS campaigns, automated review response, menu optimization analytics</td>
+<td>Increased return visits, better review response rate</td>
+</tr>
+<tr>
+<td><strong>Winnow</strong> (food waste AI)</td>
+<td>Custom quote</td>
+<td>Tracks food waste using AI vision system on kitchen bins. Identifies what&#39;s being thrown away and why.</td>
+<td><strong>15-25% reduction in food waste</strong> — at Rosalita&#39;s IDR 82M/month food purchases, that&#39;s <strong>IDR 12-20M/month saved</strong>.</td>
+</tr>
+</tbody></table>
+<h3>K.3 Advanced AI — Revenue Growth Tools</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Investment</th>
+<th>Application</th>
+<th>Expected Impact</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Snackpass</strong> (snackpass.co)</td>
+<td>Varies — POS + marketing platform</td>
+<td>Commission-free direct ordering through mobile app, AI-powered marketing campaigns, loyalty program, self-serve kiosks</td>
+<td>Eliminates 20-30% GoFood/Grab commission on orders moved to direct channel</td>
+</tr>
+<tr>
+<td><strong>Hostie AI</strong> (hostie.ai)</td>
+<td>From ~$200/mo</td>
+<td>Voice AI phone receptionist — answers calls, takes reservations, answers FAQs in 20+ languages. <strong>Critical for Bali&#39;s international tourist market.</strong></td>
+<td>Never miss a reservation call. Frees staff from phone during service. 30-50% of restaurant calls go unanswered currently.</td>
+</tr>
+<tr>
+<td><strong>AI-powered dynamic pricing</strong></td>
+<td>Custom</td>
+<td>Adjusts menu prices based on demand (peak vs off-peak, high vs low season)</td>
+<td><strong>Typical 3-8% revenue lift</strong> for restaurants that implement it</td>
+</tr>
+</tbody></table>
+<h3>K.4 AI-Powered Marketing Automation Workflow</h3>
+<p><strong>Current state</strong>: Social media posts are likely manual and inconsistent. Review responses are slow or nonexistent. No email/SMS marketing.</p>
+<p><strong>Future state with AI</strong>:</p>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                    AI MARKETING ENGINE                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ChatGPT ───→ Writes 30 Instagram captions (30 min/month)        │
+│     │                                                            │
+│     ├──→ Generates Google Review responses (5 min/day)           │
+│     │                                                            │
+│     └──→ Creates weekly event promo text (10 min/week)           │
+│                                                                  │
+│  Canva AI ──→ Turns captions into branded visuals (30 min/week)  │
+│     │                                                            │
+│     └──→ Resizes across Instagram, Facebook, TikTok (auto)       │
+│                                                                  │
+│  Meta AI ───→ Schedules + posts at optimal times (auto)          │
+│                                                                  │
+│  Popmenu ───→ Sends targeted offers to past guests (auto)        │
+│     │                                                            │
+│     └──→ Tracks which promos drive visits (analytics)            │
+│                                                                  │
+│  Google AI ──→ Monitors reviews, flags urgent negatives          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>Time savings</strong>: ~15-20 hours/month of marketing work → reduced to 5-7 hours/month. Frees the owner/manager to focus on operations and guest experience.</p>
+<h3>K.5 AI for Operational Efficiency — Specific to Rosalita&#39;s</h3>
+<table>
+<thead>
+<tr>
+<th>Operational Pain Point</th>
+<th>AI Solution</th>
+<th>How It Works</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Staff scheduling takes 2-3 hrs/week</strong></td>
+<td>7shifts AI scheduling</td>
+<td>2 minutes → generates optimal schedule based on sales forecasts</td>
+</tr>
+<tr>
+<td><strong>Training new staff takes weeks</strong></td>
+<td>ChatGPT-written training docs + SOPs</td>
+<td>Create a &quot;Rosalita&#39;s Training Manual&quot; in 1 day instead of 2 weeks</td>
+</tr>
+<tr>
+<td><strong>Responding to Google/TripAdvisor reviews</strong></td>
+<td>ChatGPT + review response templates</td>
+<td>Paste the review, get a professional response in 30 seconds. Maintain 4.8★ rating.</td>
+</tr>
+<tr>
+<td><strong>Kitchen inventory management</strong></td>
+<td>Winnow AI or simple spreadsheet + ChatGPT analysis</td>
+<td>Take weekly inventory photos → paste counts into ChatGPT → get order suggestions</td>
+</tr>
+<tr>
+<td><strong>Menu pricing decisions</strong></td>
+<td>ChatGPT + competitive data</td>
+<td>&quot;Given our costs are X, competitors price Y at Z, recommend optimal pricing for our menu&quot;</td>
+</tr>
+<tr>
+<td><strong>Creating event promotions</strong></td>
+<td>ChatGPT generates copy + Canva generates visuals</td>
+<td>From &quot;July 4th special&quot; prompt to ready-to-post graphics in 15 minutes</td>
+</tr>
+<tr>
+<td><strong>Guest feedback analysis</strong></td>
+<td>ChatGPT analyzes weekly review data</td>
+<td>&quot;Summarize this week&#39;s 15 reviews: what do guests love, what are the complaints?&quot;</td>
+</tr>
+</tbody></table>
+<h3>K.6 Total AI Investment Summary</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Monthly Cost</th>
+<th>Annual Cost</th>
+<th>Est. Annual Savings / Revenue Lift</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Tier 1: Immediate</strong> (ChatGPT + Canva + Meta)</td>
+<td>IDR ~350K ($20-35)</td>
+<td>IDR ~4M</td>
+<td>IDR 60-120M (time saved + better marketing)</td>
+</tr>
+<tr>
+<td><strong>Tier 2: Intermediate</strong> (+ 7shifts + Winnow)</td>
+<td>IDR ~1,500K ($100)</td>
+<td>IDR ~18M</td>
+<td>IDR 200-350M (labor + food waste reduction)</td>
+</tr>
+<tr>
+<td><strong>Tier 3: Advanced</strong> (+ Hostie + Popmenu/Snackpass)</td>
+<td>IDR ~5,000K ($300)</td>
+<td>IDR ~60M</td>
+<td>IDR 300-600M (revenue growth + commission savings)</td>
+</tr>
+</tbody></table>
+<p><strong>Total potential impact</strong>: AI tools could improve Rosalita&#39;s EBITDA by <strong>IDR 20–50M/month</strong> within 6-12 months, at a tool cost of less than IDR 7M/month at the highest tier.</p>
+<p><strong>Payback period</strong>: Less than 1 month for Tier 1, 2-3 months for Tier 2, 3-6 months for Tier 3.</p>
+    </div>
+  </div>
+</div>
+<hr>
+<h2 id="part-l">Part L: Revised &amp; Final Assessment — Updated Proposal Scorecard</h2>
+<h3>What Changed After This Deeper Analysis</h3>
+<table>
+<thead>
+<tr>
+<th>Before (Original Parts A-G)</th>
+<th>After (Adding Parts H-K)</th>
+<th>Net Change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Focus on cost-cutting</td>
+<td>Balance of cost-cutting + revenue growth via AI + time-period capture</td>
+<td>More comprehensive</td>
+</tr>
+<tr>
+<td>Menu reduction 60→48 items</td>
+<td>Same, <strong>confirmed</strong> by competitive analysis</td>
+<td>No change</td>
+</tr>
+<tr>
+<td>Staff 22→16 FTE</td>
+<td>Same + add AI scheduling for further optimization</td>
+<td>Enhanced</td>
+</tr>
+<tr>
+<td>$0 AI investment</td>
+<td>AI tools adding IDR 20-50M/month to EBITDA</td>
+<td><strong>Major positive addition</strong></td>
+</tr>
+<tr>
+<td>No breakfast/brunch</td>
+<td>Weekend brunch potential identified (IDR 50-80M/month)</td>
+<td><strong>New revenue stream identified</strong></td>
+</tr>
+<tr>
+<td>No happy hour</td>
+<td>Daily happy hour 4-7PM recommended</td>
+<td><strong>New revenue stream identified</strong></td>
+</tr>
+<tr>
+<td>Monday 25% off accepted</td>
+<td>Identified as too deep — restructure recommended</td>
+<td><strong>Plan corrected</strong></td>
+</tr>
+<tr>
+<td>Wednesday wings 67% off accepted</td>
+<td>Identified as below-cost — restructure recommended</td>
+<td><strong>Plan corrected</strong></td>
+</tr>
+<tr>
+<td>Cocktail menu not addressed</td>
+<td>Cocktail pricing &amp; optimization added</td>
+<td><strong>Gap filled</strong></td>
+</tr>
+<tr>
+<td>Area analysis: none</td>
+<td>Full competitive + location analysis, partner hotel strategy</td>
+<td><strong>New strategic dimension</strong></td>
+</tr>
+<tr>
+<td><strong>EBITDA target: IDR 101M/mo by Jun 2027</strong></td>
+<td><strong>Revised potential: IDR 140-180M/mo</strong></td>
+<td><strong>40-80% higher</strong></td>
+</tr>
+</tbody></table>
+<h3>Revised 12-Month Revenue &amp; EBITDA Projection</h3>
+<table>
+<thead>
+<tr>
+<th>Line Item</th>
+<th>Original Target (Jun 2027)</th>
+<th>Revised Target (with AI + new streams)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Guests/day</td>
+<td>82</td>
+<td>88</td>
+</tr>
+<tr>
+<td>Average spend</td>
+<td>IDR 250K</td>
+<td>IDR 265K</td>
+</tr>
+<tr>
+<td><strong>Monthly Revenue</strong></td>
+<td><strong>IDR 615M</strong></td>
+<td><strong>IDR 699M</strong></td>
+</tr>
+<tr>
+<td>Brunch revenue (weekends, new)</td>
+<td>—</td>
+<td>IDR 50M</td>
+</tr>
+<tr>
+<td>Happy hour revenue (new)</td>
+<td>—</td>
+<td>IDR 25M</td>
+</tr>
+<tr>
+<td>AI-driven marketing lift</td>
+<td>—</td>
+<td>IDR 30M</td>
+</tr>
+<tr>
+<td>Delivery optimization savings</td>
+<td>—</td>
+<td>IDR 15M</td>
+</tr>
+<tr>
+<td><strong>Total Monthly Revenue</strong></td>
+<td><strong>IDR 615M</strong></td>
+<td><strong>IDR 819M</strong></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Food COGS (30%)</td>
+<td>-IDR 184.5M</td>
+<td>-IDR 184.5M</td>
+</tr>
+<tr>
+<td>Beverage COGS (27%)</td>
+<td>-IDR 110.7M</td>
+<td>-IDR 138M</td>
+</tr>
+<tr>
+<td><strong>Gross Profit</strong></td>
+<td><strong>IDR 319.8M (67%)</strong></td>
+<td><strong>IDR 496.5M (73% incl. higher bev mix)</strong></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Staff costs</td>
+<td>-IDR 135.3M (22%)</td>
+<td>-IDR 135.3M (22% — AI scheduling helps maintain)</td>
+</tr>
+<tr>
+<td>Rent (fixed)</td>
+<td>-IDR 30M</td>
+<td>-IDR 30M</td>
+</tr>
+<tr>
+<td>Utilities</td>
+<td>-IDR 36.9M</td>
+<td>-IDR 36.9M</td>
+</tr>
+<tr>
+<td>Marketing (incl. AI tools)</td>
+<td>-IDR 15.4M</td>
+<td>-IDR 20M (AI tools ~IDR 5M, rest marketing)</td>
+</tr>
+<tr>
+<td>Other overhead</td>
+<td>-IDR 30.8M</td>
+<td>-IDR 30.8M</td>
+</tr>
+<tr>
+<td>Food waste reduction (AI)</td>
+<td>—</td>
+<td><strong>+IDR 15M</strong></td>
+</tr>
+<tr>
+<td><strong>EBITDA</strong></td>
+<td><strong>+IDR 101.4M</strong></td>
+<td><strong>+IDR 258.5M</strong></td>
+</tr>
+<tr>
+<td><strong>EBITDA Margin</strong></td>
+<td><strong>~16.5%</strong></td>
+<td><strong>~31.6%</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Note</strong>: The revised target represents the <strong>aspirational ceiling</strong> with full AI adoption, new revenue streams, and successful weekend brunch launch. The original target of IDR 101M/month is the <strong>conservative floor</strong> achievable through cost-cutting alone. Realistic performance likely lands between the two, at IDR 150-200M/month EBITDA.</p>
+</blockquote>
+<h3>Final Owner&#39;s Checklist — Prioritized Actions</h3>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Action</th>
+<th>Timeline</th>
+<th>Est. EBITDA Impact</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>P0</strong></td>
+<td>Start ChatGPT + Canva AI (free, immediate ROI)</td>
+<td>This week</td>
+<td>IDR 5-10M/month</td>
+</tr>
+<tr>
+<td><strong>P0</strong></td>
+<td>Remove Asian Corner from menu</td>
+<td>This week</td>
+<td>IDR 5-10M/month</td>
+</tr>
+<tr>
+<td><strong>P0</strong></td>
+<td>Restructure Monday 25% off → bundle deal</td>
+<td>Next 2 weeks</td>
+<td>Protects 5-10M margin</td>
+</tr>
+<tr>
+<td><strong>P0</strong></td>
+<td>Restructure Wednesday wings 67% off → bundle</td>
+<td>Next 2 weeks</td>
+<td>Protects 5-8M margin</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>Launch daily Happy Hour (4-7PM, 20% off cocktails + half-price apps)</td>
+<td>Within 30 days</td>
+<td>IDR 15-30M/month new rev</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>Launch weekend brunch (Sat-Sun 10AM-2PM)</td>
+<td>Within 60 days</td>
+<td>IDR 30-50M/month new rev</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>Document cocktail menu pricing</td>
+<td>Within 30 days</td>
+<td>Improved margin visibility</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>Sign up for 7shifts AI scheduling</td>
+<td>Within 30 days</td>
+<td>IDR 5-8M/month savings</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>Hotel concierge partnerships (5 hotels within 1km)</td>
+<td>Within 60 days</td>
+<td>IDR 10-20M/month new rev</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>Implement Winnow or equivalent food waste tracking</td>
+<td>Within 90 days</td>
+<td>IDR 12-20M/month savings</td>
+</tr>
+<tr>
+<td><strong>P3</strong></td>
+<td>Hostie AI phone assistant for reservations</td>
+<td>Month 4-6</td>
+<td>Improved booking conversion</td>
+</tr>
+<tr>
+<td><strong>P3</strong></td>
+<td>Direct WhatsApp ordering system (reduce GoFood commission)</td>
+<td>Month 4-6</td>
+<td>IDR 15-25M/month savings</td>
+</tr>
+<tr>
+<td><strong>P3</strong></td>
+<td>AI-driven dynamic pricing for peak vs off-peak</td>
+<td>Month 6-9</td>
+<td>3-8% revenue lift</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="part-m">Part M: Strategic Partnership Analysis — Red Ruby Bali × Prestix.vip × StarPOINTS</h2>
+<h3>M.1 Introduction: The Ecosystem Opportunity</h3>
+<p>Rosalita&#39;s Cantina is not an independent restaurant. It is part of the <strong>Red Ruby Group</strong>, which operates:</p>
+<table>
+<thead>
+<tr>
+<th>Venue</th>
+<th>Type</th>
+<th>Location</th>
+<th>Distance from Rosalita&#39;s</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Red Ruby Club</strong></td>
+<td>Nightclub (24/7, Wed-Sun)</td>
+<td>Jl. Petitenget No.919x, Seminyak</td>
+<td>~1-2 km</td>
+</tr>
+<tr>
+<td><strong>The Social</strong></td>
+<td>Bar / lounge</td>
+<td>Seminyak</td>
+<td>~1 km</td>
+</tr>
+<tr>
+<td><strong>Red Ruby The Terrace</strong></td>
+<td>Rooftop restaurant &amp; bar</td>
+<td>Seminyak</td>
+<td>~1-2 km</td>
+</tr>
+<tr>
+<td><strong>Rosalita&#39;s Cantina</strong></td>
+<td>Mexican restaurant &amp; bar</td>
+<td>Seminyak Square</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>7 Plates</strong> (coming soon)</td>
+<td>New concept</td>
+<td>Seminyak</td>
+<td>TBD</td>
+</tr>
+</tbody></table>
+<p>This matters because <strong>cross-promotion between sister venues is an internal decision</strong>, not an arm&#39;s-length negotiation. Every IDR kept within the group stays in the group&#39;s ecosystem.</p>
+<p>Beyond the venues, the group also operates:</p>
+<ul>
+<li><strong>Prestix.vip</strong> — VIP booking and matchmaker platform</li>
+<li><strong>StarWORKS / StarPOINTS / StarXP / StarCHAIN</strong> — blockchain-based loyalty and token ecosystem (already integrated at Rosalita&#39;s since Dec 2022 via StarCARD and StarPOINTS)</li>
+</ul>
+<p>These three layers — venues, booking platform, and crypto loyalty — create a <strong>closed-loop ecosystem</strong> that no independent restaurant in Seminyak can replicate. The opportunity is to operationalize connections that already exist on paper but have not been systematically captured.</p>
+<p>This section analyzes three partnership streams:</p>
+<ol>
+<li><strong>Red Ruby Bali</strong> — cross-promotion (dinner-to-club packages, shared events)</li>
+<li><strong>Prestix.vip</strong> — table booking channel + Find a Date commission flow to Rosalita&#39;s</li>
+<li><strong>StarPOINTS / StarXP / StarCHAIN</strong> — deepening the existing loyalty integration for a true closed-loop economy</li>
+</ol>
+<hr>
+<h3>M.2 Red Ruby Bali — Sister Venue Cross-Promotion</h3>
+<h4>M.2.1 Who Is Red Ruby Bali?</h4>
+<p>Red Ruby Club is a 24-hour nightclub in Seminyak (Wed-Sun), with a membership program:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Price</th>
+<th>Perks</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Silver</td>
+<td>IDR 100K/month</td>
+<td>Standard entry</td>
+</tr>
+<tr>
+<td>Gold</td>
+<td>IDR 500K/month</td>
+<td>Priority entry + 1 bottle</td>
+</tr>
+<tr>
+<td>Platinum</td>
+<td>IDR 1,000K/month</td>
+<td>VIP table + 2 bottles + guest list</td>
+</tr>
+</tbody></table>
+<p>Key facts:</p>
+<ul>
+<li>Operating hours: Wed-Sun, open 24 hours (typically busiest 11PM-5AM)</li>
+<li>Crowd leaves in waves between 5AM-7AM</li>
+<li>Members number in the hundreds (inferred from tier pricing — premium positioning)</li>
+<li>Instagram: active, event-driven content, strong local nightlife following</li>
+<li>Sister venues under same group = zero friction for cross-marketing</li>
+</ul>
+<h4>M.2.2 Opportunity 1: 5AM Post-Club Breakfast (Fri-Sun)</h4>
+<p>The gap: Rosalita&#39;s opens at 11AM. Red Ruby&#39;s crowd leaves at 5-7AM looking for food. That&#39;s a <strong>5-hour gap</strong> with no group option for hungry departing club-goers.</p>
+<p><strong>The concept</strong>: A limited &quot;After Party Breakfast&quot; menu served Fri-Sun, 5AM-10AM at Rosalita&#39;s, positioned as the official post-Red Ruby destination.</p>
+<p><strong>Menu</strong> (5-7 items only — no full kitchen needed):</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Est. Price</th>
+<th>Food Cost %</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Breakfast Taco (egg, cheese, chorizo/beans)</td>
+<td>IDR 45K</td>
+<td>28%</td>
+<td>Core item — easy to prep</td>
+</tr>
+<tr>
+<td>Churros con Chocolate</td>
+<td>IDR 35K</td>
+<td>20%</td>
+<td>Pre-made dough, fry to order</td>
+</tr>
+<tr>
+<td>Breakfast Burrito (to-go friendly)</td>
+<td>IDR 55K</td>
+<td>30%</td>
+<td>Option for takeaway</td>
+</tr>
+<tr>
+<td>Fresh Juice (orange, watermelon)</td>
+<td>IDR 30K</td>
+<td>15%</td>
+<td>High margin, recovery appeal</td>
+</tr>
+<tr>
+<td>Coffee (American, Latte, Espresso)</td>
+<td>IDR 25-35K</td>
+<td>10%</td>
+<td>Highest margin item</td>
+</tr>
+<tr>
+<td>Bloody Mary</td>
+<td>IDR 75K</td>
+<td>15%</td>
+<td>&quot;Hair of the dog&quot; — high-margin cocktail</td>
+</tr>
+<tr>
+<td>Michelada</td>
+<td>IDR 65K</td>
+<td>12%</td>
+<td>Mexican classic for the hungover crowd</td>
+</tr>
+</tbody></table>
+<p><strong>Operations</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Days</td>
+<td>Friday, Saturday, Sunday (12 days/month)</td>
+</tr>
+<tr>
+<td>Hours</td>
+<td>5:00 AM – 10:00 AM</td>
+</tr>
+<tr>
+<td>Staff</td>
+<td>2 people (1 cook + 1 server/cashier)</td>
+</tr>
+<tr>
+<td>Kitchen</td>
+<td>Limited menu = no full kitchen brigade needed</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>1 security staff recommended (post-club crowd)</td>
+</tr>
+<tr>
+<td>Music</td>
+<td>Low-volume lounge/background (not club volume)</td>
+</tr>
+<tr>
+<td>Licensing</td>
+<td>⚠️ Must verify with local authorities — alcohol sales before 11AM may require special permit</td>
+</tr>
+</tbody></table>
+<p><strong>Traffic assumption</strong>: Red Ruby has capacity for hundreds. Even if 5-10% of departing guests stop by:</p>
+<ul>
+<li>~15-25 covers per morning</li>
+<li>Assume mostly groups of 2-4</li>
+<li>Average spend: ~IDR 100K (coffee + item, or breakfast taco + juice)</li>
+<li>20 covers × IDR 100K × 12 mornings = <strong>IDR 24M/month revenue</strong></li>
+</ul>
+<p><strong>Financial projection (monthly — 12 mornings)</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Line Item</th>
+<th>Amount</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Revenue (20 covers × IDR 100K × 12 days)</td>
+<td>IDR 24M</td>
+</tr>
+<tr>
+<td>Food &amp; beverage COGS (~22% blended)</td>
+<td>-IDR 5.3M</td>
+</tr>
+<tr>
+<td><strong>Gross Profit</strong></td>
+<td><strong>IDR 18.7M (78%)</strong></td>
+</tr>
+<tr>
+<td>Staff (2 × IDR 50K/hr × 5hr × 12 days)</td>
+<td>-IDR 6M</td>
+</tr>
+<tr>
+<td>Security (1 × IDR 40K/hr × 5hr × 12)</td>
+<td>-IDR 2.4M</td>
+</tr>
+<tr>
+<td>Incremental utilities &amp; supplies</td>
+<td>-IDR 1.5M</td>
+</tr>
+<tr>
+<td><strong>Net Contribution to EBITDA</strong></td>
+<td><strong>IDR 8.8M/month</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Annualized: ~IDR 106M EBITDA contribution.</strong></p>
+<blockquote>
+<p>The 5AM breakfast is not a profit center on its own — but it fills the gap in the ecosystem, captures guests the group already acquired (at Red Ruby), and strengthens Rosalita&#39;s position as the group&#39;s F&amp;B anchor.</p>
+</blockquote>
+<h4>M.2.3 Opportunity 2: Dinner × Club Entry Cross-Promotion</h4>
+<p><strong>Direction A: Dinner → Club (feeding into Red Ruby)</strong></p>
+<p>Offer every dinner guest at Rosalita&#39;s a VIP entry pass to Red Ruby (free cover, priority queue):</p>
+<table>
+<thead>
+<tr>
+<th>Detail</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cost to Rosalita&#39;s</td>
+<td>Zero — internal group handoff</td>
+</tr>
+<tr>
+<td>Cost to Red Ruby</td>
+<td>Zero — marginal cost of entry; incremental bottle/F&amp;B sales</td>
+</tr>
+<tr>
+<td>Value to guest</td>
+<td>Skip line, free entry (normally IDR 100-200K cover)</td>
+</tr>
+<tr>
+<td>Conversion expectation</td>
+<td>10-15% of dinner guests take the offer</td>
+</tr>
+<tr>
+<td>Upsell opportunity</td>
+<td>Dinner add-on package: &quot;Dinner + Red Ruby VIP&quot; at IDR 50K upcharge</td>
+</tr>
+</tbody></table>
+<p><strong>Direction B: Club → Dinner (reverse, capturing departing guests)</strong></p>
+<p>Red Ruby departing guests (5-7AM) or pre-club guests (8-11PM) get 20% off their first visit to Rosalita&#39;s:</p>
+<table>
+<thead>
+<tr>
+<th>Detail</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Distribution</td>
+<td>Red Ruby coat check / member WhatsApp blast / QR posters</td>
+</tr>
+<tr>
+<td>Redemption condition</td>
+<td>Valid same night or within 7 days</td>
+</tr>
+<tr>
+<td>Discount cost</td>
+<td>20% = ~IDR 50K off an IDR 250K check — acceptable CAC</td>
+</tr>
+<tr>
+<td>Expected referrals</td>
+<td>50-100 / month initially, scaling with promotion frequency</td>
+</tr>
+</tbody></table>
+<p><strong>Combined traffic impact</strong>:</p>
+<ul>
+<li>Assume 75 incremental guests/month across both directions</li>
+<li>Average spend: IDR 250K</li>
+<li>Incremental monthly revenue: 75 × IDR 250K = <strong>IDR 18.75M</strong></li>
+<li>Margin at ~15% after direct costs: <strong>IDR 2.8M</strong></li>
+<li>But the <strong>true value is marketing cost savings</strong> — acquiring a new dinner guest normally costs IDR 50-100K+ in ads. Red Ruby referrals cost zero.</li>
+</ul>
+<h4>M.2.4 Opportunity 3: Shared Staffing &amp; Combined Events</h4>
+<p><strong>Staff sharing</strong>: During 5AM breakfast (5-10AM) and brunch (10AM-2PM), Red Ruby&#39;s security staff or DJs could work dual shifts at Rosalita&#39;s. Likewise, Rosalita&#39;s kitchen could supply late-night snacks to Red Ruby. This spreads fixed costs across both venues.</p>
+<p><strong>Combined events</strong>: &quot;Dinner at Rosalita&#39;s, After Party at Red Ruby&quot; — a structured weekly event:</p>
+<ul>
+<li>Rosalita&#39;s serves a fixed-price dinner (e.g., IDR 250K/person, 7-10PM)</li>
+<li>Guests get a wristband for free Red Ruby entry</li>
+<li>Red Ruby offers the dinner crowd a welcome cocktail</li>
+<li>Combined marketing doubles the social media reach</li>
+</ul>
+<p><strong>Revenue impact</strong>: Low direct revenue, but builds brand cohesion and creates a differentiated group experience that neither venue could offer alone.</p>
+<p><strong>Combined Subtotal — Red Ruby Opportunities:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Stream</th>
+<th>Monthly EBITDA Contribution</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5AM Post-Club Breakfast (Fri-Sun)</td>
+<td>IDR 8.8M</td>
+</tr>
+<tr>
+<td>Dinner × Club cross-promotion (net incremental)</td>
+<td>IDR 2.8M</td>
+</tr>
+<tr>
+<td>Shared staffing savings</td>
+<td>IDR 1-2M</td>
+</tr>
+<tr>
+<td>Marketing cost savings (free cross-promotion)</td>
+<td>IDR 3-5M</td>
+</tr>
+<tr>
+<td><strong>Red Ruby Total (conservative)</strong></td>
+<td><strong>IDR 13-15M/month</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>M.3 Prestix.vip — Table Booking &amp; Find a Date Integration</h3>
+<h4>M.3.1 What Is Prestix.vip?</h4>
+<p>Prestix.vip is a booking platform that serves two functions:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>VIP Table Booking</strong></td>
+<td>Book tables at partner venues (currently Red Ruby, expanding to Rosalita&#39;s)</td>
+</tr>
+<tr>
+<td><strong>Promote &amp; Earn</strong></td>
+<td>Affiliate program — promoters earn commission for driving bookings</td>
+</tr>
+<tr>
+<td><strong>Find a Date</strong></td>
+<td>Matchmaker service — members pay for a curated date experience; the matchmaker (&quot;assistant&quot;) earns 15% commission on the fee</td>
+</tr>
+</tbody></table>
+<p>The platform is part of the StarWORKS ecosystem and uses StarXP as its loyalty/commission currency.</p>
+<h4>M.3.2 Opportunity 1: Table Booking Channel</h4>
+<p>List Rosalita&#39;s on Prestix.vip as a bookable venue. This opens a new reservation channel targeting:</p>
+<ul>
+<li>Tourists who find Prestix through search/ads</li>
+<li>Red Ruby members looking for dinner before clubbing</li>
+<li>StarWALLET users browsing ecosystem merchants</li>
+</ul>
+<p><strong>Booking model</strong>:</p>
+<ul>
+<li>Assume Prestix charges a 10% commission on booked revenue (industry standard for reservation platforms)</li>
+<li>Rosalita&#39;s fills tables that would otherwise sit empty during off-peak periods</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Conservative</th>
+<th>Optimistic</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bookings/month</td>
+<td>15</td>
+<td>40</td>
+</tr>
+<tr>
+<td>Avg party size</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Avg spend per person</td>
+<td>IDR 200K</td>
+<td>IDR 300K</td>
+</tr>
+<tr>
+<td>Revenue/booked table</td>
+<td>IDR 600K</td>
+<td>IDR 1.2M</td>
+</tr>
+<tr>
+<td><strong>Monthly incremental revenue</strong></td>
+<td><strong>IDR 9M</strong></td>
+<td><strong>IDR 48M</strong></td>
+</tr>
+<tr>
+<td>Minus 10% Prestix commission</td>
+<td>-IDR 900K</td>
+<td>-IDR 4.8M</td>
+</tr>
+<tr>
+<td>Net revenue</td>
+<td>IDR 8.1M</td>
+<td>IDR 43.2M</td>
+</tr>
+<tr>
+<td>Food &amp; bev cost (~30%)</td>
+<td>-IDR 2.4M</td>
+<td>-IDR 13M</td>
+</tr>
+<tr>
+<td><strong>Net margin contribution</strong></td>
+<td><strong>IDR 1.2M</strong></td>
+<td><strong>IDR 6.5M</strong></td>
+</tr>
+</tbody></table>
+<p>The conservative case is more realistic until Prestix builds its booking traffic. The strategic value is <strong>being the first and only F&amp;B venue on the platform</strong>, capturing the exclusive position.</p>
+<h4>M.3.3 Opportunity 2: Find a Date → StarXP → Rosalita&#39;s</h4>
+<p>This is the most innovative — and most complex — of the partnership opportunities:</p>
+<p><strong>How it works:</strong></p>
+<pre><code>Find a Date Member pays IDR 500K
+         ↓
+Matchmaker (&quot;assistant&quot;) earns 15% = IDR 75K
+         ↓
+Commission paid as StarXP (not cash)
+         ↓
+Matchmaker redeems StarXP at Rosalita&#39;s (or any ecosystem merchant)
+         ↓
+Rosalita&#39;s honors StarXP at face value
+         ↓
+Rosalita&#39;s submits redemption to StarWORKS
+         ↓
+StarWORKS reimburses Rosalita&#39;s (minus a processing fee, estimated 5-10%)
+</code></pre>
+<p><strong>The revenue loop for Rosalita&#39;s:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Amount</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Guest spends IDR 150K at Rosalita&#39;s, pays 50% with StarXP (IDR 75K) + 50% cash</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Rosalita&#39;s receives IDR 75K cash + IDR 75K in StarXP credit</td>
+<td>= IDR 150K total</td>
+</tr>
+<tr>
+<td>StarWORKS reimburses ~IDR 68K for the StarXP portion (after ~10% fee)</td>
+<td>= IDR 68K</td>
+</tr>
+<tr>
+<td><strong>Total Rosalita&#39;s cash-in</strong> for a IDR 150K order</td>
+<td><strong>IDR 143K</strong></td>
+</tr>
+<tr>
+<td>Effective discount to Rosalita&#39;s</td>
+<td>~5% (vs. ~12% credit card fee) — acceptable</td>
+</tr>
+</tbody></table>
+<p><strong>The key question</strong>: How many matchmakers redeem at Rosalita&#39;s?</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Conservative</th>
+<th>Realistic</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Find a Date transactions/month (ecosystem-wide)</td>
+<td>100</td>
+<td>300</td>
+</tr>
+<tr>
+<td>Matchmakers earning 15% = IDR 75K in StarXP</td>
+<td>100</td>
+<td>300</td>
+</tr>
+<tr>
+<td>Matchmakers who redeem at Rosalita&#39;s</td>
+<td>10% (10)</td>
+<td>20% (60)</td>
+</tr>
+<tr>
+<td>Average redemption value</td>
+<td>IDR 75K</td>
+<td>IDR 100K</td>
+</tr>
+<tr>
+<td><strong>Monthly StarXP volume at Rosalita&#39;s</strong></td>
+<td><strong>IDR 750K</strong></td>
+<td><strong>IDR 6M</strong></td>
+</tr>
+<tr>
+<td>Reimbursement from StarWORKS (after fee)</td>
+<td>~IDR 680K</td>
+<td>~IDR 5.4M</td>
+</tr>
+<tr>
+<td>Food cost on redeemed items (~28%)</td>
+<td>-IDR 210K</td>
+<td>-IDR 1.7M</td>
+</tr>
+<tr>
+<td><strong>Net contribution</strong></td>
+<td><strong>IDR 470K/month</strong></td>
+<td><strong>IDR 3.7M/month</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Additional value</strong>: Every matchmaker who comes to Rosalita&#39;s to redeem also:</p>
+<ul>
+<li>Brings a guest (avg party of 2)</li>
+<li>May order beyond the StarXP credit (cash spend)</li>
+<li>Tries the food → returns as a paying customer</li>
+<li>Posts about it → free social media exposure</li>
+</ul>
+<p>These spillover effects likely double the net contribution.</p>
+<h4>M.3.4 Combined Prestix.vip Contribution:</h4>
+<table>
+<thead>
+<tr>
+<th>Stream</th>
+<th>Conservative</th>
+<th>Realistic</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Table booking commission (net)</td>
+<td>IDR 1.2M</td>
+<td>IDR 3.5M</td>
+</tr>
+<tr>
+<td>Find a Date → StarXP redemption (net)</td>
+<td>IDR 470K</td>
+<td>IDR 3.7M</td>
+</tr>
+<tr>
+<td>Spillover revenue (incremental cash spend)</td>
+<td>IDR 500K</td>
+<td>IDR 2M</td>
+</tr>
+<tr>
+<td><strong>Prestix.vip Total</strong></td>
+<td><strong>IDR 2.2M/month</strong></td>
+<td><strong>IDR 9.2M/month</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>M.4 StarPOINTS / StarXP / StarCHAIN — Deepening the Closed-Loop Ecosystem</h3>
+<h4>M.4.1 Current State</h4>
+<p>Rosalita&#39;s already has StarPOINTS integration (confirmed by press release, Dec 2022, and live on website):</p>
+<ul>
+<li>Guests earn StarPOINTS when spending at Rosalita&#39;s</li>
+<li>StarCARD (physical or digital) used for point collection</li>
+<li>Points convert to STARX tokens (ERC-777, migrating to BSC BEP-20)</li>
+<li>StarWALLET is the consumer app for managing points/tokens</li>
+</ul>
+<p>This is already a competitive advantage — no other Mexican restaurant in Seminyak offers blockchain-based loyalty.</p>
+<h4>M.4.2 The Full Ecosystem</h4>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>StarPOINTS</strong></td>
+<td>Loyalty points earned at merchants (including Rosalita&#39;s)</td>
+</tr>
+<tr>
+<td><strong>STARX</strong></td>
+<td>Native token (ERC-777 → BSC BEP-20 migration) — tradeable, has DEX with ~10% tax</td>
+</tr>
+<tr>
+<td><strong>StarXP</strong></td>
+<td>Experience points from merchant spending — converted to STARX</td>
+</tr>
+<tr>
+<td><strong>StarCHAIN</strong></td>
+<td>Proprietary blockchain for ecosystem transactions</td>
+</tr>
+<tr>
+<td><strong>StarWALLET</strong></td>
+<td>Consumer app (wallet + merchant directory + token management)</td>
+</tr>
+<tr>
+<td><strong>StarTRAVELLER</strong></td>
+<td>Travel booking platform within the ecosystem</td>
+</tr>
+<tr>
+<td><strong>DEX tax</strong></td>
+<td>~10% on STARX trades, with ~4% allocated to ecosystem development fund</td>
+</tr>
+</tbody></table>
+<p><strong>The DEX tax is critical</strong>: Every time STARX trades on the exchange, ~4% of the volume flows to the ecosystem fund. This fund pays for merchant incentives, marketing, and development. As a merchant in the ecosystem, Rosalita&#39;s can potentially access this fund for:</p>
+<ul>
+<li>Co-marketing budgets</li>
+<li>Customer acquisition subsidies</li>
+<li>Technology integration grants</li>
+</ul>
+<h4>M.4.3 Opportunity: Become the Primary F&amp;B Merchant</h4>
+<p><strong>The gap</strong>: Today, StarPOINTS is passive at Rosalita&#39;s — guests earn points, but the restaurant doesn&#39;t actively drive the behavior it wants.</p>
+<p><strong>Proposed actions:</strong></p>
+<ol>
+<li><p><strong>Front-load the loyalty</strong> — Give bonus StarPOINTS for:</p>
+<ul>
+<li>First visit (500 bonus points, worth ~IDR 25K)</li>
+<li>Monday/Tuesday visits (double points — fills slow days)</li>
+<li>Cocktail orders (triple points — drives highest-margin item)</li>
+<li>Refer-a-friend (1,000 bonus points)</li>
+</ul>
+</li>
+<li><p><strong>StarXP acceptance</strong> — Offer StarXP as a partial payment method:</p>
+<ul>
+<li>Guests can pay up to 30-50% of their bill in StarXP</li>
+<li>StarWORKS reimburses Rosalita&#39;s at ~90 cents on the dollar</li>
+<li>Processing cost (<del>10%) is cheaper than GoFood (20-30%) or credit cards (</del>2-3% + FX)</li>
+<li>Creates a reason for StarWALLET users to choose Rosalita&#39;s</li>
+</ul>
+</li>
+<li><p><strong>Cross-ecosystem exposure</strong> — Get listed in StarWALLET&#39;s merchant directory as a featured merchant. StarTRAVELLER users booking Bali trips see Rosalita&#39;s as a recommended dining experience. Prestix.vip users get Rosalita&#39;s as the default dinner option.</p>
+</li>
+</ol>
+<h4>M.4.4 Financial Model</h4>
+<table>
+<thead>
+<tr>
+<th>Stream</th>
+<th>Monthly Impact</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Incremental traffic from StarWALLET directory</strong></td>
+<td>2-5 additional covers/day</td>
+<td>Hard to measure directly; estimate IDR 5-15M/month revenue</td>
+</tr>
+<tr>
+<td><strong>StarXP redemption fee savings</strong> vs credit cards</td>
+<td>IDR 1-3M/month</td>
+<td>StarXP processing ~10% vs credit cards ~2-3% + FX fees for tourists</td>
+</tr>
+<tr>
+<td><strong>Loyalty-driven repeat visits</strong></td>
+<td>5-15% increase in repeat rate</td>
+<td>Points programs typically lift frequency 10-20%</td>
+</tr>
+<tr>
+<td><strong>Ecosystem fund co-marketing</strong></td>
+<td>IDR 0-5M/month</td>
+<td>Unclear availability — needs negotiation</td>
+</tr>
+<tr>
+<td><strong>Brand differentiation (intangible)</strong></td>
+<td>Priceless</td>
+<td>No other Mexican restaurant in Seminyak has blockchain loyalty</td>
+</tr>
+</tbody></table>
+<p><strong>Conservative EBITDA contribution: IDR 2-5M/month</strong> (direct, measurable)
+<strong>Potential with full activation: IDR 8-15M/month</strong> (including loyalty-driven frequency)</p>
+<hr>
+<h3>M.5 Combined Partnership Projection</h3>
+<p><strong>Conservative case (safe, achievable within 3-6 months):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Stream</th>
+<th>Monthly EBITDA Contribution</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Red Ruby — 5AM Breakfast (Fri-Sun)</td>
+<td>IDR 8.8M</td>
+</tr>
+<tr>
+<td>Red Ruby — Dinner × Club cross-promotion</td>
+<td>IDR 2.8M</td>
+</tr>
+<tr>
+<td>Red Ruby — Shared ops &amp; marketing savings</td>
+<td>IDR 4M</td>
+</tr>
+<tr>
+<td>Prestix.vip — Table bookings + Date Finder</td>
+<td>IDR 2.2M</td>
+</tr>
+<tr>
+<td>StarPOINTS deepening</td>
+<td>IDR 2M</td>
+</tr>
+<tr>
+<td><strong>Total Conservative</strong></td>
+<td><strong>IDR 19.8M/month</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Realistic case (with execution and optimization within 9 months):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Stream</th>
+<th>Monthly EBITDA Contribution</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Red Ruby — 5AM Breakfast (scaled to 4 mornings)</td>
+<td>IDR 12M</td>
+</tr>
+<tr>
+<td>Red Ruby — Dinner × Club (scaled to monthly event)</td>
+<td>IDR 5M</td>
+</tr>
+<tr>
+<td>Red Ruby — Shared ops &amp; combined marketing</td>
+<td>IDR 6M</td>
+</tr>
+<tr>
+<td>Prestix.vip — Bookings + Date Finder (scaled)</td>
+<td>IDR 9.2M</td>
+</tr>
+<tr>
+<td>StarPOINTS deepening (loyalty-driven frequency)</td>
+<td>IDR 8M</td>
+</tr>
+<tr>
+<td><strong>Total Realistic</strong></td>
+<td><strong>IDR 40.2M/month</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Key insight</strong>: These partnerships could add <strong>IDR 20-40M/month to EBITDA</strong> within 9-12 months — equivalent to the entire original target from Parts A-G. They transform Rosalita&#39;s from a standalone restaurant into the F&amp;B anchor of a multi-venue ecosystem.</p>
+</blockquote>
+<hr>
+<h3>M.6 Implementation Timeline</h3>
+<h4>Phase 1: Foundation (July – September 2026)</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Timeline</th>
+<th>Owner</th>
+<th>Dependencies</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Verify 5AM alcohol licensing with local authorities</td>
+<td>July Week 1</td>
+<td>Owner</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Design 5AM breakfast menu (5-7 items)</td>
+<td>July Week 1-2</td>
+<td>Head Chef</td>
+<td>Licensing answer</td>
+</tr>
+<tr>
+<td>Create Red Ruby cross-promotion flyers + QR codes</td>
+<td>July Week 2-3</td>
+<td>Marketing (ChatGPT + Canva)</td>
+<td>Menu finalized</td>
+</tr>
+<tr>
+<td>Set up Rosalita&#39;s profile on Prestix.vip</td>
+<td>August Week 1</td>
+<td>Owner / Prestix team</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Launch &quot;Dinner + Red Ruby VIP&quot; package</td>
+<td>August Week 2</td>
+<td>Owner + Red Ruby GM</td>
+<td>Flyers ready</td>
+</tr>
+<tr>
+<td>Add StarXP payment option (up to 30% of bill)</td>
+<td>September</td>
+<td>Owner + StarWORKS</td>
+<td>Technical setup</td>
+</tr>
+</tbody></table>
+<p><strong>Phase 1 target</strong>: IDR 8-12M/month partnership contribution by September.</p>
+<h4>Phase 2: Scale (October – December 2026)</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Timeline</th>
+<th>Owner</th>
+<th>Dependencies</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Expand 5AM breakfast to Fri-Sun (12 mornings/month)</td>
+<td>October</td>
+<td>Owner + Chef</td>
+<td>Pilot success</td>
+</tr>
+<tr>
+<td>Launch monthly combined event (&quot;Dinner + After Party&quot;)</td>
+<td>October</td>
+<td>Both GMs</td>
+<td>Phase 1 learnings</td>
+</tr>
+<tr>
+<td>Activate bonus StarPOINTS program (first visit, slow days, cocktails)</td>
+<td>October-November</td>
+<td>Owner + StarWORKS</td>
+<td>StarWORKS agreement</td>
+</tr>
+<tr>
+<td>Red Ruby members get Rosalita&#39;s discount automatically</td>
+<td>November</td>
+<td>Both GMs</td>
+<td>Tech integration</td>
+</tr>
+<tr>
+<td>Find a Date → StarXP flow live at Rosalita&#39;s</td>
+<td>November-December</td>
+<td>Prestix + StarWORKS</td>
+<td>Prestix integration</td>
+</tr>
+<tr>
+<td>Go from Prestix table booking pilot to full integration</td>
+<td>December</td>
+<td>Owner + Prestix</td>
+<td>Booking volume review</td>
+</tr>
+</tbody></table>
+<p><strong>Phase 2 target</strong>: IDR 20-30M/month partnership contribution by December.</p>
+<h4>Phase 3: Ecosystem Anchor (January – June 2027)</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Timeline</th>
+<th>Owner</th>
+<th>Dependencies</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Featured merchant in StarWALLET directory</td>
+<td>Q1 2027</td>
+<td>Owner + StarWORKS</td>
+<td>Agreement</td>
+</tr>
+<tr>
+<td>StarTRAVELLER integration (Rosalita&#39;s as recommended dining)</td>
+<td>Q1 2027</td>
+<td>StarWORKS</td>
+<td>StarWALLET directory</td>
+</tr>
+<tr>
+<td>StarXP up to 50% of bill accepted</td>
+<td>Q2 2027</td>
+<td>Owner + StarWORKS</td>
+<td>Volume justifies</td>
+</tr>
+<tr>
+<td>Combined group loyalty tier</td>
+<td>Q2 2027</td>
+<td>Group-level</td>
+<td>All venues on same system</td>
+</tr>
+<tr>
+<td>Evaluate 7 Plates partnership cross-promotion</td>
+<td>Q2 2027</td>
+<td>Owner + 7 Plates team</td>
+<td>New venue opening</td>
+</tr>
+</tbody></table>
+<p><strong>Phase 3 target</strong>: IDR 30-40M/month partnership contribution by June 2027.</p>
+<hr>
+<h3>M.7 Risk Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Likelihood</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Licensing denial</strong>: Local authorities reject 5AM alcohol sales</td>
+<td>Medium</td>
+<td>High (kills breakfast)</td>
+<td>Serve without alcohol; focus on coffee, juice, food-only. Bloody Mary/Michelada is optional, not core.</td>
+</tr>
+<tr>
+<td><strong>Staff burnout</strong>: 5AM shift hard to fill or retain</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Rotate staff; offer premium pay for breakfast shift; share staff with Red Ruby</td>
+</tr>
+<tr>
+<td><strong>Low restaurant volume</strong>: 5AM breakfast doesn&#39;t attract expected covers</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Minimum viable: 10 covers/day = IDR 12M/mo still profitable. Below 10 = cut days.</td>
+</tr>
+<tr>
+<td><strong>Prestix low traffic</strong>: Booking platform has insufficient users</td>
+<td>High</td>
+<td>Medium</td>
+<td>Use it purely as a supplementary channel; no overhead cost. If bookings &lt; 5/month after 6 months, pause.</td>
+</tr>
+<tr>
+<td><strong>Find a Date ethical risk</strong>: Matchmaker service associated with Rosalita&#39;s brand</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Rosalita&#39;s is a redemption venue, not a matchmaker partner. No direct association needed.</td>
+</tr>
+<tr>
+<td><strong>StarXP technical integration fails or delays</strong></td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Keep existing StarPOINTS; add StarXP when ready. No rush.</td>
+</tr>
+<tr>
+<td><strong>StarWORKS ecosystem stalls or token loses value</strong></td>
+<td>Medium</td>
+<td>Low</td>
+<td>StarPOINTS (non-speculative loyalty points) are separate from STARX token speculation. Rosalita&#39;s exposure is limited to redemption volume.</td>
+</tr>
+<tr>
+<td><strong>Brand confusion</strong>: Rosalita&#39;s becomes &quot;the breakfast club for Red Ruby&quot;</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Keep separate marketing identities. Breakfast is a limited-hours offering, not the core brand.</td>
+</tr>
+</tbody></table>
+<p><strong>Overall risk assessment</strong>: LOW to MODERATE. No single partnership is critical to Rosalita&#39;s survival (the core turnaround in Parts A-L works independently). These are upside opportunities that can be paused or abandoned without damaging the main business.</p>
+<hr>
+<h3>M.8 Recommendations &amp; Priority Actions</h3>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Action</th>
+<th>Time Required</th>
+<th>Est. EBITDA Impact</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>P1</strong></td>
+<td>Verify 5AM alcohol licensing with local authorities</td>
+<td>1 day</td>
+<td>Unlocks IDR 8.8M/month</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>Set up Rosalita&#39;s on Prestix.vip</td>
+<td>2 hours</td>
+<td>IDR 1-3M/month</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>Create Red Ruby cross-promo flyers (Canva, 1 hour)</td>
+<td>1 hour</td>
+<td>IDR 3-5M/month</td>
+</tr>
+
+<tr>
+<td><strong>P2</strong></td>
+<td>Launch &quot;Dinner + Red Ruby VIP&quot; package</td>
+<td>1 day to set up</td>
+<td>IDR 2-5M/month</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>Contact StarWORKS about bonus StarPOINTS program</td>
+<td>1 meeting</td>
+<td>IDR 2-5M/month</td>
+</tr>
+<tr>
+<td><strong>P3</strong></td>
+<td>Full StarXP payment acceptance</td>
+<td>2-3 weeks setup</td>
+<td>IDR 2-5M/month</td>
+</tr>
+<tr>
+<td><strong>P3</strong></td>
+<td>Combined monthly &quot;Dinner + After Party&quot; event</td>
+<td>Ongoing</td>
+<td>IDR 5-8M/month</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Bottom line</strong>: The first two actions (licensing check + Prestix.vip profile) can be done this week with zero cost. The partnership strategy is a <strong>low-risk, high-upside complement</strong> to the core turnaround — not a replacement for getting the fundamentals right.</p>
+</blockquote>
+<hr>
+<h3>M.9 How This Changes the Numbers</h3>
+<p>The projections in Part L (IDR 101M/month conservative floor, IDR 258.5M/month aspirational ceiling) did <strong>not</strong> include any partnership revenue.</p>
+<p>Adding the partnership streams:</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Part L EBITDA</th>
+<th>+ Partnerships</th>
+<th>Total Potential</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Conservative floor</strong> (cost-cutting only)</td>
+<td>IDR 101M</td>
+<td>IDR 20M</td>
+<td><strong>IDR 121M/month</strong></td>
+</tr>
+<tr>
+<td><strong>Realistic</strong> (cost-cutting + AI + partnerships)</td>
+<td>IDR 150-200M</td>
+<td>IDR 30M</td>
+<td><strong>IDR 180-230M/month</strong></td>
+</tr>
+<tr>
+<td><strong>Aspirational ceiling</strong> (AI + new streams + partnerships)</td>
+<td>IDR 258.5M</td>
+<td>IDR 40M</td>
+<td><strong>IDR 298.5M/month</strong></td>
+</tr>
+</tbody></table>
+<p>These partnerships are <strong>not required for the turnaround to work</strong> — Parts A-L deliver profitability on their own. But they accelerate the timeline, diversify revenue, and build a moat that competitors can&#39;t easily copy.</p>
+<hr>
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h2 id="part-n">Part N: Rosalita Cantina as StarWorld + Prestix Ecosystem Hub</h2>
+    <span class="step-impact">IDR 14-75M/mo</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+
+      <h3>N.1 The Concept</h3>
+      <p>Rosalita Cantina's physical location in Seminyak Square — in the heart of Bali's tourist corridor, within 1km of 5 five-star hotels — makes it the natural <strong>real-world clubhouse</strong> for the StarWorld + Prestix ecosystem. Rather than operating purely as a standalone restaurant, Rosalita can host recurring <strong>sector-specific investor and industry events</strong> that grow the ecosystem while driving covers and revenue.</p>
+      <p><strong>The core idea:</strong> One evening per week/month, Rosalita's hosts an industry-focused event where business owners from a specific Bali sector come together to network, learn about the Prestix.vip booking platform, and access StarWORKS membership capital.</p>
+
+      <h3>N.2 Target Industry Sectors</h3>
+      <table>
+      <thead>
+      <tr>
+      <th>Sector</th>
+      <th>Est. Businesses</th>
+      <th>Pain Point</th>
+      <th>Prestix/StarWORKS Solution</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Massage &amp; Spa</strong></td>
+      <td>1,000+</td>
+      <td>High OTA commissions, low online booking</td>
+      <td>Prestix.vip direct booking (0% vs 20-30%), StarPOINTS loyalty, membership capital</td>
+      </tr>
+      <tr>
+      <td><strong>Villa Rentals</strong></td>
+      <td>500+ operators</td>
+      <td>Fragmented booking, no cross-sell</td>
+      <td>Unified booking, cross-property StarPOINTS, capital for upgrades</td>
+      </tr>
+      <tr>
+      <td><strong>Tours, Surf &amp; Activities</strong></td>
+      <td>300+ operators</td>
+      <td>Seasonal cashflow, no shared data</td>
+      <td>Membership capital (revenue-share), StarTRAVELLER integration</td>
+      </tr>
+      <tr>
+      <td><strong>Wellness &amp; Yoga</strong></td>
+      <td>200+ studios</td>
+      <td>Low retention, no recurring revenue</td>
+      <td>StarPOINTS loyalty, subscription memberships</td>
+      </tr>
+      <tr>
+      <td><strong>F&amp;B (Other Restaurants)</strong></td>
+      <td>50+ in Seminyak</td>
+      <td>GoFood/Grab 20-30% commission</td>
+      <td>Prestix.vip direct booking, dine-around packages</td>
+      </tr>
+      <tr>
+      <td><strong>Retail &amp; Boutiques</strong></td>
+      <td>200+ shops</td>
+      <td>Foot traffic dependent, no loyalty</td>
+      <td>StarPOINTS cross-merchant rewards</td>
+      </tr>
+      <tr>
+      <td><strong>Transportation</strong></td>
+      <td>100+ driver companies</td>
+      <td>No recurring channel</td>
+      <td>Prestix.vip transport add-on, subscription transfers</td>
+      </tr>
+      <tr>
+      <td><strong>Wedding &amp; Events</strong></td>
+      <td>100+ planners</td>
+      <td>Fragmented vendor sourcing</td>
+      <td>Vendor directory, group booking, event financing</td>
+      </tr>
+      </tbody></table>
+
+      <h3>N.3 Event Format &amp; Cadence</h3>
+      <p><strong>"Sector Night" — weekly rotation on traditionally slow nights (Tue/Wed):</strong></p>
+      <ul>
+      <li><strong>Format:</strong> 60 min networking → 30 min presentation → 60 min dinner + 1-on-1s</li>
+      <li><strong>Capacity:</strong> 40-80 attendees, dedicated section at Rosalita's</li>
+      <li><strong>F&amp;B:</strong> IDR 150K/person finger food + 2 drinks, or IDR 250K full dinner</li>
+      <li><strong>Pitch:</strong> 15-min Prestix.vip demo + 15-min StarWORKS membership capital presentation</li>
+      <li><strong>Target:</strong> Business owners, GMs, investors in the target sector</li>
+      </ul>
+      <table>
+      <thead>
+      <tr>
+      <th>Month</th>
+      <th>Sector Event</th>
+      <th>Target Covers</th>
+      <th>Est. Revenue</th>
+      <th>Signups Target</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Jul 2026</td>
+      <td><strong>Pilot: Massage &amp; Spa Night</strong></td>
+      <td>40-60</td>
+      <td>IDR 10-15M</td>
+      <td>5-10 new listings</td>
+      </tr>
+      <tr>
+      <td>Aug 2026</td>
+      <td><strong>Villa &amp; Hospitality Night</strong></td>
+      <td>50-70</td>
+      <td>IDR 12-18M</td>
+      <td>8-15 new listings</td>
+      </tr>
+      <tr>
+      <td>Sep 2026</td>
+      <td><strong>Tours, Surf &amp; Activities Night</strong></td>
+      <td>40-60</td>
+      <td>IDR 10-15M</td>
+      <td>5-10 new listings</td>
+      </tr>
+      <tr>
+      <td>Oct 2026</td>
+      <td><strong>Wellness &amp; Yoga Night</strong></td>
+      <td>40-60</td>
+      <td>IDR 10-15M</td>
+      <td>5-10 new listings</td>
+      </tr>
+      <tr>
+      <td>Nov 2026</td>
+      <td><strong>F&amp;B Industry Meetup</strong></td>
+      <td>50-80</td>
+      <td>IDR 12-20M</td>
+      <td>5-10 new listings</td>
+      </tr>
+      <tr>
+      <td>Dec 2026</td>
+      <td><strong>Year-End Ecosystem Gala</strong></td>
+      <td>100-150</td>
+      <td>IDR 25-50M</td>
+      <td>20+ new listings</td>
+      </tr>
+      </tbody></table>
+
+      <h3>N.4 Revenue &amp; EBITDA Contribution</h3>
+      <table>
+      <thead>
+      <tr>
+      <th>Revenue Stream</th>
+      <th>Per Event</th>
+      <th>Per Month (2 events)</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td>Venue hire (from StarWORKS / ticket sales)</td>
+      <td>IDR 5-10M</td>
+      <td>IDR 10-20M</td>
+      </tr>
+      <tr>
+      <td>F&amp;B covers (50 × IDR 200K)</td>
+      <td>IDR 10M</td>
+      <td>IDR 20M</td>
+      </tr>
+      <tr>
+      <td>Platform listing fees (8 signups × IDR 500K)</td>
+      <td>IDR 4M</td>
+      <td>IDR 8M</td>
+      </tr>
+      <tr>
+      <td>Membership capital intro fee</td>
+      <td>IDR 2M</td>
+      <td>IDR 4M</td>
+      </tr>
+      <tr>
+      <td>Sponsored / upsell revenue</td>
+      <td>IDR 3-5M</td>
+      <td>IDR 6-10M</td>
+      </tr>
+      <tr>
+      <td><strong>Total Direct Revenue</strong></td>
+      <td><strong>IDR 24-31M</strong></td>
+      <td><strong>IDR 48-62M</strong></td>
+      </tr>
+      </tbody></table>
+
+      <h3>N.5 EBITDA Scenarios</h3>
+      <table>
+      <thead>
+      <tr>
+      <th>Scenario</th>
+      <th>Events/Month</th>
+      <th>Direct Revenue</th>
+      <th>Costs</th>
+      <th>Net EBITDA</th>
+      <th>Timeline</th>
+      </tr>
+      </thead>
+      <tbody><tr>
+      <td><strong>Conservative</strong></td>
+      <td>1</td>
+      <td>IDR 24M</td>
+      <td>IDR 10M</td>
+      <td><strong>+IDR 14M/mo</strong></td>
+      <td>Oct 2026</td>
+      </tr>
+      <tr>
+      <td><strong>Realistic</strong></td>
+      <td>2</td>
+      <td>IDR 48M</td>
+      <td>IDR 15M</td>
+      <td><strong>+IDR 33M/mo</strong></td>
+      <td>Jan 2027</td>
+      </tr>
+      <tr>
+      <td><strong>Optimistic</strong></td>
+      <td>4 (bi-weekly)</td>
+      <td>IDR 100M</td>
+      <td>IDR 25M</td>
+      <td><strong>+IDR 75M/mo</strong></td>
+      <td>Jun 2027</td>
+      </tr>
+      </tbody></table>
+
+      <h3>N.6 First Actions — This Week</h3>
+      <ol>
+      <li><strong>Discuss with StarWORKS/Prestix team</strong> — present concept, agree on revenue split and programming (2hr meeting)</li>
+      <li><strong>Define first event</strong> — Massage &amp; Spa Industry Night, pick date, target top 50 spas, draft pitch deck (5hrs)</li>
+      <li><strong>Set up ticketing</strong> — Event page on Prestix.vip or Google Form (1hr)</li>
+      <li><strong>Create one-page explainer</strong> for attendees (ChatGPT, 30 min)</li>
+      <li><strong>Target date</strong> — Last Tuesday of July 2026 for pilot event</li>
+      </ol>
+
+    </div>
+  </div>
+</div>
+<hr>
+<div class="step-accordion" onclick="toggleStep(this)">
+  <div class="step-header">
+    <span class="step-expand-icon">+</span>
+    <h2>Appendix: Key Data Points from This Analysis</h2>
+    <span class="step-impact none">Reference</span>
+  </div>
+  <div class="step-content">
+    <div class="step-content-inner">
+      <table>
+      <thead>
+      <tr>
+      <th>Data Point</th>
+      <th>Source</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Rosalita&#39;s TripAdvisor Rating</td>
+<td>TripAdvisor</td>
+<td><strong>4.8★</strong> — #1 Mexican in Seminyak</td>
+</tr>
+<tr>
+<td>Competitor Reviews Gap</td>
+<td>TripAdvisor</td>
+<td>Motel Mexicola has 10x more reviews (5,870 vs 580)</td>
+</tr>
+<tr>
+<td>Seminyak Restaurants Total</td>
+<td>TripAdvisor</td>
+<td>~470 restaurants, ~4,935 within 10 miles</td>
+</tr>
+<tr>
+<td>Mexican Restaurants in Seminyak</td>
+<td>TripAdvisor</td>
+<td>15 total</td>
+</tr>
+<tr>
+<td>AI Labor Savings (7shifts benchmark)</td>
+<td>Industry data</td>
+<td>3-5% labor cost reduction</td>
+</tr>
+<tr>
+<td>AI Food Waste Reduction (Winnow benchmark)</td>
+<td>Industry data</td>
+<td>15-25% waste reduction</td>
+</tr>
+<tr>
+<td>Restaurants Using AI (2026)</td>
+<td>Industry trend</td>
+<td>Growing adoption, independent restaurants catching up</td>
+</tr>
+<tr>
+<td>Restaurant Avg Margin (industry)</td>
+<td>Industry data</td>
+<td>3-9% net profit (Rosalita&#39;s aiming for 16-31% EBITDA = excellent)</td>
+</tr>
+<tr>
+<td>Rosalita&#39;s Beverage % of Revenue</td>
+<td>Cashflow data</td>
+<td><strong>40%</strong> — already strong</td>
+</tr>
+<tr>
+<td>GoFood Commission</td>
+<td>Industry data</td>
+<td>20-30% of order value</td>
+</tr>
+<tr>
+<td>Hotels within 1km</td>
+<td>Google Maps</td>
+<td>5+ (Oberoi 4.8★, Legian 4.9★, Marriott 4.5★, Seminyak Beach Resort 4.8★)</td>
+</tr>
+<tr>
+<td>Seminyak Square Rating</td>
+<td>TripAdvisor</td>
+<td>3.2★ (adequate, not destination)</td>
+</tr>
+<tr>
+<td>Business Hours</td>
+<td>Website</td>
+<td>11AM-11PM daily</td>
+</tr>
+<tr>
+<td>Staff cost as % of revenue (May 2026)</td>
+<td>Cashflow data</td>
+<td>40% (target: 22%)</td>
+</tr>
+</tbody></table>
+    </div>
+  </div>
+</div>
+<hr>
+<!-- <div style="background: rgba(var(--ember-rgb), 0.04); border: 1px solid rgba(var(--ember-rgb), 0.2); border-radius: 12px; padding: 20px 24px; margin: 24px 0; text-align: center;">
+  <p style="color: var(--muted2); font-size: 0.9rem; margin-bottom: 8px;">
+    <strong style="color: var(--ember);">Part O: Tax Loss Recovery Notes</strong>
+    — tracking Rosalita's ~IDR 1.2B accumulated loss pool (worth ~IDR 260M in future tax savings at 22% CIT)
+    and general Indonesian tax framework context. <strong>Note:</strong> The previous draft's inter-company analysis has been removed
+    — Rosalita, Red Ruby, and Island Bali Villas are <em>not</em> under common ownership.
+  </p>
+  <a href="tax-structure.html" style="display: inline-block; margin-top: 8px; padding: 10px 24px; background: var(--ember); color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.88rem;">
+    Open Part O: Tax Notes →
+  </a>
+</div> -->
+<hr>
+<h2>Appendix: AI Tool Quick-Reference for Owner</h2>
+<p><strong>The 3 tools to start with TODAY (all free or near-free):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>URL</th>
+<th>Signup Time</th>
+<th>First Task</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ChatGPT</strong></td>
+<td>chat.openai.com</td>
+<td>2 minutes</td>
+<td>&quot;Write 5 Instagram captions for our Taco Tuesday promotion&quot;</td>
+</tr>
+<tr>
+<td><strong>Canva</strong></td>
+<td>canva.com</td>
+<td>2 minutes</td>
+<td>&quot;Create Instagram story template for Taco Tuesday&quot;</td>
+</tr>
+<tr>
+<td><strong>Meta Business Suite</strong></td>
+<td>business.facebook.com</td>
+<td>5 minutes</td>
+<td>Link Instagram account, schedule this week&#39;s posts</td>
+</tr>
+</tbody></table>
+<p><strong>Total setup time: 15 minutes. Total cost: $0. First output: within the hour.</strong></p>
+<hr>
+<p><em>This document is a strategic analysis based on the cashflow workbook, menu data, website (rosalitasbali.com), competitive research, and AI industry data. All financial projections assume no major external shocks and are based on the trajectory observed through May 2026. Actual results may vary. Regular review and adjustment of this plan is recommended quarterly. The revised projections incorporating AI and new revenue streams represent an aspirational target; the original projections represent a conservative floor.</em></p>
+
+  </article>
+</main>
+
+<footer class="doc-footer">
+  <div class="footer-links">
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <span class="footer-sep">&middot;</span>
+    <a href="terms-of-service.html">Terms of Service</a>
+  </div>
+  Rosalita Cantina — Business Review &amp; Turnaround Plan &middot; June 2026
+  <div class="footer-small">Analysis based on cashflow workbook, menu data, website review, competitive research, and AI industry benchmarks.</div>
+</footer>
+
+</div><!-- /#pdfCapture -->
+
+<script>
+if (new URLSearchParams(location.search).get('pdf') === '1') document.body.setAttribute('data-pdf-export', '1');
+</script>
+</body>
+</html>

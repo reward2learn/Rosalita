@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f14">
+<title>Executive Summary — Rosalita Cantina</title>
+<meta name="description" content="Rosalita Cantina — Business Review & Turnaround Strategy. Comprehensive analysis and 12-month action plan.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Auth Gate Overlay -->
+<div id="authGateOverlay" style="display:none; position:fixed; inset:0; z-index:10000; background:#0f0f14; align-items:center; justify-content:center;">
+  <div id="authGateInner" style="max-width:420px; text-align:center; padding:32px 24px;"></div>
+</div>
+
+<nav class="top-nav">
+  <div class="nav-inner">
+     <a href="index.html" class="nav-brand">  <img  src="images/logo.svg" alt="Rosalita's Cantina" class="hero-logo" /></a>
+    <a href="index.html" class="nav-brand"><span class="ember">Rosalita</span> Cantina</a>
+    <button class="nav-toggle" aria-label="Toggle menu">&#x22EE;</button>
+  </div>
+</nav>
+
+<!-- Side Drawer -->
+<div id="sideDrawer" class="side-drawer">
+  <div class="drawer-user-badge" id="drawerUserBadge" style="display:none;">
+    <img id="drawerAvatar" src="" alt="" class="drawer-avatar">
+    <div class="drawer-user-info">
+      <div id="drawerUserName" class="drawer-user-name">Admin</div>
+      <div id="drawerUserEmail" class="drawer-user-email">Signed in</div>
+    </div>
+    <a href="/api/auth?action=logout" class="drawer-signout" title="Sign out">&#10140;</a>
+  </div>
+  <div class="drawer-links">
+    <a href="index.html">Dashboard</a>
+    <a href="summary.html" class="active google-only">Summary</a>
+    <a href="review.html" class="google-only">Analysis</a>
+    <a href="ops-admin.html">Ops Admin</a>
+    <a href="ops-tracking.html" class="google-only">Ops Tracking</a>
+    <a href="ops-chat.html" class="google-only">AI Chat</a>
+  </div>
+  <div class="drawer-legal">
+    <a href="#" id="navPdf" 
+      onclick="downloadPDF();return false;" 
+      style="margin-left:auto;color:#fff;text-decoration:none;font-weight:600;">PDF
+    </a>
+    <a href="privacy-policy.html">Privacy</a>
+    <a href="terms-of-service.html">Terms</a>
+  </div>
+</div>
+<div id="drawerOverlay" class="drawer-overlay"></div>
+
+<!-- ── PDF Capture Wrapper ── -->
+<div id="pdfCapture">
+
+<main class="doc-container">
+  <article class="doc-content">
+    <h1>Rosalita Cantina — Executive Summary</h1>
+<h3>12-Month Turnaround Plan | June 2026</h3>
+<p><strong>The situation in one sentence</strong>: After losing IDR 443M in Jan-Apr, May 2026 was the first EBITDA-positive month (+IDR 434K). The model works when costs are controlled. Now we scale it.</p>
+<hr>
+<h2>The 5 Levers <a href="review.html#part-c" style="font-size:0.75rem;font-weight:400;color:var(--ember);text-decoration:none;margin-left:8px;">→ Analysis</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Lever</th>
+<th>What It Does</th>
+<th>Est. EBITDA Impact</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><strong>Staff costs</strong> <a href="review.html#phase-1" style="color:var(--ember);text-decoration:none;font-size:0.7rem;margin-left:4px;" title="View in Analysis">↗</a></td>
+<td>54-68% → 22% of revenue (already 34→22 staff)</td>
+<td>IDR 50-80M/month</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Menu consolidation</strong> <a href="review.html#part-e" style="color:var(--ember);text-decoration:none;font-size:0.7rem;margin-left:4px;" title="View in Analysis">↗</a></td>
+<td>60 → 48 items, remove Asian Corner, fix promos</td>
+<td>IDR 10-20M/month</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>New revenue windows</strong> <a href="review.html#part-i" style="color:var(--ember);text-decoration:none;font-size:0.7rem;margin-left:4px;" title="View in Analysis">↗</a></td>
+<td>Happy Hour (daily 4-7PM), Brunch (Sat-Sun), Late-night</td>
+<td>IDR 50-100M/month</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>AI automation</strong> <a href="review.html#part-k" style="color:var(--ember);text-decoration:none;font-size:0.7rem;margin-left:4px;" title="View in Analysis">↗</a></td>
+<td>ChatGPT + Canva (free), 7shifts, Winnow</td>
+<td>IDR 20-50M/month</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Partnerships &amp; Ecosystem Hub</strong> <a href="review.html#part-m" style="color:var(--ember);text-decoration:none;font-size:0.7rem;margin-left:4px;" title="View in Analysis">↗</a></td>
+<td>Red Ruby breakfast, Prestix.vip, StarPOINTS deepening, monthly industry events at Rosalita's</td>
+<td>IDR 34-115M/month</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>The Target <a href="review.html#part-l" style="font-size:0.75rem;font-weight:400;color:var(--ember);text-decoration:none;margin-left:8px;">→ Analysis</a></h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>May 2026 Now</th>
+<th>Jun 2027 Conservative</th>
+<th>Jun 2027 Realistic</th>
+<th>Jun 2027 Aspirational</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Monthly Revenue</td>
+<td>IDR 411M</td>
+<td>IDR 615M</td>
+<td>IDR 699M</td>
+<td>IDR 819M+</td>
+</tr>
+<tr>
+<td><strong>Monthly EBITDA</strong></td>
+<td><strong>+IDR 434K</strong></td>
+<td><strong>+IDR 101M</strong></td>
+<td><strong>IDR 150-200M</strong></td>
+<td><strong>IDR 298M</strong></td>
+</tr>
+<tr>
+<td>EBITDA Margin</td>
+<td>0.1%</td>
+<td>16.5%</td>
+<td>~25%</td>
+<td>~32%</td>
+</tr>
+<tr>
+<td>Guests/Day</td>
+<td>56</td>
+<td>82</td>
+<td>88-100</td>
+<td>100+</td>
+</tr>
+<tr>
+<td>Avg Spend/Guest</td>
+<td>~IDR 220K</td>
+<td>IDR 250K</td>
+<td>IDR 265K</td>
+<td>IDR 275K+</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Do This Week (P0 — Zero Cost, Immediate ROI) <a href="review.html#part-g" style="font-size:0.75rem;font-weight:400;color:var(--ember);text-decoration:none;margin-left:8px;">→ Analysis</a></h2>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Create ChatGPT + Canva accounts</strong> — free, 15min setup → start posting daily content, responding to reviews <a href="review.html#part-k" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="AI Strategy details">↗</a></li>
+<li><input disabled="" type="checkbox"> <strong>Remove Asian Corner</strong> from GoFood, website, and Instagram menu photos (brand mismatch, 6 items gone) <a href="review.html#part-e" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Menu Consolidation details">↗</a></li>
+<li><input disabled="" type="checkbox"> <strong>Fix Monday promo</strong> — change &quot;25% off everything&quot; to a bundle deal (e.g., 2 tacos + drink IDR 120K) <a href="review.html#part-i" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Revenue Driver details">↗</a></li>
+<li><input disabled="" type="checkbox"> <strong>Fix Wednesday promo</strong> — change &quot;67% off wings&quot; to wing + beer bundle (6 wings + beer IDR 85K) <a href="review.html#part-i" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Revenue Driver details">↗</a></li>
+<li><input disabled="" type="checkbox"> <strong>Check 5AM alcohol licensing</strong> — verify if early-morning service is allowed (unlocks Red Ruby partnership) <a href="review.html#part-m" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Partnership details">↗</a></li>
+<li><input disabled="" type="checkbox"> <strong>Set up Prestix.vip profile</strong> — list Rosalita&#39;s on the booking platform (takes 2 hours) <a href="review.html#part-m" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Partnership details">↗</a></li>
+</ul>
+<hr>
+<h2>Do This Month (P1) <a href="review.html#phase-1" style="font-size:0.75rem;font-weight:400;color:var(--ember);text-decoration:none;margin-left:8px;">→ Analysis</a></h2>
+<ul>
+<li><input disabled="" type="checkbox"> Launch daily <strong>Happy Hour</strong> (4-7PM): 20% off cocktails + half-price appetizers <a href="review.html#part-i" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Revenue Driver details">↗</a></li>
+<li><input disabled="" type="checkbox"> Document <strong>cocktail menu pricing</strong> in menu.txt (highest-margin, not yet documented) <a href="review.html#part-i" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Revenue Driver details">↗</a></li>
+<li><input disabled="" type="checkbox"> Launch <strong>&quot;Dinner + Red Ruby VIP&quot;</strong> cross-promotion package <a href="review.html#part-m" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Partnership details">↗</a></li>
+<li><input disabled="" type="checkbox"> Sign up for <strong>7shifts AI scheduling</strong> software <a href="review.html#part-k" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="AI Strategy details">↗</a></li>
+</ul>
+<hr>
+<h2>Do This Quarter (P2 — Oct-Dec 2026) <a href="review.html#phase-2" style="font-size:0.75rem;font-weight:400;color:var(--ember);text-decoration:none;margin-left:8px;">→ Analysis</a></h2>
+<ul>
+<li><input disabled="" type="checkbox"> Launch <strong>weekend brunch</strong> (Sat-Sun 10AM-2PM) <a href="review.html#phase-2" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Phase 2 details">↗</a></li>
+<li><input disabled="" type="checkbox"> Contact <strong>5 five-star hotels</strong> within 1km for concierge partnerships <a href="review.html#part-j" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Competitive Analysis details">↗</a></li>
+<li><input disabled="" type="checkbox"> Expand 5AM breakfast to <strong>Fri-Sun</strong> (12 mornings/month) <a href="review.html#part-m" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Partnership details">↗</a></li>
+<li><input disabled="" type="checkbox"> Activate <strong>bonus StarPOINTS</strong> program (first visit, slow days, cocktail orders) <a href="review.html#part-m" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Partnership details">↗</a></li>
+<li><input disabled="" type="checkbox"> Implement <strong>Winnow</strong> or equivalent food waste tracking <a href="review.html#part-k" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="AI Strategy details">↗</a></li>
+<li><input disabled="" type="checkbox"> <strong>Pilot first ecosystem industry event</strong> — Massage &amp; Spa Night at Rosalita's (target: 40-60 covers + platform signups) <a href="review.html#part-n" style="color:var(--ember);text-decoration:none;font-size:0.7rem;" title="Ecosystem Hub details">↗</a></li>
+</ul>
+<hr>
+<h2>Key Numbers to Watch <a href="review.html#part-a" style="font-size:0.75rem;font-weight:400;color:var(--ember);text-decoration:none;margin-left:8px;">→ Analysis</a></h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Current (May)</th>
+<th>Target (Jun 2027)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Staff cost as % of revenue</td>
+<td>40%</td>
+<td><strong>22%</strong></td>
+</tr>
+<tr>
+<td>Average spend per guest</td>
+<td>~IDR 220K</td>
+<td><strong>IDR 265K</strong></td>
+</tr>
+<tr>
+<td>Guests per day</td>
+<td>56</td>
+<td><strong>82+</strong></td>
+</tr>
+<tr>
+<td>AI tool investment</td>
+<td>IDR 0</td>
+<td>IDR 350K-1.5M/month</td>
+</tr>
+<tr>
+<td>GoFood commission cost</td>
+<td>20-30% of delivery</td>
+<td><strong>IDR 15-25M saved</strong> via direct ordering</td>
+</tr>
+<tr>
+<td>Partnership EBITDA contribution</td>
+<td>IDR 0</td>
+<td><strong>IDR 34-115M/month</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>AI Tools — Start in 15 Minutes, All Free <a href="review.html#part-k" style="font-size:0.75rem;font-weight:400;color:var(--ember);text-decoration:none;margin-left:8px;">→ Analysis</a></h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Cost</th>
+<th>First Task</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ChatGPT</strong></td>
+<td>Free</td>
+<td>&quot;Write 5 Instagram captions for Taco Tuesday&quot;</td>
+</tr>
+<tr>
+<td><strong>Canva</strong></td>
+<td>Free</td>
+<td>&quot;Create Instagram story template for our promotions&quot;</td>
+</tr>
+<tr>
+<td><strong>Meta Business Suite</strong></td>
+<td>Free</td>
+<td>Link Instagram account, schedule this week&#39;s posts</td>
+</tr>
+</tbody></table>
+<hr>
+<blockquote>
+<p><strong>Bottom line</strong>: The fundamentals work (May proved it). Execute the P0 list this week and P1 list this month, and Rosalita&#39;s goes from barely breaking even (<strong>+IDR 434K/mo</strong>) to generating <strong>IDR 100-200M/month EBITDA</strong> within 12 months. The cost-cutting alone gets you to IDR 101M. The AI tools, new hours, and partnerships push it higher.</p>
+</blockquote>
+ 
+  </article>
+</main>
+
+<footer class="doc-footer">
+  <div class="footer-links">
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <span class="footer-sep">&middot;</span>
+    <a href="terms-of-service.html">Terms of Service</a>
+  </div>
+  Rosalita Cantina — Business Review &amp; Turnaround Plan &middot; June 2026
+  <div class="footer-small">Analysis based on cashflow workbook, menu data, website review, competitive research, and AI industry benchmarks.</div>
+</footer>
+
+</div><!-- /#pdfCapture -->
+
+<script>
+if (new URLSearchParams(location.search).get('pdf') === '1') document.body.setAttribute('data-pdf-export', '1');
+// ── Auth Gate ──
+(function() {
+  var overlay = document.getElementById('authGateOverlay');
+  var inner = document.getElementById('authGateInner');
+  if (!overlay || !inner) return;
+
+  function showSignIn() {
+    overlay.style.display = 'flex';
+    inner.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(235,61,40,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;">&#9733;</div>' +
+      '<h2 style="font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#f0f0f5;">Sign in Required</h2>' +
+      '<p style="color:#8888a0;font-size:0.9rem;margin-bottom:24px;">Sign in with Google to access this page.</p>' +
+      '<a href="/api/auth?action=google&redirect=/summary.html" style="display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1a1a22;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>' +
+      'Sign in with Google</a>';
+  }
+
+  function showDenied() {
+    overlay.style.display = 'flex';
+    inner.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(235,61,40,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#eb3d28;">&#9888;</div>' +
+      '<h2 style="font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#f0f0f5;">Access Denied</h2>' +
+      '<p style="color:#8888a0;font-size:0.9rem;margin-bottom:24px;">PIN-authenticated users can only access the Ops Admin page. Sign in with Google for full access.</p>' +
+      '<a href="/api/auth?action=google" style="display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1a1a22;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>' +
+      'Sign in with Google</a>' +
+      '<p style="margin-top:16px;"><a href="index.html" style="color:var(--ember);text-decoration:none;font-size:0.85rem;">&larr; Back to Dashboard</a></p>';
+  }
+
+  fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+    if (!data.user) { showSignIn(); }
+    else if (data.user.authMethod === 'pin') {
+      showDenied();
+      var gl = document.querySelectorAll('.drawer-links .google-only');
+      for (var i=0;i<gl.length;i++) gl[i].style.display='none';
+    }
+    // Google user: overlay stays hidden, links visible
+  }).catch(function(){ showSignIn(); });
+})();
+function downloadPDF() {
+    var card = document.getElementById('cardPDF');
+    var spinner = document.getElementById('pdfSpinner');
+    if (card) card.style.opacity = '0.6';
+    if (spinner) spinner.style.display = 'flex'; // show spinner
+
+
+    // Step 1: Initiate PDF job
+    var pagePath = window.location.pathname + window.location.search;
+    fetch('/api/auth?action=pdf&page=' + encodeURIComponent(pagePath), { credentials: 'include' })
+      .then(function(res) {
+        if (!res.ok) throw new Error('PDF request failed (' + res.status + ')');
+        return res.json();
+      })
+      .then(function(data) {
+        if (!data.jobId || !data.statusCheckUrl) throw new Error('Invalid job response from server.');
+        // Poll for completion
+        var poll = function() {
+          fetch(data.statusCheckUrl, { credentials: 'include' })
+            .then(function(r) {
+              if (!r.ok) {
+                return r.text().then(function(text) {
+                  throw new Error('Status check failed (' + r.status + '): ' + text.slice(0, 120));
+                });
+              }
+              return r.json();
+            })
+            .then(function(statusData) {
+              if (statusData.status === 'COMPLETED') {
+                // The API returns Base64 PDF data in `resultUrl` or `pdfBase64`
+                var base64 = statusData.completed_data?.pdfBase64 || statusData.pdfBase64;
+                if (!base64) throw new Error('PDF data missing from completed job.');
+                var binary = atob(base64);
+                var len = binary.length;
+                var buffer = new Uint8Array(len);
+                for (var i = 0; i < len; i++) buffer[i] = binary.charCodeAt(i);
+                var blob = new Blob([buffer], { type: 'application/pdf' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'Rosalita-Business-Review-June-2026.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+              } else if (statusData.status === 'FAILED') {
+                throw new Error('PDF generation failed: ' + (statusData.details || 'unknown error'));
+              } else {
+                // Still pending – poll again after short delay
+                setTimeout(poll, 2000);
+              }
+            })
+            .catch(err => { console.error('[pdf poll]', err); alert('Error while checking PDF status: '+err.message); });
+        };
+        poll();
+      })
+      .catch(function(err) {
+        console.error('[pdf]', err);
+        alert(err.message || 'PDF export failed. Please try again.');
+      })
+      .finally(function() {         if (card) card.style.opacity = '';
+        if (spinner) spinner.style.display = 'none'; // hide spinner
+ });
+}
+// Nav toggle
+document.querySelector('.nav-toggle')?.addEventListener('click', function() {
+  document.getElementById('sideDrawer')?.classList.toggle('open');
+  document.getElementById('drawerOverlay')?.classList.toggle('open');
+  document.body.style.overflow = document.getElementById('sideDrawer')?.classList.contains('open') ? 'hidden' : '';
+  updateDrawerBadge();
+});
+document.getElementById('drawerOverlay')?.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('sideDrawer')?.classList.contains('open')) closeDrawer();
+});
+function closeDrawer() {
+  document.getElementById('sideDrawer')?.classList.remove('open');
+  document.getElementById('drawerOverlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function updateDrawerBadge() {
+  var badge = document.getElementById('drawerUserBadge');
+  if (!badge) return;
+  fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+    if (data.user) {
+      document.getElementById('drawerAvatar').src = data.user.picture || 'images/default-avatar.svg';
+      document.getElementById('drawerAvatar').alt = data.user.name || 'User';
+      document.getElementById('drawerUserName').textContent = data.user.name || 'Admin';
+      document.getElementById('drawerUserEmail').textContent = data.user.email || (data.user.authMethod === 'pin' ? 'Signed in with PIN' : 'Signed in');
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }).catch(function(){ badge.style.display = 'none'; });
+}
+// Auto-wrap tables in .table-responsive and add data-label from th
+document.querySelectorAll('.doc-content table, .data-table').forEach(function(table) {
+  if (!table.parentElement.classList.contains('table-responsive')) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'table-responsive';
+    table.parentNode.insertBefore(wrapper, table);
+    wrapper.appendChild(table);
+  }
+  var headers = [];
+  table.querySelectorAll('thead th').forEach(function(th) {
+    headers.push(th.textContent.trim());
+  });
+  if (headers.length > 2) {
+    table.querySelectorAll('tbody tr').forEach(function(tr) {
+      tr.querySelectorAll('td').forEach(function(td, i) {
+        if (headers[i]) td.setAttribute('data-label', headers[i]);
+      });
+    });
+  }
+});
+</script>
+
+</body>
+</html>

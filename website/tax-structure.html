@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f14">
+<title>Tax Notes — Rosalita Cantina</title>
+<meta name="description" content="Tax loss carryforward tracking and general Indonesian tax framework for Rosalita Cantina.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <nav class="top-nav">
+    <div class="nav-inner">
+       <a href="index.html" class="nav-brand">  <img  src="images/logo.svg" alt="Rosalita's Cantina" class="hero-logo" /></a>
+      <a href="index.html" class="nav-brand"><span class="ember">Rosalita</span> Cantina</a>
+      <button class="nav-toggle" aria-label="Toggle menu">&#x22EE;</button>
+    </div>
+  </nav>
+<!-- Side Drawer -->
+<div id="sideDrawer" class="side-drawer">
+  <div class="drawer-user-badge" id="drawerUserBadge" style="display:none;">
+    <img id="drawerAvatar" src="" alt="" class="drawer-avatar">
+    <div class="drawer-user-info">
+      <div id="drawerUserName" class="drawer-user-name">Admin</div>
+      <div id="drawerUserEmail" class="drawer-user-email">Signed in</div>
+    </div>
+    <a href="/api/auth?action=logout" class="drawer-signout" title="Sign out">&#10140;</a>
+  </div>
+  <div class="drawer-links">
+    <a href="index.html">Dashboard</a>
+    <a href="summary.html" class="google-only">Summary</a>
+    <a href="review.html" class="google-only">Analysis</a>
+    <a href="ops-admin.html">Ops Admin</a>
+    <a href="ops-tracking.html" class="google-only">Ops Tracking</a>
+    <a href="ops-chat.html" class="google-only">AI Chat</a>
+  </div>
+  <div class="drawer-legal">
+    <a href="privacy-policy.html">Privacy</a>
+    <a href="terms-of-service.html">Terms</a>
+  </div>
+</div>
+<div id="drawerOverlay" class="drawer-overlay"></div>
+
+<main class="doc-container">
+  <article class="doc-content">
+
+    <h1>Tax Loss Recovery Notes</h1>
+    <p style="color: var(--muted); margin-bottom: 24px;">
+      Rosalita Cantina &middot; June 2026
+    </p>
+
+    <blockquote>
+      <p><strong>Correction from the previous draft:</strong> Part O initially analyzed inter-company loan structuring, thin capitalization, transfer pricing, and group optimization — but those sections were based on an assumption that Rosalita, Red Ruby, and Island Bali Villas were under common ownership. <strong>They are not.</strong> Those sections have been removed. What remains below is purely Rosalita-specific: the tax loss carryforward asset and general Indonesian tax context that any restaurant owner should know.</p>
+    </blockquote>
+
+    <h2 id="losses">The Tax Loss Asset: IDR 132M+ in Potential Savings</h2>
+
+    <p>Rosalita Cantina (PT Rosalita Cantina Bali) has accumulated significant operating losses. These are not just a bad memory — they are a <strong>tax asset</strong> that can offset future taxable income.</p>
+
+    <table>
+    <thead>
+    <tr>
+    <th>Item</th>
+    <th>Value</th>
+    <th>Source</th>
+    </tr>
+    </thead>
+    <tbody><tr>
+    <td><strong>Accumulated losses</strong> through April 2026</td>
+    <td>~IDR 598M</td>
+    <td>Cashflow sheet, row 86</td>
+    </tr>
+    <tr>
+    <td>Estimated full-year 2026 loss</td>
+    <td>~IDR 500-600M</td>
+    <td>Extrapolated from Jan-May</td>
+    </tr>
+    <tr>
+    <td><strong>Total loss pool available</strong></td>
+    <td><strong>~IDR 1.1-1.2B</strong></td>
+    <td>Combined 2026 est.</td>
+    </tr>
+    <tr>
+    <td>Corporate Income Tax rate (2026)</td>
+    <td><strong>22%</strong></td>
+    <td>Standard Indonesian CIT</td>
+    </tr>
+    <tr>
+    <td><strong>Potential tax savings at 22%</strong></td>
+    <td><strong>IDR 242-264M</strong></td>
+    <td>1.1-1.2B × 22%</td>
+    </tr>
+    </tbody></table>
+
+    <h3>The 5-Year Clock</h3>
+    <p>Indonesian tax law allows losses to be carried forward for <strong>5 years maximum</strong>. Carryback is not permitted. This means:</p>
+    <ul>
+    <li>2026 losses must be fully utilized by <strong>2031</strong> or they expire worthless</li>
+    <li>The turnaround plan targets profitability in mid-2027 — this aligns well with the 5-year window</li>
+    <li>If the realistic EBITDA target is hit (IDR 150-200M/month by mid-2027), the full loss pool can be utilized within 12-18 months of reaching profitability</li>
+    </ul>
+
+    <table>
+    <thead>
+    <tr>
+    <th>Year</th>
+    <th>Est. EBITDA (Realistic)</th>
+    <th>Loss Utilized</th>
+    <th>Remaining Pool</th>
+    <th>Tax Saved</th>
+    </tr>
+    </thead>
+    <tbody><tr>
+    <td>2026</td>
+    <td>-IDR 600M (est.)</td>
+    <td>0</td>
+    <td>IDR 1,198M</td>
+    <td>0</td>
+    </tr>
+    <tr>
+    <td>2027</td>
+    <td>+IDR 1,800M</td>
+    <td>IDR 1,198M</td>
+    <td>0</td>
+    <td>IDR 264M saved</td>
+    </tr>
+    <tr>
+    <td>2028</td>
+    <td>+IDR 2,400M</td>
+    <td>0</td>
+    <td>0</td>
+    <td>IDR 528M (full year tax at 22%)</td>
+    </tr>
+    </tbody></table>
+
+    <p><strong>Key point</strong>: This is a real financial asset. The losses already incurred will save the business ~IDR 260M in cash taxes if the turnaround succeeds. Track the loss carryforward schedule annually with your accountant to ensure no losses expire before utilization.</p>
+
+    <hr>
+
+    <h2 id="framework">General Indonesian Tax Context</h2>
+    <p>Standard corporate tax rules every F&B business in Bali should know:</p>
+
+    <table>
+    <thead>
+    <tr>
+    <th>Rule</th>
+    <th>Detail</th>
+    </tr>
+    </thead>
+    <tbody><tr>
+    <td><strong>Corporate Income Tax</strong></td>
+    <td>22% standard rate (2026). Payable on annual net profit.</td>
+    </tr>
+    <tr>
+    <td><strong>Loss carryforward</strong></td>
+    <td>5 years maximum. No carryback. No group offsetting.</td>
+    </tr>
+    <tr>
+    <td><strong>VAT (PPN)</strong></td>
+    <td>11% on most goods and services. Input VAT on purchases is creditable against output VAT collected.</td>
+    </tr>
+    <tr>
+    <td><strong>Withholding Tax (Article 23)</strong></td>
+    <td>2% on management/consulting/technical service fees paid to Indonesian residents; 15% on interest and royalties.</td>
+    </tr>
+    <tr>
+    <td><strong>Withholding Tax (Article 21)</strong></td>
+    <td>Progressive rates (5-35%) on employee salaries, withheld and remitted monthly.</td>
+    </tr>
+    <tr>
+    <td><strong>Monthly filings</strong></td>
+    <td>PPN returns due end of following month. PPh Article 21/23 due by month's 20th/10th.</td>
+    </tr>
+    <tr>
+    <td><strong>Annual CIT return</strong></td>
+    <td>Due April 30 for calendar-year filers. Monthly installments based on prior year's return.</td>
+    </tr>
+    </tbody></table>
+
+    <hr>
+
+    <h2 id="management-fee">Management Fee (IDR 6.25M/Month) — General Documentation Note</h2>
+    <p>Rosalita pays IDR 6.25M/month in Admin/Management Fees (IDR 75M/year). This appears as a fixed expense in the cashflow workbook. General best practice for any significant business expense:</p>
+    <ul>
+    <li>Keep the underlying <strong>agreement or invoice</strong> from the service provider</li>
+    <li>Ensure the fee corresponds to actual services received (management support, accounting, branding, etc.)</li>
+    <li>A flat unchanging fee during loss-making periods is common for third-party management contracts but should be documented</li>
+    <li>If paid to an Indonesian resident company: 2% withholding tax (Article 23) applies, and the recipient should issue an 11% PPN invoice</li>
+    </ul>
+    <p>This is not a tax risk if properly documented — just ensure the paperwork is in order.</p>
+
+    <hr>
+
+    <h2 id="takeaways">Quick Takeaways</h2>
+    <table>
+    <thead>
+    <tr>
+    <th>Action</th>
+    <th>Why</th>
+    <th>Cost</th>
+    </tr>
+    </thead>
+    <tbody><tr>
+    <td>Track loss carryforward annually with accountant</td>
+    <td>Don't let IDR 260M in potential savings expire unused</td>
+    <td>Free (part of annual filing)</td>
+    </tr>
+    <tr>
+    <td>Confirm management fee has supporting agreement/invoice</td>
+    <td>Standard documentation best practice</td>
+    <td>Free (check with provider)</td>
+    </tr>
+    <tr>
+    <td>Keep PPN and PPh 23 filings current</td>
+    <td>Avoid late-filing penalties</td>
+    <td>Free (internal or outsourced)</td>
+    </tr>
+    </tbody></table>
+
+    <p style="color: var(--muted); font-size: 0.85rem; margin-top: 36px;">
+      <em>Sources: Cashflow workbook (Rosallita Cashflow May 24th 2026.xlsx), PwC Indonesia Tax Summary 2026, Indonesian Income Tax Law (UU PPh). Not tax advice — consult a licensed Indonesian tax advisor for specific filing obligations.</em>
+    </p>
+
+  </article>
+</main>
+
+<footer class="doc-footer">
+  <div class="footer-links">
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <span class="footer-sep">&middot;</span>
+    <a href="terms-of-service.html">Terms of Service</a>
+  </div>
+  Rosalita Cantina — Business Review &amp; Turnaround Plan &middot; June 2026
+  <div class="footer-small">General tax reference only. Consult a tax advisor for Rosalita's specific filing obligations.</div>
+</footer>
+
+<script>
+fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+  if (data.user && data.user.authMethod === 'pin') {
+    var gl = document.querySelectorAll('.drawer-links .google-only');
+    for (var i=0;i<gl.length;i++) gl[i].style.display='none';
+  }
+}).catch(function(){});
+
+// Nav toggle
+document.querySelector('.nav-toggle')?.addEventListener('click', function() {
+  document.getElementById('sideDrawer')?.classList.toggle('open');
+  document.getElementById('drawerOverlay')?.classList.toggle('open');
+  document.body.style.overflow = document.getElementById('sideDrawer')?.classList.contains('open') ? 'hidden' : '';
+  updateDrawerBadge();
+});
+document.getElementById('drawerOverlay')?.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('sideDrawer')?.classList.contains('open')) closeDrawer();
+});
+function closeDrawer() {
+  document.getElementById('sideDrawer')?.classList.remove('open');
+  document.getElementById('drawerOverlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function updateDrawerBadge() {
+  var badge = document.getElementById('drawerUserBadge');
+  if (!badge) return;
+fetch('/api/auth?action=me', { credentials: 'include' }).then(function(r){return r.json()}).then(function(data){
+    if (data.user) {
+      document.getElementById('drawerAvatar').src = data.user.picture || 'images/default-avatar.svg';
+      document.getElementById('drawerAvatar').alt = data.user.name || 'User';
+      document.getElementById('drawerUserName').textContent = data.user.name || 'Admin';
+      document.getElementById('drawerUserEmail').textContent = data.user.email || (data.user.authMethod === 'pin' ? 'Signed in with PIN' : 'Signed in');
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }).catch(function(){ badge.style.display = 'none'; });
+};
+// Auto-wrap tables in .table-responsive and add data-label from th
+document.querySelectorAll('.doc-content table').forEach(function(table) {
+  if (!table.parentElement.classList.contains('table-responsive')) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'table-responsive';
+    table.parentNode.insertBefore(wrapper, table);
+    wrapper.appendChild(table);
+  }
+  var headers = [];
+  table.querySelectorAll('thead th').forEach(function(th) {
+    headers.push(th.textContent.trim());
+  });
+  if (headers.length > 2) {
+    table.querySelectorAll('tbody tr').forEach(function(tr) {
+      tr.querySelectorAll('td').forEach(function(td, i) {
+        if (headers[i]) td.setAttribute('data-label', headers[i]);
+      });
+    });
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Dependencies
+website/node_modules/
+website/.next/
+# Local tooling / agent workspaces
+CodeNomad/
+.opencode/
+.cursor/
+.codenomad/
+.Google/
+Google/
+**/client_secret_*.json
+logs/
+.tmp/
+~/

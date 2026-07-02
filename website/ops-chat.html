@@ -1,0 +1,2181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f14">
+<title>AI Chat — Rosalita Cantina</title>
+<meta name="description" content="AI assistant for Rosalita Cantina — ask about the business review, KPIs, and performance tracking.">
+  <link rel="stylesheet" href="style.css">
+
+<!-- Auth Gate Overlay -->
+<div id="authGateOverlay" style="display:none; position:fixed; inset:0; z-index:10000; background:#0f0f14; align-items:center; justify-content:center;">
+  <div id="authGateInner" style="max-width:420px; text-align:center; padding:32px 24px;"></div>
+</div>
+
+<style>
+/* ── Chat Layout ──────────────────────────────── */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 52px - 85px); /* nav + footer */
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 24px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 0;
+  scroll-behavior: smooth;
+}
+
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 2px; }
+.chat-messages::-webkit-scrollbar-thumb { background: rgba(var(--ember-rgb), 0.3); border-radius: 2px; }
+
+/* ── Message Bubbles ──────────────────────────── */
+.message {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  animation: fadeIn 0.25s var(--ease);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message.user { flex-direction: row-reverse; }
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.message-avatar.user {
+  background: var(--ember);
+  color: #fff;
+}
+
+.message-avatar.assistant {
+  background: rgba(255,255,255,0.08);
+  color: var(--cyan);
+}
+
+.message-bubble {
+  max-width: 78%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.message-bubble > span {
+  flex: 1 1 auto;
+  min-width: 60px;
+}
+
+.message.user .message-bubble {
+  background: var(--ember);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.message.assistant .message-bubble {
+  background: #1a1a22;
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-bottom-left-radius: 4px;
+}
+
+.message-time {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 4px;
+  opacity: 0.6;
+}
+
+.message.user .message-time {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.message.assistant .message-bubble strong {
+  color: var(--ember);
+}
+
+.message.assistant .message-bubble code {
+  background: rgba(255,255,255,0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-family: 'SF Mono', Consolas, monospace;
+  color: var(--cyan);
+}
+
+/* ── Empty State ──────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--muted);
+}
+
+.empty-state .icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.empty-state h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  max-width: 400px;
+  margin: 0 auto 20px;
+}
+
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.suggestion-chip {
+  background: #1a1a22;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.78rem;
+  color: var(--muted2);
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.suggestion-chip:hover {
+  border-color: var(--ember);
+  color: var(--text);
+  background: rgba(var(--ember-rgb), 0.06);
+}
+
+/* ── Input Area ───────────────────────────────── */
+.chat-input-area {
+  padding: 16px 0 20px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.chat-input {
+  flex: 1;
+  background: #1a1a22;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 14px 18px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s var(--ease);
+  min-height: 48px;
+  max-height: 120px;
+}
+
+.chat-input:focus {
+  border-color: var(--ember);
+}
+
+.chat-input::placeholder { color: #555; }
+
+.chat-send-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--ember);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.2s var(--ease);
+  flex-shrink: 0;
+}
+
+.chat-send-btn:hover {
+  background: #d43520;
+  transform: translateY(-1px);
+}
+
+.chat-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Loading Indicator ────────────────────────── */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #1a1a22;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+  max-width: 120px;
+  margin-bottom: 20px;
+}
+
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+  30% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Mic Button ──────────────────────────────── */
+.chat-mic-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #1a1a22;
+  color: var(--muted2);
+  border: 1px solid #333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.2s var(--ease);
+  flex-shrink: 0;
+}
+
+.chat-mic-btn:hover {
+  border-color: var(--muted2);
+  color: var(--text);
+}
+
+.chat-mic-btn.recording {
+  background: rgba(var(--ember-rgb), 0.15);
+  border-color: var(--ember);
+  color: var(--ember);
+  animation: pulse-mic 1s ease-in-out infinite;
+}
+
+@keyframes pulse-mic {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--ember-rgb), 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(var(--ember-rgb), 0); }
+}
+
+.chat-mic-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  animation: none;
+}
+
+/* ── Attach Button ────────────────────────────── */
+.chat-attach-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #1a1a22;
+  color: var(--muted2);
+  border: 1px solid #333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.2s var(--ease);
+  flex-shrink: 0;
+}
+
+.chat-attach-btn:hover {
+  border-color: var(--muted2);
+  color: var(--text);
+}
+
+/* ── Attachment Preview Area ──────────────────── */
+.attach-preview-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0 4px;
+  min-height: 0;
+  transition: min-height 0.2s var(--ease);
+}
+
+.attach-preview-area:empty {
+  padding: 0;
+}
+
+.attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1a1a22;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 4px 8px 4px 4px;
+  font-size: 0.75rem;
+  color: var(--muted2);
+  max-width: 200px;
+  animation: fadeIn 0.2s var(--ease);
+}
+
+.attach-chip-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(var(--ember-rgb), 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.attach-chip-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 40px;
+}
+
+.attach-chip-size {
+  color: rgba(255,255,255,0.25);
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.attach-chip-remove {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.25);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.15s var(--ease);
+}
+
+.attach-chip-remove:hover {
+  color: var(--ember);
+  background: rgba(var(--ember-rgb), 0.1);
+}
+
+/* ── Attachments in Message Bubbles ──────────── */
+.message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.message-attach-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
+  padding: 4px 8px 4px 4px;
+  font-size: 0.72rem;
+  max-width: 180px;
+}
+
+.message.user .message-attach-item {
+  background: rgba(0,0,0,0.15);
+}
+
+.message-attach-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.message-attach-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.message-attach-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+  opacity: 0.8;
+}
+
+/* ── Drag-and-Drop Overlay ────────────────────── */
+.drag-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,15,20,0.85);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.drag-overlay.show {
+  display: flex;
+}
+
+.drag-overlay-inner {
+  text-align: center;
+  padding: 60px 40px;
+  border: 2px dashed rgba(var(--ember-rgb), 0.4);
+  border-radius: 24px;
+  background: rgba(var(--ember-rgb), 0.04);
+}
+
+.drag-overlay-inner .icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.drag-overlay-inner h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.drag-overlay-inner p {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+/* ── Chat Toolbar ─────────────────────────────── */
+.chat-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin-top: 8px;
+  min-height: 24px;
+}
+
+.chat-toolbar-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.2);
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-toolbar-btn:hover {
+  color: var(--ember);
+  background: rgba(var(--ember-rgb), 0.06);
+}
+
+.chat-toolbar-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.chat-toolbar-btn .icon {
+  font-size: 0.8rem;
+}
+
+.chat-toolbar-sep {
+  width: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 2px 4px;
+}
+
+.chat-save-ok {
+  color: var(--cyan);
+  font-size: 0.68rem;
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+  align-self: center;
+}
+
+.chat-save-ok.show {
+  opacity: 1;
+}
+
+/* ── TTS Button on Messages ───────────────────── */
+.tts-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  margin-left: 6px;
+  vertical-align: middle;
+  transition: all 0.2s var(--ease);
+  flex-shrink: 0;
+}
+
+.tts-btn:hover {
+  color: var(--cyan);
+  border-color: rgba(10,249,254,0.3);
+  background: rgba(10,249,254,0.06);
+}
+
+.tts-btn.speaking {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  animation: pulse-tts 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse-tts {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(10,249,254,0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(10,249,254,0); }
+}
+
+/* ── TTS Toolbar Toggle ───────────────────────── */
+.tts-toggle {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.2);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s var(--ease);
+}
+
+.tts-toggle:hover {
+  color: var(--muted2);
+  background: rgba(255,255,255,0.03);
+}
+
+.tts-toggle.active {
+  color: var(--cyan);
+}
+
+/* ── Error Message ────────────────────────────── */
+.error-msg {
+  color: var(--ember);
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  background: rgba(var(--ember-rgb), 0.08);
+  border-radius: 8px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* ── Responsive ───────────────────────────────── */
+@media (max-width: 768px) {
+  .chat-container { padding: 0 16px; height: calc(100vh - 52px - 75px); }
+  .chat-messages { padding: 16px 0; }
+  .message-bubble { max-width: 88%; font-size: 0.85rem; }
+  .empty-state { padding: 40px 16px; }
+}
+
+/* ── Load Conversation Modal ────────────── */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.75); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-content {
+  background: var(--bg); border-radius: 12px;
+  width: 90%; max-width: 520px; max-height: 80vh;
+  display: flex; flex-direction: column;
+  border: 1px solid var(--ember); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.modal-header h3 { margin: 0; color: var(--text); font-size: 16px; }
+.modal-close {
+  background: none; border: none; color: var(--muted);
+  font-size: 24px; cursor: pointer; padding: 0 4px; line-height: 1;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body {
+  padding: 12px 16px; overflow-y: auto; flex: 1;
+}
+.modal-body .modal-loading { color: var(--muted); text-align: center; padding: 24px; }
+
+.conv-item {
+  padding: 12px 14px; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+  transition: background 0.15s;
+}
+.conv-item:hover { background: rgba(235,61,40,0.08); }
+.conv-item .conv-title { color: var(--text); font-weight: 500; font-size: 14px; }
+.conv-item .conv-meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+
+/* ── Voice Settings Modal ──────────────── */
+.voice-setting { margin-bottom: 16px; }
+.voice-label { display: block; color: var(--text); font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+.voice-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.voice-value { color: var(--cyan); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.voice-select {
+  width: 100%; padding: 8px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.04); color: var(--text);
+  border: 1px solid rgba(255,255,255,0.1); font-size: 13px;
+  outline: none; cursor: pointer;
+}
+.voice-select:focus { border-color: var(--ember); }
+.voice-slider {
+  width: 100%; height: 4px; -webkit-appearance: none; appearance: none;
+  background: rgba(255,255,255,0.1); border-radius: 2px; outline: none;
+}
+.voice-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--ember); cursor: pointer;
+  border: 2px solid var(--bg);
+}
+.voice-slider::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--ember); cursor: pointer; border: 2px solid var(--bg);
+}
+.voice-range-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.voice-test-btn {
+  width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--ember);
+  background: rgba(235,61,40,0.1); color: var(--ember); font-size: 14px;
+  cursor: pointer; transition: background 0.15s; margin-top: 4px;
+}
+.voice-test-btn:hover { background: rgba(235,61,40,0.2); }
+.voice-config-btn { font-size: 16px; line-height: 1; }
+
+/* ── TTS Status Bar ────────────────────── */
+.tts-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--cyan); margin-left: 4px;
+  animation: ttsPulse 1.5s ease-in-out infinite;
+}
+.tts-status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cyan); display: inline-block;
+  animation: ttsDotPulse 1s ease-in-out infinite;
+}
+@keyframes ttsPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+@keyframes ttsDotPulse { 0%, 100% { opacity: 0.4; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+</style>
+</head>
+<body>
+
+  <nav class="top-nav">
+    <div class="nav-inner">
+       <a href="index.html" class="nav-brand">  <img  src="images/logo.svg" alt="Rosalita's Cantina" class="hero-logo" /></a>
+      <a href="index.html" class="nav-brand"><span class="ember">Rosalita</span> Cantina</a>
+      <button class="nav-toggle" aria-label="Toggle menu">&#x22EE;</button>
+    </div>
+  </nav>
+
+<!-- Side Drawer -->
+<div id="sideDrawer" class="side-drawer">
+  <div class="drawer-user-badge" id="drawerUserBadge" style="display:none;">
+    <img id="drawerAvatar" src="" alt="" class="drawer-avatar">
+    <div class="drawer-user-info">
+      <div id="drawerUserName" class="drawer-user-name">Admin</div>
+      <div id="drawerUserEmail" class="drawer-user-email">Signed in</div>
+    </div>
+    <a href="/api/auth?action=logout" class="drawer-signout" title="Sign out">&#10140;</a>
+  </div>
+  <div class="drawer-links">
+    <a href="index.html">Dashboard</a>
+    <a href="summary.html" class="google-only">Summary</a>
+    <a href="review.html" class="google-only">Analysis</a>
+    <a href="ops-admin.html">Ops Admin</a>
+    <a href="ops-tracking.html" class="google-only">Ops Tracking</a>
+    <a href="ops-chat.html" class="active google-only">AI Chat</a>
+  </div>
+  <div class="drawer-legal">
+    <a href="#" id="navPdf" 
+      onclick="downloadPDF();return false;" 
+      style="margin-left:auto;color:#fff;text-decoration:none;font-weight:600;">PDF
+    </a>
+    <a href="privacy-policy.html">Privacy</a>
+    <a href="terms-of-service.html">Terms</a>
+  </div>
+</div>
+<div id="drawerOverlay" class="drawer-overlay"></div>
+
+<!-- ── PDF Capture Wrapper ── -->
+<div id="pdfCapture">
+
+<main class="chat-container">
+  <div class="chat-messages" id="chatMessages">
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState">
+      <div class="icon">&#9733;</div>
+      <h3>Ask Rosalita AI</h3>
+      <p>Ask me anything about the business review, KPIs, or performance tracking. I can pull live data from the database.</p>
+      <div class="suggestion-chips">
+        <span class="suggestion-chip" data-msg="What's our EBITDA target for this year?">EBITDA targets?</span>
+        <span class="suggestion-chip" data-msg="How are we performing this month vs target?">This month vs targets</span>
+        <span class="suggestion-chip" data-msg="What are the 5 levers of the turnaround plan?">The 5 levers</span>
+        <span class="suggestion-chip" data-msg="What should I do this week?">P0 this week</span>
+        <span class="suggestion-chip" data-msg="Show me our recent daily data">Recent daily data</span>
+        <span class="suggestion-chip" data-msg="What's the Red Ruby partnership opportunity?">Red Ruby partnership</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-input-area">
+    <div class="attach-preview-area" id="attachPreview"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chatInput" placeholder="Ask about the business, KPIs, or performance..." rows="1"></textarea>
+      <button class="chat-attach-btn" id="attachBtn" title="Attach file">&#x1F4CE;</button>
+      <button class="chat-mic-btn" id="micBtn" title="Voice input (Chrome)">&#127908;</button>
+      <button class="chat-send-btn" id="sendBtn" disabled>&#10148;</button>
+    </div>
+    <input type="file" id="fileInput" multiple style="display:none" accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.json,.js,.ts,.html,.css,.md">
+    <div class="chat-toolbar">
+      <button class="tts-toggle active" id="ttsToggle" title="TTS On — click to mute">&#x1F50A;</button>
+      <button class="chat-toolbar-btn voice-config-btn" id="voiceConfigBtn" title="Voice settings">&#x2699;&#xFE0F;</button>
+      <span id="ttsStatus" class="tts-status" style="display:none;"><span class="tts-status-dot"></span> Playing&hellip;</span>
+      <span style="flex:1"></span>
+      <button class="chat-toolbar-btn" id="clearBtn" title="Delete all messages"><span class="icon">&#x1F5D1;</span> Clear</button>
+      <span class="chat-toolbar-sep"></span>
+      <button class="chat-toolbar-btn" id="copyBtn" title="Copy conversation to clipboard"><span class="icon">&#x1F4CB;</span> Copy</button>
+      <button class="chat-toolbar-btn" id="downloadBtn" title="Download conversation as text file"><span class="icon">&#x1F4E5;</span> Download</button>
+      <button class="chat-toolbar-btn" id="saveBtn" title="Save conversation to database"><span class="icon">&#x1F4BE;</span> Save</button>
+      <button class="chat-toolbar-btn" id="loadBtn" title="Load a saved conversation"><span class="icon">&#x1F4C2;</span> Load</button>
+      <span class="chat-save-ok" id="saveOk">&#x2713; Saved</span>
+    </div>
+    <div id="errorMsg" class="error-msg" style="display:none;"></div>
+  </div>
+<div class="drag-overlay" id="dragOverlay">
+  <div class="drag-overlay-inner">
+    <div class="icon">&#x1F4C4;</div>
+    <h3>Drop files here</h3>
+    <p>Attach images, documents, or other files to your conversation</p>
+  </div>
+</div>
+
+<footer class="doc-footer" style="position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid rgba(255,255,255,0.04);z-index:10;">
+  <div class="footer-links">
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <span class="footer-sep">&middot;</span>
+    <a href="terms-of-service.html">Terms of Service</a>
+  </div>
+  Rosalita AI &mdash; Business Intelligence Assistant
+</footer>
+
+</div><!-- /#pdfCapture -->
+
+<!-- ─── Load Conversation Modal ──────────── -->
+<div class="modal-overlay" id="loadModal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Load Conversation</h3>
+      <button class="modal-close" id="loadModalClose">&times;</button>
+    </div>
+    <div class="modal-body" id="loadModalBody">
+      <p class="modal-loading">Loading conversations...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Voice Settings Modal ────────────── -->
+<div class="modal-overlay" id="voiceModal" style="display:none;">
+  <div class="modal-content" style="max-width:380px;">
+    <div class="modal-header">
+      <h3>Voice Settings</h3>
+      <button class="modal-close" id="voiceModalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="voice-setting">
+        <label class="voice-label">Voice</label>
+        <select id="voiceSelect" class="voice-select"></select>
+      </div>
+      <div class="voice-setting">
+        <div class="voice-label-row">
+          <label class="voice-label">Speed</label>
+          <span class="voice-value" id="speedDisplay">0.9</span>
+        </div>
+        <input type="range" class="voice-slider" id="speedSlider" min="0.5" max="2.0" step="0.05" value="0.9">
+        <div class="voice-range-labels"><span>Slow</span><span>Fast</span></div>
+      </div>
+      <div class="voice-setting">
+        <div class="voice-label-row">
+          <label class="voice-label">Pitch</label>
+          <span class="voice-value" id="pitchDisplay">1.0</span>
+        </div>
+        <input type="range" class="voice-slider" id="pitchSlider" min="0.5" max="2.0" step="0.05" value="1.0">
+        <div class="voice-range-labels"><span>Low</span><span>High</span></div>
+      </div>
+      <button class="voice-test-btn" id="testVoiceBtn">&#x1F50A; Test Voice</button>
+    </div>
+  </div>
+</div>
+
+<script>
+if (new URLSearchParams(location.search).get('pdf') === '1') document.body.setAttribute('data-pdf-export', '1');
+// ── Auth Gate ──
+(function() {
+  var overlay = document.getElementById('authGateOverlay');
+  var inner = document.getElementById('authGateInner');
+  if (!overlay || !inner) return;
+
+  function showSignIn() {
+    overlay.style.display = 'flex';
+    inner.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(235,61,40,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;">&#9733;</div>' +
+      '<h2 style="font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#f0f0f5;">Sign in Required</h2>' +
+      '<p style="color:#8888a0;font-size:0.9rem;margin-bottom:24px;">Sign in with Google to access this page.</p>' +
+      '<a href="/api/auth?action=google" style="display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1a1a22;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>' +
+      'Sign in with Google</a>';
+  }
+
+  function showDenied() {
+    overlay.style.display = 'flex';
+    inner.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(235,61,40,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#eb3d28;">&#9888;</div>' +
+      '<h2 style="font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#f0f0f5;">Access Denied</h2>' +
+      '<p style="color:#8888a0;font-size:0.9rem;margin-bottom:24px;">PIN-authenticated users can only access the Ops Admin page. Sign in with Google for full access.</p>' +
+      '<a href="/api/auth?action=google" style="display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1a1a22;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>' +
+      'Sign in with Google</a>' +
+      '<p style="margin-top:16px;"><a href="index.html" style="color:var(--ember);text-decoration:none;font-size:0.85rem;">&larr; Back to Dashboard</a></p>';
+  }
+
+  fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+    if (!data.user) { showSignIn(); }
+    else if (data.user.authMethod === 'pin') {
+      showDenied();
+      var gl = document.querySelectorAll('.drawer-links .google-only');
+      for (var i=0;i<gl.length;i++) gl[i].style.display='none';
+    }
+  }).catch(function(){ showSignIn(); });
+})();
+
+// ─── State ──────────────────────────────────────
+let conversationHistory = [];
+let isProcessing = false;
+
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+const emptyState = document.getElementById('emptyState');
+const errorMsg = document.getElementById('errorMsg');
+const STORAGE_KEY = 'rosalita_chat_history';
+
+// ─── Load saved messages ───────────────────────
+function loadHistory() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        conversationHistory = parsed;
+        renderMessages();
+      }
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function saveHistory() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversationHistory.slice(-50)));
+  } catch (e) { /* ignore */ }
+}
+function downloadPDF() {
+    var card = document.getElementById('cardPDF');
+    var spinner = document.getElementById('pdfSpinner');
+    if (card) card.style.opacity = '0.6';
+    if (spinner) spinner.style.display = 'flex'; // show spinner
+
+
+    // Step 1: Initiate PDF job
+    var pagePath = window.location.pathname + window.location.search;
+    fetch('/api/auth?action=pdf&page=' + encodeURIComponent(pagePath), { credentials: 'include' })
+      .then(function(res) {
+        if (!res.ok) throw new Error('PDF request failed (' + res.status + ')');
+        return res.json();
+      })
+      .then(function(data) {
+        if (!data.jobId || !data.statusCheckUrl) throw new Error('Invalid job response from server.');
+        // Poll for completion
+        var poll = function() {
+          fetch(data.statusCheckUrl, { credentials: 'include' })
+            .then(function(r) {
+              if (!r.ok) {
+                return r.text().then(function(text) {
+                  throw new Error('Status check failed (' + r.status + '): ' + text.slice(0, 120));
+                });
+              }
+              return r.json();
+            })
+            .then(function(statusData) {
+              if (statusData.status === 'COMPLETED') {
+                // The API returns Base64 PDF data in `resultUrl` or `pdfBase64`
+                var base64 = statusData.completed_data?.pdfBase64 || statusData.pdfBase64;
+                if (!base64) throw new Error('PDF data missing from completed job.');
+                var binary = atob(base64);
+                var len = binary.length;
+                var buffer = new Uint8Array(len);
+                for (var i = 0; i < len; i++) buffer[i] = binary.charCodeAt(i);
+                var blob = new Blob([buffer], { type: 'application/pdf' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'Rosalita-Business-Review-June-2026.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+              } else if (statusData.status === 'FAILED') {
+                throw new Error('PDF generation failed: ' + (statusData.details || 'unknown error'));
+              } else {
+                // Still pending – poll again after short delay
+                setTimeout(poll, 2000);
+              }
+            })
+            .catch(err => { console.error('[pdf poll]', err); alert('Error while checking PDF status: '+err.message); });
+        };
+        poll();
+      })
+      .catch(function(err) {
+        console.error('[pdf]', err);
+        alert(err.message || 'PDF export failed. Please try again.');
+      })
+      .finally(function() {         if (card) card.style.opacity = '';
+        if (spinner) spinner.style.display = 'none'; // hide spinner
+ });
+}
+// ─── Render Messages ────────────────────────────
+function renderMessages() {
+  // Clear all except empty state
+  const existing = chatMessages.querySelectorAll('.message, .typing-indicator');
+  existing.forEach(el => el.remove());
+
+  if (conversationHistory.length === 0) {
+    emptyState.style.display = 'block';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+
+  for (const msg of conversationHistory) {
+    appendMessageDOM(msg.role, msg.content, msg.timestamp, false);
+  }
+
+  scrollToBottom();
+}
+
+function appendMessageDOM(role, content, timestamp, animate = true) {
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `message-avatar ${role}`;
+  avatar.textContent = role === 'user' ? '&#9993;' : '&#9733;';
+  avatar.innerHTML = role === 'user' ? '&#9993;' : '&#9733;';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'message-bubble';
+  bubble.textContent = content;
+
+  const time = document.createElement('div');
+  time.className = 'message-time';
+  time.textContent = timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  bubble.appendChild(time);
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+
+  if (animate) {
+    div.style.opacity = '0';
+    chatMessages.appendChild(div);
+    requestAnimationFrame(() => { div.style.opacity = '1'; });
+  } else {
+    chatMessages.appendChild(div);
+  }
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  });
+}
+
+// ─── Auto-resize textarea ──────────────────────
+chatInput.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  sendBtn.disabled = !this.value.trim() || isProcessing;
+  // If user types while mic is recording, stop continuous mode
+  if (this.value.trim() && isRecording) {
+    micContinuous = false;
+    micPendingRestart = false;
+    stopRecording();
+  }
+});
+
+chatInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (this.value.trim() && !isProcessing) sendMessage();
+  }
+});
+
+// ─── Send Message ──────────────────────────────
+async function sendMessage(text) {
+  const message = (text || chatInput.value).trim();
+  if (!message || isProcessing) return;
+
+  isProcessing = true;
+  sendBtn.disabled = true;
+  chatInput.disabled = true;
+  errorMsg.style.display = 'none';
+
+  // Clear input
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+
+  // Hide empty state
+  emptyState.style.display = 'none';
+
+  // Add user message
+  conversationHistory.push({
+    role: 'user',
+    content: message,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  });
+  appendMessageDOM('user', message, null);
+  saveHistory();
+  scrollToBottom();
+
+  // Show typing indicator
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'typing-indicator';
+  typingDiv.id = 'typingIndicator';
+  typingDiv.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+  chatMessages.appendChild(typingDiv);
+  scrollToBottom();
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        history: conversationHistory.slice(-10, -1), // exclude the one we just added
+      }),
+    });
+
+    // Remove typing indicator
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) indicator.remove();
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    // Add assistant message
+    conversationHistory.push({
+      role: 'assistant',
+      content: data.reply,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    });
+    appendMessageDOM('assistant', data.reply, null);
+    saveHistory();
+    scrollToBottom();
+
+    // Restart mic in continuous mode if it died during API call
+    if (micContinuous && !isRecording) {
+      // If TTS is on, mic restart is handled by TTS's onend via micPendingRestart
+      if (!ttsEnabled) startRecording();
+    }
+  } catch (err) {
+    // Remove typing indicator
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) indicator.remove();
+
+    console.error('Chat error:', err);
+    errorMsg.textContent = err.message || 'Connection error. Please try again.';
+    errorMsg.style.display = 'block';
+
+    // Restart mic on error too (TTS doesn't run on error, so always safe)
+    if (micContinuous && !isRecording) startRecording();
+  } finally {
+    isProcessing = false;
+    chatInput.disabled = false;
+    chatInput.focus();
+    sendBtn.disabled = !chatInput.value.trim();
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ─── Clear Conversation ────────────────────────
+document.getElementById('clearBtn').addEventListener('click', function() {
+  if (conversationHistory.length === 0 && pendingAttachments.length === 0) return;
+  if (!confirm('Clear all messages? This cannot be undone.')) return;
+  conversationHistory = [];
+  pendingAttachments = [];
+  renderAttachmentPreviews();
+  localStorage.removeItem(STORAGE_KEY);
+  renderMessages();
+  chatInput.focus();
+  errorMsg.style.display = 'none';
+});
+
+// ─── Copy to Clipboard ─────────────────────────
+document.getElementById('copyBtn').addEventListener('click', function() {
+  if (conversationHistory.length === 0) return;
+  var text = conversationHistory.map(function(m) {
+    var role = m.role === 'user' ? 'You' : 'Rosalita AI';
+    var time = m.timestamp || '';
+    var attText = '';
+    if (m.attachments && m.attachments.length > 0) {
+      attText = '\n[Attachments: ' + m.attachments.map(function(a) { return a.name; }).join(', ') + ']';
+    }
+    return '[' + role + (time ? ' ' + time : '') + ']\n' + m.content + attText;
+  }).join('\n\n');
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = document.getElementById('copyBtn');
+    btn.innerHTML = '<span class="icon">&#x2713;</span> Copied';
+    setTimeout(function() { btn.innerHTML = '<span class="icon">&#x1F4CB;</span> Copy'; }, 2000);
+  }).catch(function() {
+    errorMsg.textContent = 'Failed to copy to clipboard.';
+    errorMsg.style.display = 'block';
+  });
+});
+
+// ─── Download Transcript ────────────────────────
+document.getElementById('downloadBtn').addEventListener('click', function() {
+  if (conversationHistory.length === 0) return;
+  var lines = ['Rosalita Cantina — AI Chat Transcript', 'Generated: ' + new Date().toLocaleString(), ''];
+  conversationHistory.forEach(function(m) {
+    var role = m.role === 'user' ? 'You' : 'Rosalita AI';
+    var time = m.timestamp || '';
+    lines.push('── ' + role + (time ? ' (' + time + ')' : '') + ' ──');
+    lines.push(m.content);
+    if (m.attachments && m.attachments.length > 0) {
+      lines.push('  Attachments: ' + m.attachments.map(function(a) { return a.name + ' (' + formatFileSize(a.size) + ')'; }).join(', '));
+    }
+    lines.push('');
+  });
+  var blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'rosalita-chat-' + new Date().toISOString().slice(0, 10) + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// ─── Save Conversation to Database ──────────────
+document.getElementById('saveBtn').addEventListener('click', function() {
+  if (conversationHistory.length === 0) return;
+  var btn = document.getElementById('saveBtn');
+  var ok = document.getElementById('saveOk');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="icon">&#x23F3;</span> Saving…';
+  ok.classList.remove('show');
+  fetch('/api/chat?resource=conversations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Chat ' + new Date().toLocaleDateString(),
+      messages: conversationHistory,
+    }),
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    if (data.ok) {
+      ok.textContent = '\u2713 Saved #' + data.id;
+      ok.classList.add('show');
+      setTimeout(function() { ok.classList.remove('show'); }, 3000);
+    } else {
+      throw new Error(data.error || 'Save failed');
+    }
+  }).catch(function(err) {
+    errorMsg.textContent = 'Save failed: ' + err.message;
+    errorMsg.style.display = 'block';
+  }).finally(function() {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="icon">&#x1F4BE;</span> Save';
+  });
+});
+
+// ─── Load Conversation ──────────────────────────
+const loadModal = document.getElementById('loadModal');
+const loadModalBody = document.getElementById('loadModalBody');
+const loadModalClose = document.getElementById('loadModalClose');
+
+document.getElementById('loadBtn').addEventListener('click', function() {
+  loadModal.style.display = 'flex';
+  loadModalBody.innerHTML = '<p class="modal-loading">Loading conversations...</p>';
+
+  var saveOk = document.getElementById('saveOk');
+  saveOk.classList.remove('show');
+  errorMsg.style.display = 'none';
+
+  fetch('/api/chat?resource=conversations&limit=20')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.data || data.data.length === 0) {
+        loadModalBody.innerHTML = '<p style="color:var(--muted);text-align:center;padding:24px;">No saved conversations yet. Save a conversation first.</p>';
+        return;
+      }
+
+      var html = '';
+      data.data.forEach(function(conv) {
+        var date = new Date(conv.created_at).toLocaleDateString();
+        var time = new Date(conv.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        html += '<div class="conv-item" data-id="' + conv.id + '" data-title="' + escapeHtml(conv.title || 'Untitled') + '">';
+        html += '<div class="conv-title">' + escapeHtml(conv.title || 'Untitled') + '</div>';
+        html += '<div class="conv-meta">' + date + ' ' + time + ' \u00B7 ' + conv.message_count + ' message' + (conv.message_count !== 1 ? 's' : '') + '</div>';
+        html += '</div>';
+      });
+      loadModalBody.innerHTML = html;
+
+      loadModalBody.querySelectorAll('.conv-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+          var id = this.dataset.id;
+          var title = this.dataset.title;
+          loadConversation(id, title);
+        });
+      });
+    })
+    .catch(function(err) {
+      loadModalBody.innerHTML = '<p style="color:var(--error);text-align:center;padding:24px;">Failed to load conversations: ' + escapeHtml(err.message) + '</p>';
+    });
+});
+
+function loadConversation(id) {
+  loadModalBody.innerHTML = '<p class="modal-loading">Loading conversation...</p>';
+
+  fetch('/api/chat?resource=conversations&id=' + id)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.data || !data.data.messages) {
+        throw new Error('Invalid conversation data');
+      }
+
+      // Check if current conversation has unsaved messages
+      var hasUnsaved = conversationHistory.length > 0;
+      if (hasUnsaved && !confirm('Replace current conversation with saved conversation?')) {
+        loadModal.style.display = 'none';
+        return;
+      }
+
+      conversationHistory = data.data.messages;
+      saveHistory();
+      renderMessages();
+      scrollToBottom();
+
+      loadModal.style.display = 'none';
+      errorMsg.style.display = 'none';
+
+      // Show loaded notification
+      var saveOk = document.getElementById('saveOk');
+      saveOk.textContent = '\u2713 Loaded #' + id;
+      saveOk.classList.add('show');
+      setTimeout(function() { saveOk.classList.remove('show'); saveOk.innerHTML = '\u2713 Saved'; }, 3000);
+    })
+    .catch(function(err) {
+      loadModalBody.innerHTML = '<p style="color:var(--error);text-align:center;padding:24px;">Failed to load conversation: ' + escapeHtml(err.message) + '</p>';
+    });
+}
+
+// Close modal
+loadModalClose.addEventListener('click', function() { loadModal.style.display = 'none'; });
+loadModal.addEventListener('click', function(e) {
+  if (e.target === loadModal) loadModal.style.display = 'none';
+});
+
+// ─── File Attachments ──────────────────────────
+let pendingAttachments = [];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
+
+document.getElementById('attachBtn').addEventListener('click', function() {
+  document.getElementById('fileInput').click();
+});
+
+document.getElementById('fileInput').addEventListener('change', function() {
+  handleFiles(this.files);
+  this.value = '';
+});
+
+// Drag-and-drop on chat messages area
+let dragCounter = 0;
+const dragOverlay = document.getElementById('dragOverlay');
+
+chatMessages.addEventListener('dragenter', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter++;
+  dragOverlay.classList.add('show');
+});
+
+chatMessages.addEventListener('dragover', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+chatMessages.addEventListener('dragleave', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    dragOverlay.classList.remove('show');
+  }
+});
+
+chatMessages.addEventListener('drop', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter = 0;
+  dragOverlay.classList.remove('show');
+  handleFiles(e.dataTransfer.files);
+});
+
+// Also allow drop on the whole chat input area
+document.querySelector('.chat-input-area').addEventListener('dragenter', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter++;
+  dragOverlay.classList.add('show');
+});
+document.querySelector('.chat-input-area').addEventListener('dragover', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+});
+document.querySelector('.chat-input-area').addEventListener('dragleave', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    dragOverlay.classList.remove('show');
+  }
+});
+document.querySelector('.chat-input-area').addEventListener('drop', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter = 0;
+  dragOverlay.classList.remove('show');
+  handleFiles(e.dataTransfer.files);
+});
+
+function handleFiles(files) {
+  if (!files || files.length === 0) return;
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i];
+    if (file.size > MAX_FILE_SIZE) {
+      errorMsg.textContent = 'File too large: ' + file.name + ' (max 5MB)';
+      errorMsg.style.display = 'block';
+      continue;
+    }
+    var reader = new FileReader();
+    reader.onload = (function(f) {
+      return function(e) {
+        var att = {
+          id: 'att_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          name: f.name,
+          type: f.type,
+          size: f.size,
+          data: e.target.result, // data URI
+        };
+        pendingAttachments.push(att);
+        renderAttachmentPreviews();
+        errorMsg.style.display = 'none';
+      };
+    })(file);
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeAttachment(id) {
+  pendingAttachments = pendingAttachments.filter(function(a) { return a.id !== id; });
+  renderAttachmentPreviews();
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + 'B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + 'KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+}
+
+function renderAttachmentPreviews() {
+  var container = document.getElementById('attachPreview');
+  if (pendingAttachments.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < pendingAttachments.length; i++) {
+    var a = pendingAttachments[i];
+    var isImage = a.type && a.type.startsWith('image/');
+    html += '<div class="attach-chip">';
+    if (isImage) {
+      html += '<img class="attach-chip-thumb" src="' + a.data + '" alt="' + a.name + '">';
+    } else {
+      html += '<div class="attach-chip-thumb">&#x1F4C4;</div>';
+    }
+    html += '<span class="attach-chip-name">' + escapeHtml(a.name) + '</span>';
+    html += '<span class="attach-chip-size">' + formatFileSize(a.size) + '</span>';
+    html += '<button class="attach-chip-remove" onclick="removeAttachment(\'' + a.id + '\')" title="Remove">&#x2715;</button>';
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+// Update appendMessageDOM to show attachments in message bubbles
+var origAppendMessageDOM = appendMessageDOM;
+appendMessageDOM = function(role, content, timestamp, animate, attachments) {
+  var div = document.createElement('div');
+  div.className = 'message ' + role;
+
+  var avatar = document.createElement('div');
+  avatar.className = 'message-avatar ' + role;
+  avatar.innerHTML = role === 'user' ? '&#9993;' : '&#9733;';
+
+  var bubble = document.createElement('div');
+  bubble.className = 'message-bubble';
+
+  var textSpan = document.createElement('span');
+  textSpan.textContent = content;
+  bubble.appendChild(textSpan);
+
+  // TTS button for assistant messages
+  if (role === 'assistant' && content) {
+    var ttsBtn = document.createElement('button');
+    ttsBtn.className = 'tts-btn';
+    ttsBtn.innerHTML = '&#x1F50A;';
+    ttsBtn.title = 'Read aloud';
+    ttsBtn.style.display = 'inline-flex'; // always visible
+    ttsBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (this.classList.contains('speaking')) {
+        stopSpeaking();
+      } else {
+        // Enable TTS if not already
+        if (!ttsEnabled) {
+          ttsEnabled = true;
+          ttsToggle.innerHTML = '&#x1F50A;';
+          ttsToggle.classList.add('active');
+          ttsToggle.title = 'TTS On — click to mute';
+        }
+        speakText(content, this);
+      }
+    });
+    bubble.appendChild(ttsBtn);
+  }
+
+  if (attachments && attachments.length > 0) {
+    var attDiv = document.createElement('div');
+    attDiv.className = 'message-attachments';
+    for (var i = 0; i < attachments.length; i++) {
+      var a = attachments[i];
+      var isImage = a.type && a.type.startsWith('image/');
+      var item = document.createElement('div');
+      item.className = 'message-attach-item';
+      if (isImage && a.data) {
+        var img = document.createElement('img');
+        img.className = 'message-attach-img';
+        img.src = a.data;
+        img.alt = a.name;
+        item.appendChild(img);
+      } else {
+        var icon = document.createElement('div');
+        icon.className = 'message-attach-icon';
+        icon.textContent = '\uD83D\uDCC4';
+        item.appendChild(icon);
+      }
+      var name = document.createElement('span');
+      name.className = 'message-attach-name';
+      name.textContent = a.name;
+      item.appendChild(name);
+      attDiv.appendChild(item);
+    }
+    bubble.appendChild(attDiv);
+  }
+
+  var time = document.createElement('div');
+  time.className = 'message-time';
+  time.textContent = timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  bubble.appendChild(time);
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+
+  if (animate) {
+    div.style.opacity = '0';
+    chatMessages.appendChild(div);
+    requestAnimationFrame(function() { div.style.opacity = '1'; });
+  } else {
+    chatMessages.appendChild(div);
+  }
+};
+
+// Update renderMessages to pass attachments
+var origRenderMessages = renderMessages;
+renderMessages = function() {
+  var existing = chatMessages.querySelectorAll('.message, .typing-indicator');
+  existing.forEach(function(el) { el.remove(); });
+
+  if (conversationHistory.length === 0) {
+    emptyState.style.display = 'block';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+
+  for (var i = 0; i < conversationHistory.length; i++) {
+    var msg = conversationHistory[i];
+    appendMessageDOM(msg.role, msg.content, msg.timestamp, false, msg.attachments);
+  }
+
+  scrollToBottom();
+};
+
+// ── SSE streaming response handler ──
+function streamResponse(res) {
+  return new Promise(function(resolve, reject) {
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder();
+    var fullText = '';
+    var buffer = '';
+    var settled = false;
+
+    // Create assistant message bubble with timestamp
+    var msgDiv = document.createElement('div');
+    msgDiv.className = 'message assistant';
+    var ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    msgDiv.innerHTML = '<div class="message-avatar assistant">&#9733;</div><div class="message-bubble"><span class="bubble-text"></span><div class="message-time">' + ts + '</div></div>';
+    msgDiv.style.opacity = '0';
+    chatMessages.appendChild(msgDiv);
+    requestAnimationFrame(function() { msgDiv.style.opacity = '1'; });
+    var bubbleTextEl = msgDiv.querySelector('.bubble-text');
+
+    function processLines(lines) {
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line || !line.startsWith('data: ')) continue;
+        var payload = line.slice(6);
+        if (payload === '[DONE]') {
+          if (!settled) { settled = true; resolve({ reply: fullText }); }
+          return;
+        }
+        try {
+          var parsed = JSON.parse(payload);
+          if (parsed.error) {
+            if (!settled) { settled = true; reject(new Error(parsed.error)); }
+            return;
+          }
+          var delta = parsed.choices?.[0]?.delta?.content || '';
+          if (delta) {
+            fullText += delta;
+            bubbleTextEl.textContent = fullText;
+          }
+        } catch (e) {
+          // Skip unparseable SSE lines
+        }
+      }
+    }
+
+    function pump() {
+      reader.read().then(function(result) {
+        if (result.done) {
+          if (!settled) { settled = true; resolve({ reply: fullText }); }
+          return;
+        }
+        buffer += decoder.decode(result.value, { stream: true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // keep incomplete line in buffer
+        processLines(lines);
+        scrollToBottom();
+        pump();
+      }).catch(function(err) {
+        if (!settled) { settled = true; reject(err); }
+      });
+    }
+
+    pump();
+  });
+}
+
+// Update sendMessage to include attachments
+var origSendMessage = sendMessage;
+sendMessage = function(text) {
+  var message = (text || chatInput.value).trim();
+  if (!message && pendingAttachments.length === 0) return;
+  if (isProcessing) return;
+
+  isProcessing = true;
+  sendBtn.disabled = true;
+  chatInput.disabled = true;
+  errorMsg.style.display = 'none';
+
+  // Capture and clear attachments
+  var atts = pendingAttachments.slice();
+  pendingAttachments = [];
+  renderAttachmentPreviews();
+
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+
+  emptyState.style.display = 'none';
+
+  conversationHistory.push({
+    role: 'user',
+    content: message || '(attached file' + (atts.length > 1 ? 's' : '') + ')',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    attachments: atts,
+  });
+  appendMessageDOM('user', message || '(attached file' + (atts.length > 1 ? 's' : '') + ')', null, true, atts);
+  saveHistory();
+  scrollToBottom();
+
+  // Show typing indicator
+  var typingDiv = document.createElement('div');
+  typingDiv.className = 'typing-indicator';
+  typingDiv.id = 'typingIndicator';
+  typingDiv.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+  chatMessages.appendChild(typingDiv);
+  scrollToBottom();
+
+  // Strip attachments from API call — send only text
+  try {
+    var textOnlyHistory = conversationHistory.slice(-10, -1).map(function(m) {
+      return { role: m.role, content: m.content, timestamp: m.timestamp };
+    });
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: message || '(attached file' + (atts.length > 1 ? 's' : '') + ')',
+        history: textOnlyHistory,
+        stream: true,
+      }),
+    }).then(function(res) {
+      var indicator = document.getElementById('typingIndicator');
+      if (indicator) indicator.remove();
+      if (!res.ok) {
+        return res.json().then(function(errData) { throw new Error(errData.error || 'HTTP ' + res.status); });
+      }
+      // Use streaming if supported, fall back to JSON
+      if (res.body) return streamResponse(res);
+      // Non-streaming fallback: append the message to DOM (streaming already did)
+      return res.json().then(function(data) {
+        appendMessageDOM('assistant', data.reply, null, true);
+        scrollToBottom();
+        return data;
+      });
+    }).then(function(data) {
+      conversationHistory.push({
+        role: 'assistant',
+        content: data.reply,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      });
+      saveHistory();
+      scrollToBottom();
+
+      // Auto-speak if TTS is enabled
+      if (ttsEnabled && data.reply) {
+        // Find the last assistant message's TTS button
+        setTimeout(function() {
+          var ttsBtns = document.querySelectorAll('.tts-btn');
+          var lastBtn = ttsBtns[ttsBtns.length - 1];
+          speakText(data.reply, lastBtn);
+        }, 100);
+      }
+    }).catch(function(err) {
+      var indicator = document.getElementById('typingIndicator');
+      if (indicator) indicator.remove();
+      console.error('Chat error:', err);
+      errorMsg.textContent = err.message || 'Connection error. Please try again.';
+      errorMsg.style.display = 'block';
+    }).finally(function() {
+      isProcessing = false;
+      chatInput.disabled = false;
+      chatInput.focus();
+      sendBtn.disabled = !chatInput.value.trim();
+
+      // Restart mic AFTER isProcessing is false (startRecording checks isProcessing)
+      if (micContinuous && !isRecording) startRecording();
+    });
+  } catch (err) {
+    var indicator = document.getElementById('typingIndicator');
+    if (indicator) indicator.remove();
+    console.error('Chat error:', err);
+    errorMsg.textContent = err.message || 'Connection error.';
+    errorMsg.style.display = 'block';
+    isProcessing = false;
+    chatInput.disabled = false;
+    chatInput.focus();
+    sendBtn.disabled = !chatInput.value.trim();
+
+    // Restart mic on synchronous error too
+    if (micContinuous && !isRecording) startRecording();
+  }
+};
+
+// ─── Text-to-Speech (OpenAI TTS via /api/voice) ──
+let ttsEnabled = true;
+let ttsSpeaking = false;
+let audioRef = null;
+const ttsToggle = document.getElementById('ttsToggle');
+const ttsStatus = document.getElementById('ttsStatus');
+const voiceModal = document.getElementById('voiceModal');
+const voiceModalClose = document.getElementById('voiceModalClose');
+const voiceSelect = document.getElementById('voiceSelect');
+const speedSlider = document.getElementById('speedSlider');
+const pitchSlider = document.getElementById('pitchSlider');
+const speedDisplay = document.getElementById('speedDisplay');
+const pitchDisplay = document.getElementById('pitchDisplay');
+const voiceConfigBtn = document.getElementById('voiceConfigBtn');
+
+// ── OpenAI TTS voices ──
+const OPENAI_TTS_VOICES = [
+  { id: 'alloy',   name: 'Alloy' },
+  { id: 'echo',    name: 'Echo' },
+  { id: 'fable',   name: 'Fable' },
+  { id: 'onyx',    name: 'Onyx' },
+  { id: 'nova',    name: 'Nova' },
+  { id: 'shimmer', name: 'Shimmer' },
+];
+
+// ── TTS Preferences (persisted to localStorage) ──
+var ttsPrefs = JSON.parse(localStorage.getItem('ttsPrefs') || '{"voice":"alloy","rate":0.9,"pitch":1.0}');
+speedSlider.value = ttsPrefs.rate || 0.9;
+pitchSlider.value = ttsPrefs.pitch || 1.0;
+speedDisplay.textContent = ttsPrefs.rate || 0.9;
+pitchDisplay.textContent = ttsPrefs.pitch || 1.0;
+
+function saveTtsPrefs() {
+  ttsPrefs.rate = parseFloat(speedSlider.value);
+  ttsPrefs.pitch = parseFloat(pitchSlider.value);
+  ttsPrefs.voice = voiceSelect.value;
+  localStorage.setItem('ttsPrefs', JSON.stringify(ttsPrefs));
+}
+
+// ── Populate voice list ──
+function populateVoices() {
+  var currentVal = voiceSelect.value || ttsPrefs.voice || 'alloy';
+  voiceSelect.innerHTML = '';
+  OPENAI_TTS_VOICES.forEach(function(v) {
+    var opt = document.createElement('option');
+    opt.value = v.id;
+    opt.textContent = v.name;
+    if (v.id === currentVal) opt.selected = true;
+    voiceSelect.appendChild(opt);
+  });
+}
+populateVoices();
+
+// ── Toggle TTS ──
+ttsToggle.addEventListener('click', function() {
+  ttsEnabled = !ttsEnabled;
+  ttsToggle.innerHTML = ttsEnabled ? '&#x1F50A;' : '&#x1F507;';
+  ttsToggle.classList.toggle('active', ttsEnabled);
+  ttsToggle.title = ttsEnabled ? 'TTS On — click to mute' : 'TTS Off — click to enable';
+  if (!ttsEnabled && ttsSpeaking) stopSpeaking();
+});
+
+// ── Voice Config Modal ──
+voiceConfigBtn.addEventListener('click', function() {
+  populateVoices();
+  voiceModal.style.display = 'flex';
+});
+
+voiceModalClose.addEventListener('click', function() { voiceModal.style.display = 'none'; });
+voiceModal.addEventListener('click', function(e) { if (e.target === voiceModal) voiceModal.style.display = 'none'; });
+
+speedSlider.addEventListener('input', function() {
+  speedDisplay.textContent = parseFloat(this.value).toFixed(2);
+  saveTtsPrefs();
+});
+pitchSlider.addEventListener('input', function() {
+  pitchDisplay.textContent = parseFloat(this.value).toFixed(2);
+  saveTtsPrefs();
+});
+voiceSelect.addEventListener('change', saveTtsPrefs);
+
+document.getElementById('testVoiceBtn').addEventListener('click', function() {
+  speakText('Hello, this is your Rosalita AI voice assistant. How does this sound?');
+});
+
+// ── Update status bar ──
+function updateTtsStatus() {
+  if (ttsSpeaking && ttsEnabled) {
+    ttsStatus.style.display = 'inline-flex';
+  } else {
+    ttsStatus.style.display = 'none';
+  }
+}
+
+// ── Stop speaking ──
+function stopSpeaking() {
+  if (audioRef) {
+    audioRef.pause();
+    audioRef.currentTime = 0;
+    try { if (audioRef.src) URL.revokeObjectURL(audioRef.src); } catch {}
+    audioRef = null;
+  }
+  ttsSpeaking = false;
+  updateTtsStatus();
+  document.querySelectorAll('.tts-btn.speaking').forEach(function(b) { b.classList.remove('speaking'); });
+}
+
+// ── Speak text (OpenAI TTS via /api/voice proxy) ──
+async function speakText(text, btnEl) {
+  if (!ttsEnabled) return;
+  // Cancel any ongoing speech
+  stopSpeaking();
+
+  if (btnEl) btnEl.classList.add('speaking');
+  ttsSpeaking = true;
+  updateTtsStatus();
+
+  try {
+    const res = await fetch('/api/chat?resource=voice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: text,
+        voice: ttsPrefs.voice || 'alloy',
+        speed: ttsPrefs.rate || 0.9,
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Voice API error (${res.status})`);
+    }
+
+    const data = await res.json();
+
+    if (!data.success || !data.audioChunks || !data.audioChunks.length) {
+      throw new Error(data.error || 'No audio data received');
+    }
+
+    // Decode base64 → Audio element playback (same as Prestix LMNT pattern)
+    var bin = atob(data.audioChunks[0]);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    var blob = new Blob([bytes], { type: 'audio/mpeg' });
+    var url = URL.createObjectURL(blob);
+
+    var audio = new Audio(url);
+    audioRef = audio;
+
+    audio.addEventListener('ended', function() {
+      ttsSpeaking = false;
+      updateTtsStatus();
+      if (btnEl) btnEl.classList.remove('speaking');
+      try { URL.revokeObjectURL(url); } catch {}
+      audioRef = null;
+      if (micPendingRestart) {
+        micPendingRestart = false;
+        startRecording();
+      }
+    });
+
+    audio.addEventListener('error', function() {
+      console.error('Audio playback error');
+      ttsSpeaking = false;
+      updateTtsStatus();
+      if (btnEl) btnEl.classList.remove('speaking');
+      try { URL.revokeObjectURL(url); } catch {}
+      audioRef = null;
+      if (micPendingRestart) {
+        micPendingRestart = false;
+        startRecording();
+      }
+    });
+
+    await audio.play();
+  } catch (err) {
+    console.error('TTS error:', err);
+    ttsSpeaking = false;
+    updateTtsStatus();
+    if (btnEl) btnEl.classList.remove('speaking');
+    errorMsg.textContent = 'Voice playback failed: ' + err.message;
+    errorMsg.style.display = 'block';
+  }
+}
+
+// ─── Speech-to-Text (Web Speech API) ────────────
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isRecording = false;
+let micContinuous = false;
+let micPendingRestart = false;
+const micBtn = document.getElementById('micBtn');
+
+if (SpeechRecognition) {
+  micBtn.addEventListener('click', function() {
+    if (isRecording) {
+      // Clicking while recording = stop + exit continuous mode
+      micContinuous = false;
+      micPendingRestart = false;
+      stopSpeaking();
+      stopRecording();
+      return;
+    }
+    startRecording();
+  });
+
+  function startRecording() {
+    if (isProcessing) return;
+    // If TTS is speaking, stop it
+    if (ttsSpeaking) stopSpeaking();
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    isRecording = true;
+    micContinuous = true;
+    micPendingRestart = false;
+    micBtn.innerHTML = '&#x23F8;'; // pause icon
+    micBtn.classList.add('recording');
+    micBtn.title = 'Listening… tap to stop';
+    errorMsg.style.display = 'none';
+
+    recognition.onresult = function(event) {
+      let interim = '';
+      let final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          final += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      chatInput.value = final || interim;
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+      sendBtn.disabled = !chatInput.value.trim() || isProcessing;
+    };
+
+    recognition.onerror = function(event) {
+      console.error('Speech error:', event.error);
+      if (micContinuous) {
+        // Try to restart on error unless permission denied
+        if (event.error === 'not-allowed') {
+          errorMsg.textContent = 'Microphone access denied. Allow mic access in your browser settings.';
+          errorMsg.style.display = 'block';
+          micContinuous = false;
+          stopRecording();
+        } else if (event.error === 'no-speech') {
+          // Restart silently
+          stopRecording();
+          if (micContinuous) startRecording();
+        } else {
+          stopRecording();
+          if (micContinuous) startRecording();
+        }
+      } else {
+        stopRecording();
+        if (event.error === 'not-allowed') {
+          errorMsg.textContent = 'Microphone access denied. Allow mic access in your browser settings.';
+          errorMsg.style.display = 'block';
+        } else if (event.error === 'no-speech') {
+          // Silent
+        } else {
+          errorMsg.textContent = 'Voice input error: ' + event.error;
+          errorMsg.style.display = 'block';
+        }
+      }
+    };
+
+    recognition.onend = function() {
+      if (micContinuous) {
+        // Continuous mode — auto-send if text, then restart
+        if (chatInput.value.trim() && !isProcessing) {
+          var textToSend = chatInput.value.trim();
+          // Stop mic before sending (will restart after response)
+          var wasContinuous = micContinuous;
+          stopRecording();
+          micContinuous = wasContinuous;
+          // If TTS is enabled and will speak, delay mic restart until TTS finishes
+          if (ttsEnabled) {
+            micPendingRestart = true;
+          } else {
+            // Restart immediately
+            startRecording();
+          }
+          // Send the message (don't re-trigger restart from sendMessage's finally)
+          var savedContinuous = micContinuous;
+          micContinuous = false; // prevent sendMessage from restarting
+          sendMessage(textToSend);
+          micContinuous = savedContinuous;
+        } else {
+          // No speech detected — restart listening
+          stopRecording();
+          if (micContinuous) startRecording();
+        }
+      } else {
+        // Single-shot mode
+        if (chatInput.value.trim() && !isProcessing) {
+          sendMessage();
+        }
+        stopRecording();
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error('Speech start error:', e);
+      micContinuous = false;
+      stopRecording();
+    }
+  }
+
+  function stopRecording() {
+    isRecording = false;
+    micBtn.innerHTML = '&#x1F3A4;';
+    micBtn.classList.remove('recording');
+    micBtn.title = 'Voice input (Chrome)';
+    if (recognition) {
+      try { recognition.stop(); } catch (e) { /* ignore */ }
+      recognition = null;
+    }
+  }
+} else {
+  // Speech recognition not supported
+  micBtn.style.opacity = '0.3';
+  micBtn.title = 'Voice input not supported in this browser';
+  micBtn.addEventListener('click', function() {
+    errorMsg.textContent = 'Voice input requires Chrome or a browser that supports the Web Speech API.';
+    errorMsg.style.display = 'block';
+  });
+}
+
+// ─── Send button click ──────────────────────────
+sendBtn.addEventListener('click', () => sendMessage());
+
+// ─── Suggestion chips ───────────────────────────
+document.querySelectorAll('.suggestion-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    const msg = this.dataset.msg;
+    if (msg && !isProcessing) {
+      // Add to input and send
+      chatInput.value = msg;
+      sendBtn.disabled = false;
+      sendMessage();
+    }
+  });
+});
+
+// ─── Nav toggle ─────────────────────────────────
+document.querySelector('.nav-toggle')?.addEventListener('click', function() {
+  document.getElementById('sideDrawer')?.classList.toggle('open');
+  document.getElementById('drawerOverlay')?.classList.toggle('open');
+  document.body.style.overflow = document.getElementById('sideDrawer')?.classList.contains('open') ? 'hidden' : '';
+  updateDrawerBadge();
+});
+document.getElementById('drawerOverlay')?.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('sideDrawer')?.classList.contains('open')) closeDrawer();
+});
+function closeDrawer() {
+  document.getElementById('sideDrawer')?.classList.remove('open');
+  document.getElementById('drawerOverlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function updateDrawerBadge() {
+  var badge = document.getElementById('drawerUserBadge');
+  if (!badge) return;
+  fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+    if (data.user) {
+      document.getElementById('drawerAvatar').src = data.user.picture || 'images/default-avatar.svg';
+      document.getElementById('drawerAvatar').alt = data.user.name || 'User';
+      document.getElementById('drawerUserName').textContent = data.user.name || 'Admin';
+      document.getElementById('drawerUserEmail').textContent = data.user.email || (data.user.authMethod === 'pin' ? 'Signed in with PIN' : 'Signed in');
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }).catch(function(){ badge.style.display = 'none'; });
+}
+
+// ─── Init ───────────────────────────────────────
+loadHistory();
+chatInput.focus();
+</script>
+
+</body>
+</html>

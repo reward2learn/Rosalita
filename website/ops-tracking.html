@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f14">
+<title>Ops Tracking — Rosalita Cantina</title>
+<meta name="description" content="Rosalita Cantina — Operations tracking dashboard with actual vs projected KPIs.">
+  <link rel="stylesheet" href="style.css">
+
+<!-- Auth Gate Overlay -->
+<div id="authGateOverlay" style="display:none; position:fixed; inset:0; z-index:10000; background:#0f0f14; align-items:center; justify-content:center;">
+  <div id="authGateInner" style="max-width:420px; text-align:center; padding:32px 24px;"></div>
+</div>
+
+<style>
+/* ── Period Toggle ──────────────────────────────── */
+.period-toggle {
+  display: inline-flex;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.period-btn {
+  background: #1a1a22;
+  border: none;
+  color: #888;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.2s var(--ease);
+  letter-spacing: 0.3px;
+}
+
+.period-btn:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.06);
+}
+
+.period-btn.active {
+  background: var(--ember);
+  color: #fff;
+}
+
+/* ── Chart Grid ─────────────────────────────────── */
+.chart-section {
+  padding-top: 8px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.chart-card {
+  background: #1a1a22;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px;
+  padding: 20px;
+  transition: border-color 0.25s var(--ease);
+}
+
+.chart-card:hover {
+  border-color: rgba(var(--ember-rgb), 0.2);
+}
+
+.chart-card h3 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+}
+
+.chart-card .chart-wrap {
+  position: relative;
+  height: 280px;
+}
+
+.chart-card .chart-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Empty State ────────────────────────────────── */
+.chart-empty {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.chart-empty .empty-icon {
+  font-size: 2.4rem;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.chart-empty .empty-link {
+  color: var(--ember);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.chart-empty .empty-link:hover {
+  opacity: 0.85;
+}
+
+/* ── Loading Spinner ────────────────────────────── */
+.loading-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.loading-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: dot-pulse 1.2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dot-pulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.2); }
+}
+
+/* ── Period Header ──────────────────────────────── */
+.period-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+/* ── Responsive ─────────────────────────────────── */
+@media (max-width: 768px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .chart-card .chart-wrap {
+    height: 240px;
+  }
+  .period-header {
+    gap: 12px;
+  }
+}
+
+/* ── P&L Actuals / variance ───────────────────── */
+#pnlBreakdownTable th:nth-child(2),
+#pnlBreakdownTable td:nth-child(2) {
+  color: var(--ember);
+  font-weight: 600;
+}
+
+.pnl-variance {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 500;
+  margin-top: 3px;
+  opacity: 0.85;
+}
+
+.pnl-variance.favorable { color: #22c55e; }
+.pnl-variance.unfavorable { color: #f87171; }
+.pnl-variance.neutral { color: var(--muted2); }
+
+.pnl-days-note {
+  font-size: 0.75rem;
+  color: var(--muted2);
+  padding: 8px 0 12px !important;
+  text-align: left;
+}
+</style>
+</head>
+<body>
+
+  <nav class="top-nav">
+    <div class="nav-inner">
+       <a href="index.html" class="nav-brand">  <img  src="images/logo.svg" alt="Rosalita's Cantina" class="hero-logo" /></a>
+      <a href="index.html" class="nav-brand"><span class="ember">Rosalita</span> Cantina</a>
+      <button class="nav-toggle" aria-label="Toggle menu">&#x22EE;</button>
+    </div>
+  </nav>
+
+<!-- Side Drawer -->
+<div id="sideDrawer" class="side-drawer">
+  <div class="drawer-user-badge" id="drawerUserBadge" style="display:none;">
+    <img id="drawerAvatar" src="" alt="" class="drawer-avatar">
+    <div class="drawer-user-info">
+      <div id="drawerUserName" class="drawer-user-name">Admin</div>
+      <div id="drawerUserEmail" class="drawer-user-email">Signed in</div>
+    </div>
+    <a href="/api/auth?action=logout" class="drawer-signout" title="Sign out">&#10140;</a>
+  </div>
+  <div class="drawer-links">
+    <a href="index.html">Dashboard</a>
+    <a href="summary.html" class="google-only">Summary</a>
+    <a href="review.html" class="google-only">Analysis</a>
+    <a href="ops-admin.html">Ops Admin</a>
+    <a href="ops-tracking.html" class="active google-only">Ops Tracking</a>
+    <a href="ops-chat.html" class="google-only">AI Chat</a>
+  </div>
+  <div class="drawer-legal">
+    <a href="#" id="navPdf" 
+      onclick="downloadPDF();return false;" 
+      style="margin-left:auto;color:#fff;text-decoration:none;font-weight:600;">PDF
+    </a>
+    <a href="privacy-policy.html">Privacy</a>
+    <a href="terms-of-service.html">Terms</a>
+  </div>
+</div>
+<div id="drawerOverlay" class="drawer-overlay"></div>
+
+<!-- ── PDF Capture Wrapper ── -->
+<div id="pdfCapture">
+
+<main class="doc-container">
+  <article class="doc-content">
+    <!-- ── Financial Projections Chart (from P&L) ── -->
+    <div class="chart-section" id="financialProjections">
+      <!-- <h2 class="section-title">
+        <span id="financialChartTitle">Financial Projections</span>
+        <span id="scenarioBadge" style="display:inline-block;font-size:0.65rem;font-weight:500;background:rgba(235,61,40,0.15);color:var(--ember);padding:2px 10px;border-radius:4px;margin-left:8px;vertical-align:middle;">
+          Conservative &middot; IDR 101M target
+        </span>
+      </h2> -->
+      <!-- <p class="section-sub">Monthly projections &mdash; select a scenario to compare growth tracks</p>
+       -->
+        <!-- Metric Cards -->
+    <div class="metrics" id="metricsRow" style="margin-top: 24px;">
+      <div class="metric-card" data-kpi="revenue">
+        <div class="number" id="metricRevenue">—</div>
+        <div class="label">Revenue</div>
+        <div class="change" id="metricRevenueChange">Loading…</div>
+      </div>
+      <div class="metric-card" data-kpi="ebitda">
+        <div class="number" id="metricEbitda">—</div>
+        <div class="label">EBITDA</div>
+        <div class="change" id="metricEbitdaChange">Loading…</div>
+      </div>
+      <div class="metric-card" data-kpi="guests">
+        <div class="number" id="metricGuests">—</div>
+        <div class="label">Guests / Day</div>
+        <div class="change" id="metricGuestsChange">Loading…</div>
+      </div>
+      <div class="metric-card" data-kpi="staff_cost">
+        <div class="number" id="metricStaffCost">—</div>
+        <div class="label">Staff Cost %</div>
+        <div class="change" id="metricStaffCostChange">Loading…</div>
+      </div>
+      <div class="metric-card" data-kpi="net_income">
+        <div class="number" id="metricNetIncome">—</div>
+        <div class="label">Net Profit</div>
+        <div class="change" id="metricNetIncomeChange">Loading…</div>
+      </div>
+    </div>
+    <!-- <div class="period-header" style="justify-content:flex-start;gap:6px;">
+      <div class="scenario-filter" 
+      style="display:inline-flex;background:rgba(255,255,255,0.03);border-radius:8px;padding:3px;gap:2px;width: 100%;">
+        <button class="period-btn active" data-scenario="conservative" style="width: 100%;">
+          <span class="scenario-name">Conservative</span>
+          <span class="scenario-target" id="targetConservative">IDR 101M</span>
+          <span class="scenario-metric">Target EBITDA</span>
+        </button> 
+      </div>
+    </div> -->
+      <div class="chart-card" style="margin-top:12px; margin-bottom: 48px;">
+        <button id="clearMonthBtn" class="period-btn" style="margin-bottom:48px;background:transparent;border:1px solid rgba(255,255,255,0.12); float:right;margin:5px 14px;font-size:0.75rem;cursor:pointer;">&#8635;</button>
+        <div class="chart-wrap" style="height:320px;margin-top:66px;">
+          <canvas id="financialProjectionChart"></canvas>
+        </div>
+      </div>
+      <p style="color: var(--muted2); margin-bottom: 28px;">
+        Actual operational KPIs compared against business review projections.
+      </p>
+    </div>
+    <!-- ── End Financial Projections ── -->
+
+    <!-- ── Selected Month Detail (shown on chart click) ── -->
+    <div id="selectedMonthBar" class="chart-section" style="margin-bottom:12px;">
+      <h2 class="section-title" id="selectedMonthTitle" style="font-size:1rem;margin-bottom:0;">
+        Select a month on the chart
+      </h2>
+    </div>
+ 
+    <div id="pnl-detail-report">
+      <div class=" ">
+        <table class="data-table" id="pnlSummaryTable">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Revenue</th>
+              <th>EBITDA</th>
+              <th>Guests</th>
+              <th>Staff Cost %</th>
+              <th>Net Profit</th>
+            </tr>
+          </thead>
+          <tbody id="pnlSummaryBody">
+            <tr><td colspan="6" style="color:var(--muted);text-align:center;">Click a month bar above to view details</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="section-title" style="font-size:0.95rem;margin-top:28px;margin-bottom:12px;">Monthly P&amp;L Breakdown</h3>
+
+      <div class=" ">
+        <table class="data-table" id="pnlBreakdownTable">
+          <thead>
+            <tr>
+              <th>Line Item</th>
+              <th>Actuals</th>
+              <th>Conservative</th>
+              <th>Realistic</th>
+              <th>Aspirational</th>
+            </tr>
+          </thead>
+          <tbody id="pnlBreakdownBody">
+            <tr><td colspan="5" style="color:var(--muted);text-align:center;">P&amp;L detail loads when a month is selected</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </article>
+</main>
+
+<footer class="doc-footer">
+  <div class="footer-links">
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <span class="footer-sep">&middot;</span>
+    <a href="terms-of-service.html">Terms of Service</a>
+  </div>
+  Rosalita Cantina &mdash; Operations Tracking Dashboard
+  <div class="footer-small">Actuals vs projected KPIs &middot; Data refreshes on page load</div>
+</footer>
+
+</div><!-- /#pdfCapture -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+if (new URLSearchParams(location.search).get('pdf') === '1') document.body.setAttribute('data-pdf-export', '1');
+// ── Auth Gate ──
+(function() {
+  var overlay = document.getElementById('authGateOverlay');
+  var inner = document.getElementById('authGateInner');
+  if (!overlay || !inner) return;
+
+  function showSignIn() {
+    overlay.style.display = 'flex';
+    inner.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(235,61,40,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;">&#9733;</div>' +
+      '<h2 style="font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#f0f0f5;">Sign in Required</h2>' +
+      '<p style="color:#8888a0;font-size:0.9rem;margin-bottom:24px;">Sign in with Google to access this page.</p>' +
+      '<a href="/api/auth?action=google" style="display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1a1a22;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>' +
+      'Sign in with Google</a>';
+  }
+
+  function showDenied() {
+    overlay.style.display = 'flex';
+    inner.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(235,61,40,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#eb3d28;">&#9888;</div>' +
+      '<h2 style="font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#f0f0f5;">Access Denied</h2>' +
+      '<p style="color:#8888a0;font-size:0.9rem;margin-bottom:24px;">PIN-authenticated users can only access the Ops Admin page. Sign in with Google for full access.</p>' +
+      '<a href="/api/auth?action=google" style="display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1a1a22;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>' +
+      'Sign in with Google</a>' +
+      '<p style="margin-top:16px;"><a href="index.html" style="color:var(--ember);text-decoration:none;font-size:0.85rem;">&larr; Back to Dashboard</a></p>';
+  }
+
+  fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+    if (!data.user) { showSignIn(); }
+    else if (data.user.authMethod === 'pin') {
+      showDenied();
+      var gl = document.querySelectorAll('.drawer-links .google-only');
+      for (var i=0;i<gl.length;i++) gl[i].style.display='none';
+    }
+  }).catch(function(){ showSignIn(); });
+})();
+
+
+// ── Download PDF (async job queue) ─────────────────
+function downloadPDF() {
+    var card = document.getElementById('cardPDF');
+    var spinner = document.getElementById('pdfSpinner');
+    if (card) card.style.opacity = '0.6';
+    if (spinner) spinner.style.display = 'flex'; // show spinner
+
+    // Step 1: Initiate PDF job
+    var pagePath = window.location.pathname + window.location.search;
+    fetch('/api/auth?action=pdf&page=' + encodeURIComponent(pagePath), { credentials: 'include' })
+      .then(function(res) {
+        if (!res.ok) throw new Error('PDF request failed (' + res.status + ')');
+        return res.json();
+      })
+      .then(function(data) {
+        if (!data.jobId || !data.statusCheckUrl) throw new Error('Invalid job response from server.');
+        // Poll for completion
+        var poll = function() {
+          fetch(data.statusCheckUrl, { credentials: 'include' })
+            .then(function(r) {
+              if (!r.ok) {
+                return r.text().then(function(text) {
+                  throw new Error('Status check failed (' + r.status + '): ' + text.slice(0, 120));
+                });
+              }
+              return r.json();
+            })
+            .then(function(statusData) {
+              if (statusData.status === 'COMPLETED') {
+                // The API returns Base64 PDF data in `resultUrl` or `pdfBase64`
+                var base64 = statusData.completed_data?.pdfBase64 || statusData.pdfBase64;
+                if (!base64) throw new Error('PDF data missing from completed job.');
+                var binary = atob(base64);
+                var len = binary.length;
+                var buffer = new Uint8Array(len);
+                for (var i = 0; i < len; i++) buffer[i] = binary.charCodeAt(i);
+                var blob = new Blob([buffer], { type: 'application/pdf' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'Rosalita-Business-Review-June-2026.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+              } else if (statusData.status === 'FAILED') {
+                throw new Error('PDF generation failed: ' + (statusData.details || 'unknown error'));
+              } else {
+                // Still pending – poll again after short delay
+                setTimeout(poll, 2000);
+              }
+            })
+            .catch(err => { console.error('[pdf poll]', err); alert('Error while checking PDF status: '+err.message); });
+        };
+        poll();
+      })
+      .catch(function(err) {
+        console.error('[pdf]', err);
+        alert(err.message || 'PDF export failed. Please try again.');
+      })
+      .finally(function() {         if (card) card.style.opacity = '';
+        if (spinner) spinner.style.display = 'none'; // hide spinner
+ });
+}
+
+// ── Nav Toggle ────────────────────────────────────
+document.querySelector('.nav-toggle')?.addEventListener('click', function() {
+  document.getElementById('sideDrawer')?.classList.toggle('open');
+  document.getElementById('drawerOverlay')?.classList.toggle('open');
+  document.body.style.overflow = document.getElementById('sideDrawer')?.classList.contains('open') ? 'hidden' : '';
+  updateDrawerBadge();
+});
+document.getElementById('drawerOverlay')?.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('sideDrawer')?.classList.contains('open')) closeDrawer();
+});
+function closeDrawer() {
+  document.getElementById('sideDrawer')?.classList.remove('open');
+  document.getElementById('drawerOverlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function updateDrawerBadge() {
+  var badge = document.getElementById('drawerUserBadge');
+  if (!badge) return;
+  fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+    if (data.user) {
+      document.getElementById('drawerAvatar').src = data.user.picture || 'images/default-avatar.svg';
+      document.getElementById('drawerAvatar').alt = data.user.name || 'User';
+      document.getElementById('drawerUserName').textContent = data.user.name || 'Admin';
+      document.getElementById('drawerUserEmail').textContent = data.user.email || (data.user.authMethod === 'pin' ? 'Signed in with PIN' : 'Signed in');
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }).catch(function(){ badge.style.display = 'none'; });
+}
+
+// ── Auto-wrap Tables (same as other pages) ───────
+function applyTableDataLabels(table) {
+  if (!table) return;
+  var headers = [];
+  table.querySelectorAll('thead th').forEach(function(th) {
+    headers.push(th.textContent.trim());
+  });
+  if (headers.length > 2) {
+    table.querySelectorAll('tbody tr').forEach(function(tr) {
+      tr.querySelectorAll('td').forEach(function(td, i) {
+        if (headers[i]) td.setAttribute('data-label', headers[i]);
+      });
+    });
+  }
+}
+
+document.querySelectorAll('.doc-content table, .data-table').forEach(function(table) {
+  
+  applyTableDataLabels(table);
+});
+
+/* ══════════════════════════════════════════════════
+   Financial Projections Chart (from P&L data)
+   ══════════════════════════════════════════════════ */
+
+// ── KPI data cache ──
+let financialData = null;
+let financialChart = null;
+let selectedMonthIdx = -1;
+let currentScenario = 'conservative';
+let currentKpi = 'ebitda';
+
+// Scenario target values per KPI (from P&L projections)
+const SCENARIO_TARGETS = {
+  conservative: {
+    revenue:    { label: 'IDR 613M',    metric: 'Target Revenue' },
+    ebitda:     { label: 'IDR 101M',    metric: 'Target EBITDA' },
+    net_income: { label: 'IDR 507M',    metric: 'Target Net Profit' },
+    guests:     { label: '2,325',       metric: 'Target Guests/mo' },
+    staff_cost: { label: '22.4%',       metric: 'Target Staff Cost %' },
+  }
+};
+
+function updateScenarioTargets(kpi) {
+  kpi = kpi || currentKpi;
+  currentKpi = kpi;
+  // Persist KPI in URL
+  var u = new URL(window.location);
+  u.searchParams.set('kpi', kpi);
+  history.replaceState(null, '', u);
+  // Update all three scenario buttons
+  var scenarios = ['conservative'];
+  scenarios.forEach(function(s) {
+    var target = SCENARIO_TARGETS[s] && SCENARIO_TARGETS[s][kpi];
+    if (!target) return;
+    var btn = document.querySelector('.scenario-filter .period-btn[data-scenario="' + s + '"]');
+    if (!btn) return;
+    var valEl = btn.querySelector('.scenario-target');
+    var metEl = btn.querySelector('.scenario-metric');
+    if (valEl) valEl.textContent = target.label;
+    if (metEl) metEl.textContent = target.metric;
+  });
+}
+
+// ── KPI labels & formatting ──
+const KPI_CONFIG = {
+  revenue:    { label: 'Revenue',       fmt: 'currency', color: '#22c55e' },
+  ebitda:     { label: 'EBITDA',        fmt: 'currency', color: '#22c55e' },
+  net_income: { label: 'Net Profit',    fmt: 'currency', color: '#22c55e' },
+  guests:     { label: 'Guests',        fmt: 'number',   color: '#22c55e' },
+  staff_cost: { label: 'Staff Cost',    fmt: 'currency', color: '#22c55e' },
+};
+
+function formatKpiValue(kpi, val) {
+  if (val == null || isNaN(val)) return '—';
+  if (KPI_CONFIG[kpi]?.fmt === 'number') {
+    if (Math.abs(val) >= 1000) return (val / 1000).toFixed(1) + 'K';
+    return val.toFixed(0);
+  }
+  // currency
+  var abs = Math.abs(val);
+  var sign = val < 0 ? '-' : '+';
+  if (abs >= 1000000000) return sign + 'IDR ' + (abs / 1000000000).toFixed(1) + 'B';
+  if (abs >= 1000000) return sign + 'IDR ' + (abs / 1000000).toFixed(0) + 'M';
+  if (abs >= 1000) return sign + 'IDR ' + (abs / 1000).toFixed(0) + 'K';
+  return sign + 'IDR ' + abs.toFixed(0);
+}
+
+function parseSeries(arr) {
+  if (!arr || !arr.length) return [];
+  return arr.map(function(v) {
+    if (v === null || v === undefined) return null;
+    var n = Number(v);
+    return isNaN(n) ? null : n;
+  });
+}
+
+function renderFinancialChart(kpi) {
+  if (!financialData || !financialData.labels) return;
+  var canvas = document.getElementById('financialProjectionChart');
+  if (!canvas) return;
+
+  // Destroy previous instance
+  if (financialChart) { financialChart.destroy(); financialChart = null; }
+
+  var labels = financialData.labels;
+
+  // Actuals (Jan–May 2026) + scenario forecast arrays
+  var actualArr = parseSeries(financialData.actual && financialData.actual[kpi] ? financialData.actual[kpi] : []);
+  var consArr = parseSeries(scenarioForecasts.conservative ? scenarioForecasts.conservative[kpi] : []);
+  var realArr = parseSeries(scenarioForecasts.realistic ? scenarioForecasts.realistic[kpi] : []);
+  var aspArr = parseSeries(scenarioForecasts.aspirational ? scenarioForecasts.aspirational[kpi] : []);
+
+  // Cumulative: actual where available, else conservative forecast
+  var cumulative = 0;
+  var cumulativeData = [];
+  for (var i = 0; i < labels.length; i++) {
+    var actVal = actualArr[i];
+    var val = (actVal != null && actVal !== undefined) ? actVal : (consArr[i] != null ? consArr[i] : 0);
+    cumulative += val;
+    cumulativeData.push(cumulative);
+  }
+
+  // Colors for each series
+  var colors = {
+    actual:       '#eb3d28', // ember — Jan–May actuals
+    conservative: '#22c55e', // green
+    realistic:    '#f59e0b', // amber/orange
+    aspirational:'#8b5cf6'  // purple
+  };
+
+  var ctx = canvas.getContext('2d');
+  financialChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Actual',
+          data: actualArr,
+          backgroundColor: colors.actual,
+          borderColor: colors.actual,
+          borderWidth: 1,
+          borderRadius: 3,
+          order: 2,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Conservative',
+          data: consArr,
+          backgroundColor: colors.conservative,
+          borderColor: colors.conservative,
+          borderWidth: 1,
+          borderRadius: 3,
+          order: 2,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Realistic',
+          data: realArr,
+          backgroundColor: colors.realistic,
+          borderColor: colors.realistic,
+          borderWidth: 1,
+          borderRadius: 3,
+          order: 2,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Aspirational',
+          data: aspArr,
+          backgroundColor: colors.aspirational,
+          borderColor: '#a78bfa',
+          borderWidth: 2,
+          borderRadius: 3,
+          order: 2,
+          yAxisID: 'y',
+          maxBarThickness: 14
+        },
+        {
+          label: 'Cumulative',
+          data: cumulativeData,
+          type: 'line',
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.1)',
+          borderWidth: 2,
+          pointRadius: 2,
+          pointBackgroundColor: '#3b82f6',
+          tension: 0.3,
+          fill: true,
+          order: 1,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      datasets: {
+        bar: {
+          categoryPercentage: 0.82,
+          barPercentage: 0.92
+        }
+      },
+      onClick: function(e) {
+        var els = financialChart.getElementsAtEventForMode(e, 'index', { intersect: true });
+        if (els && els.length) {
+          showMonthDetail(els[0].index);
+        } else {
+          clearMonthDetail();
+        }
+      },
+      plugins: {
+        legend: {
+          labels: { color: '#888', boxWidth: 14, padding: 12, font: { size: 11 } }
+        },
+        tooltip: {
+          backgroundColor: '#1a1a22',
+          titleColor: '#f0f0f5',
+          bodyColor: '#888',
+          borderColor: 'rgba(255,255,255,0.08)',
+          borderWidth: 1,
+          padding: 10,
+          cornerRadius: 6,
+          callbacks: {
+            label: function(context) {
+              var val = context.parsed.y;
+              if (context.dataset.label === 'Cumulative') {
+                return 'Cumulative: ' + formatKpiValue(kpi, val);
+              }
+              return context.dataset.label + ': ' + formatKpiValue(kpi, val);
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8888a0', font: { size: 9 }, maxRotation: 45 } },
+        y: {
+          position: 'left',
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#8888a0',
+            font: { size: 9 },
+            callback: function(val) {
+              if (KPI_CONFIG[kpi]?.fmt === 'number') {
+                if (Math.abs(val) >= 1000) return (val / 1000).toFixed(1) + 'K';
+                return val.toFixed(0);
+              }
+              if (Math.abs(val) >= 1000000000) return (val / 1000000).toFixed(0) + 'B'; // note: keep original logic but corrected typo
+              if (Math.abs(val) >= 1000000) return (val / 1000000).toFixed(0) + 'M';
+              if (Math.abs(val) >= 1000) return (val / 1000).toFixed(0) + 'K';
+              return val.toFixed(0);
+            }
+          }
+        },
+        y1: {
+          position: 'right',
+          grid: { display: false },
+          ticks: {
+            color: '#8888a0',
+            font: { size: 9 },
+            callback: function(val) {
+              if (KPI_CONFIG[kpi]?.fmt === 'number') {
+                if (Math.abs(val) >= 1000) return (val / 1000).toFixed(1) + 'K';
+                return val.toFixed(0);
+              }
+              if (Math.abs(val) >= 1000000000) return (val / 1000000).toFixed(0) + 'B';
+              if (Math.abs(val) >= 1000000) return (val / 1000000).toFixed(0) + 'M';
+              if (Math.abs(val) >= 1000) return (val / 1000).toFixed(0) + 'K';
+              return val.toFixed(0);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Re-apply month selection highlight if one is active
+  if (selectedMonthIdx >= 0) {
+    financialChart.setActiveElements([{ datasetIndex: 0, index: selectedMonthIdx }]);
+    financialChart.update('none');
+  }
+}
+
+// ── Month Detail (drills into Operational KPIs below) ──
+function showMonthDetail(idx) {
+  selectedMonthIdx = idx;
+  if (!financialData) return;
+  var labels = financialData.labels;
+  if (idx < 0 || idx >= labels.length) return;
+  var label = labels[idx];
+
+  // Determine data type flag
+  var aRev = financialData.actual.revenue != null ? financialData.actual.revenue[idx] : null;
+  var aEbit = financialData.actual.ebitda != null ? financialData.actual.ebitda[idx] : null;
+  var aGuests = financialData.actual.guests != null ? financialData.actual.guests[idx] : null;
+  var aNet = financialData.actual.net_income != null ? financialData.actual.net_income[idx] : null;
+  var isActual = aRev !== null && aRev !== undefined;
+
+  // Resolve display value (actual if available, else forecast)
+  function val(kpi) {
+    var a = financialData.actual[kpi] != null ? financialData.actual[kpi][idx] : null;
+    var f = financialData.forecast[kpi] != null ? financialData.forecast[kpi][idx] : null;
+    return (a !== null && a !== undefined) ? a : (f !== null && f !== undefined ? f : null);
+  }
+
+  // Show the selected-month bar
+  var bar = document.getElementById('selectedMonthBar');
+  if (bar) bar.style.display = 'block';
+  var title = document.getElementById('selectedMonthTitle');
+  if (title) title.textContent = label + ' — ' + (isActual ? 'Actual' : 'Forecast');
+
+  // Set URL param for cross-page persistence
+  var url = new URL(window.location);
+  url.searchParams.set('month', label.replace(' ', '+'));
+  history.replaceState(null, '', url);
+
+  // 1. Update metric cards
+  var rev = val('revenue');
+  var ebit = val('ebitda');
+  var guests = val('guests');
+  var net = val('net_income');
+
+  setMonthMetric('metricRevenue', 'metricRevenueChange', rev,
+    label + ' &bull; ' + (aRev !== null && aRev !== undefined ? 'Actual' : 'Forecast'));
+  setMonthMetric('metricEbitda', 'metricEbitdaChange', ebit,
+    label + ' &bull; ' + (aEbit !== null && aEbit !== undefined ? 'Actual' : 'Forecast'));
+  var guestsVal = guests != null ? guests.toFixed(0) : '—';
+  document.getElementById('metricGuests').textContent = guestsVal;
+  var gc = document.getElementById('metricGuestsChange');
+  if (gc) gc.innerHTML = label + ' &bull; ' + (aGuests !== null && aGuests !== undefined ? 'Actual' : 'Forecast');
+  var staffCost = val('staff_cost');
+  var staffCostPct = (staffCost != null && rev != null && rev !== 0) ? (staffCost / rev) * 100 : null;
+  if (staffCostPct != null) {
+    document.getElementById('metricStaffCost').textContent = staffCostPct.toFixed(1) + '%';
+    var sc = document.getElementById('metricStaffCostChange');
+    if (sc) sc.innerHTML = label + ' &bull; IDR ' + Math.round(staffCost).toLocaleString('en-ID');
+  } else {
+    document.getElementById('metricStaffCost').textContent = '—';
+    var sc = document.getElementById('metricStaffCostChange');
+    if (sc) sc.innerHTML = label + ' &bull; Not available';
+  }
+
+  // Net Profit card
+  setMonthMetric('metricNetIncome', 'metricNetIncomeChange', net,
+    label + ' &bull; ' + (aNet !== null && aNet !== undefined ? 'Actual' : 'Forecast'));
+
+  // 2. Highlight selected bar on the financial chart
+  if (financialChart) {
+    financialChart.setActiveElements([{ datasetIndex: 0, index: idx }]);
+    financialChart.update('none');
+  }
+
+  // Sync the button label
+  updateClearButton();
+
+  // 3. Populate summary + P&L detail tables below the chart
+  renderPnlDetailReport(idx, label, isActual);
+}
+
+function formatIdr(value, signed) {
+  if (value == null || isNaN(value)) return '—';
+  var abs = Math.abs(value);
+  var prefix = signed && value < 0 ? '-' : (signed && value > 0 ? '+' : '');
+  if (abs >= 1000000000) return prefix + 'IDR ' + (abs / 1000000000).toFixed(2) + 'B';
+  if (abs >= 1000000) return prefix + 'IDR ' + (abs / 1000000).toFixed(1) + 'M';
+  if (abs >= 1000) return prefix + 'IDR ' + Math.round(abs).toLocaleString('en-ID');
+  return prefix + 'IDR ' + abs.toFixed(0);
+}
+
+function getScenarioKpi(scenario, kpi, idx) {
+  if (scenario === 'primary') {
+    var a = financialData.actual[kpi] != null ? financialData.actual[kpi][idx] : null;
+    if (a !== null && a !== undefined) return a;
+    return scenarioForecasts.conservative && scenarioForecasts.conservative[kpi]
+      ? scenarioForecasts.conservative[kpi][idx] : null;
+  }
+  if (scenario === 'actual') {
+    var av = financialData.actual[kpi] != null ? financialData.actual[kpi][idx] : null;
+    return (av !== null && av !== undefined) ? av : null;
+  }
+  var fc = scenarioForecasts[scenario];
+  if (!fc || fc[kpi] == null) return null;
+  var v = fc[kpi][idx];
+  return (v !== null && v !== undefined) ? v : null;
+}
+
+function staffCostPct(revenue, staffCost) {
+  if (revenue == null || staffCost == null || revenue === 0) return null;
+  return (staffCost / revenue) * 100;
+}
+
+function labelToPeriod(label) {
+  var MONTH_MAP = { Jan:'01', Feb:'02', Mar:'03', Apr:'04', May:'05', Jun:'06',
+    Jul:'07', Aug:'08', Sep:'09', Oct:'10', Nov:'11', Dec:'12' };
+  var parts = label.split(' ');
+  return parts[1] + '-' + (MONTH_MAP[parts[0]] || '01');
+}
+
+function formatPnlCell(line, value) {
+  if (value == null || isNaN(value)) return '—';
+  if (line.pct) {
+    var pct = Math.abs(value) <= 1 ? value * 100 : value;
+    return pct.toFixed(1) + '%';
+  }
+  if (line.key && /(guests_day|guests_month|fte|_count)$/.test(line.key)) {
+    return Math.round(value).toLocaleString('en-ID');
+  }
+  if (Math.abs(value) < 500 && line.key && line.key.indexOf('staff_') === 0 && line.key.indexOf('cost') < 0) {
+    return Math.round(value).toLocaleString('en-ID');
+  }
+  return formatIdr(value, true);
+}
+
+function isHigherBetterLineKey(key) {
+  if (!key) return true;
+  if (key.indexOf('cost') >= 0 || key.indexOf('expense') >= 0 || key.indexOf('purchases') >= 0) return false;
+  if (/staff_.*_cost|total_direct|total_overhead|total_expenses|fixed_costs|variable_costs/.test(key)) return false;
+  return true;
+}
+
+function varianceVsConservative(actualVal, consVal, lineKey) {
+  if (actualVal == null || consVal == null || isNaN(actualVal) || isNaN(consVal) || consVal === 0) return '';
+  var pct = ((actualVal - consVal) / Math.abs(consVal)) * 100;
+  if (Math.abs(pct) < 0.5) return '<span class="pnl-variance neutral">≈ vs Cons.</span>';
+  var higherBetter = isHigherBetterLineKey(lineKey);
+  var favorable = higherBetter ? pct > 0 : pct < 0;
+  var sign = pct > 0 ? '+' : '';
+  var cls = favorable ? 'favorable' : 'unfavorable';
+  return '<span class="pnl-variance ' + cls + '">' + sign + pct.toFixed(1) + '% vs Cons.</span>';
+}
+
+function renderPnlDetailReport(idx, label, isActual) {
+  var summaryBody = document.getElementById('pnlSummaryBody');
+  var breakdownBody = document.getElementById('pnlBreakdownBody');
+  if (!summaryBody || !breakdownBody) return;
+
+  var actRev = getScenarioKpi('actual', 'revenue', idx);
+  var actEbit = getScenarioKpi('actual', 'ebitda', idx);
+  var actGuests = getScenarioKpi('actual', 'guests', idx);
+  var actSc = getScenarioKpi('actual', 'staff_cost', idx);
+  var actNet = getScenarioKpi('actual', 'net_income', idx);
+
+  var rev = actRev != null ? actRev : getScenarioKpi('conservative', 'revenue', idx);
+  var ebit = actEbit != null ? actEbit : getScenarioKpi('conservative', 'ebitda', idx);
+  var guests = actGuests != null ? actGuests : getScenarioKpi('conservative', 'guests', idx);
+  var sc = actSc != null ? actSc : getScenarioKpi('conservative', 'staff_cost', idx);
+  var net = actNet != null ? actNet : getScenarioKpi('conservative', 'net_income', idx);
+  var scPct = staffCostPct(rev, sc);
+
+  summaryBody.innerHTML =
+    '<tr>' +
+      '<td><strong>' + label + '</strong></td>' +
+      '<td>' + formatIdr(rev) + '</td>' +
+      '<td>' + formatIdr(ebit, true) + '</td>' +
+      '<td>' + (guests != null ? Math.round(guests).toLocaleString('en-ID') : '—') + '</td>' +
+      '<td>' + (scPct != null ? scPct.toFixed(1) + '%' : '—') + '</td>' +
+      '<td>' + formatIdr(net, true) + '</td>' +
+    '</tr>';
+
+  breakdownBody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;">Loading P&amp;L detail…</td></tr>';
+
+  var chartPeriod = labelToPeriod(label);
+  fetch('/api/financial-overview?period=' + encodeURIComponent(chartPeriod))
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) {
+      var cols = [
+        { key: 'actual', label: 'Actuals' },
+        { key: 'conservative', label: 'Conservative' },
+        { key: 'realistic', label: 'Realistic' },
+        { key: 'aspirational', label: 'Aspirational' }
+      ];
+
+      var template = (data.scenarios.conservative && data.scenarios.conservative.lines && data.scenarios.conservative.lines.length)
+        ? data.scenarios.conservative.lines
+        : (data.scenarios.actual && data.scenarios.actual.lines) || [];
+
+      if (!template.length) {
+        breakdownBody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;">No P&amp;L data for this month — re-run load_financial_data.mjs</td></tr>';
+        return;
+      }
+
+      var lineMaps = {};
+      cols.forEach(function(c) {
+        var lines = data.scenarios[c.key] ? data.scenarios[c.key].lines : [];
+        lineMaps[c.key] = {};
+        lines.forEach(function(l) { lineMaps[c.key][l.key] = l; });
+      });
+
+      var daysNote = '';
+      if (data.scenarios.actual && data.scenarios.actual.from_z_reports && data.scenarios.actual.days_count) {
+        daysNote = '<tr><td colspan="5" class="pnl-days-note">Actuals from ' + data.scenarios.actual.days_count +
+          ' daily Z-report' + (data.scenarios.actual.days_count === 1 ? '' : 's') +
+          ' (partial month until month-end).</td></tr>';
+      }
+
+      var rows = daysNote;
+      template.forEach(function(line) {
+        if (line.header) {
+          rows += '<tr><td colspan="5" style="font-weight:700;padding-top:12px;color:var(--text);">' + line.label + '</td></tr>';
+          return;
+        }
+        var pad = line.sub ? 'padding-left:20px;' : '';
+        rows += '<tr><td style="' + pad + '">' + line.label + '</td>';
+
+        cols.forEach(function(c) {
+          var cell = lineMaps[c.key][line.key];
+          var txt = cell ? formatPnlCell(cell, cell.value) : '—';
+          if (c.key === 'actual' && cell && cell.value != null && lineMaps.conservative[line.key]) {
+            var consCell = lineMaps.conservative[line.key];
+            if (consCell && consCell.value != null && !line.pct) {
+              txt += varianceVsConservative(cell.value, consCell.value, line.key);
+            }
+          }
+          rows += '<td>' + txt + '</td>';
+        });
+        rows += '</tr>';
+      });
+      breakdownBody.innerHTML = rows;
+      applyTableDataLabels(document.getElementById('pnlBreakdownTable'));
+    })
+    .catch(function(err) {
+      console.warn('[pnl-detail]', err.message);
+      breakdownBody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;">Failed to load P&amp;L detail</td></tr>';
+    });
+}
+
+function setMonthMetric(id, changeId, value, subtitle) {
+  var el = document.getElementById(id);
+  var ch = document.getElementById(changeId);
+  if (!el) return;
+  if (value != null && !isNaN(value)) {
+    var abs = Math.abs(value);
+    if (abs >= 1000000000) el.textContent = (value < 0 ? '-' : '') + 'IDR ' + (abs / 1000000000).toFixed(2) + 'B';
+    else if (abs >= 1000000) el.textContent = (value < 0 ? '-' : '') + 'IDR ' + (abs / 1000000).toFixed(0) + 'M';
+    else if (abs >= 1000) el.textContent = (value < 0 ? '-' : '') + 'IDR ' + (abs / 1000).toFixed(0) + 'K';
+    else el.textContent = (value < 0 ? '-' : '') + 'IDR ' + abs.toFixed(0);
+  } else {
+    el.textContent = '—';
+  }
+  if (ch) ch.innerHTML = subtitle || '';
+}
+
+function findDefaultMonth() {
+  if (!financialData || !financialData.labels) return 0;
+  for (var mi = 0; mi < financialData.labels.length; mi++) {
+    // Find first month with a non-null forecast value
+    if (financialData.forecast.ebitda != null && financialData.forecast.ebitda[mi] != null) return mi;
+  }
+  return 0;
+}
+
+function updateClearButton() {
+  var btn = document.getElementById('clearMonthBtn');
+  if (!btn || !financialData || !financialData.labels) return;
+  var curLabel = financialData.labels[selectedMonthIdx] || financialData.labels[0];
+  btn.textContent = '\u21BA ' + curLabel;
+}
+
+function clearMonthDetail() {
+  // Jump to the current real-world month (e.g. Jun 2026)
+  var now = new Date();
+  var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var needle = monthNames[now.getMonth()] + ' ' + now.getFullYear();
+  if (financialData && financialData.labels) {
+    for (var mi = 0; mi < financialData.labels.length; mi++) {
+      if (financialData.labels[mi] === needle) {
+        showMonthDetail(mi);
+        updateClearButton();
+        return;
+      }
+    }
+  }
+  // Fallback: first forecast month
+  var idx = findDefaultMonth();
+  showMonthDetail(idx);
+  updateClearButton();
+}
+
+var scenarioForecasts = {};
+
+function loadAllScenarioData() {
+  var urlBase = '/api/financial-overview?scenario=';
+  var scenariosArr = ['conservative', 'realistic', 'aspirational'];
+
+  Promise.all(scenariosArr.map(function(s) {
+    return fetch(urlBase + s)
+      .then(function(r) {
+        if (!r.ok) throw new Error(s + ' HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(data) {
+        return { scenario: s, data: data };
+      });
+  })).then(function(results) {
+    var byScenario = {};
+    results.forEach(function(r) { byScenario[r.scenario] = r.data; });
+
+    financialData = byScenario.conservative;
+    scenarioForecasts = {
+      conservative: byScenario.conservative ? byScenario.conservative.forecast : {},
+      realistic: byScenario.realistic ? byScenario.realistic.forecast : {},
+      aspirational: byScenario.aspirational ? byScenario.aspirational.forecast : {}
+    };
+
+    if (!byScenario.aspirational || !byScenario.aspirational.forecast) {
+      console.warn('[financialOverview] aspirational forecast missing');
+    }
+
+    // Update scenario badge in the header (use conservative label)
+    var badge = document.getElementById('scenarioBadge');
+    if (badge) {
+      var targetInfo = SCENARIO_TARGETS['conservative'] && SCENARIO_TARGETS['conservative'][currentKpi];
+      badge.textContent = financialData.scenario_label + ' \u00b7 ' + (targetInfo ? targetInfo.label : '') + ' ' + (targetInfo ? targetInfo.metric : '');
+    }
+
+    // Select current month so metric cards show data immediately
+    clearMonthDetail();
+
+    // Show target values for the current KPI
+    updateScenarioTargets(currentKpi);
+
+    renderFinancialChart(currentKpi);
+  }).catch(function(err) {
+    console.warn('[financialOverview]', err.message);
+  });
+}
+
+  
+function initFinancialChart() {
+  // Check URL for scenario param
+  var urlScenario = new URLSearchParams(window.location.search).get('scenario');
+  var validScenarios = ['conservative','realistic','aspirational'];
+  if (urlScenario && validScenarios.indexOf(urlScenario) >= 0) {
+    currentScenario = urlScenario;
+  }
+
+  // Check URL for KPI param
+  var urlKpi = new URLSearchParams(window.location.search).get('kpi');
+  var validKpis = ['revenue','ebitda','net_income','guests','staff_cost'];
+  if (urlKpi && validKpis.indexOf(urlKpi) >= 0) {
+    currentKpi = urlKpi;
+    // Activate the correct metric card
+    document.querySelectorAll('#metricsRow .metric-card[data-kpi]').forEach(function(c) { c.classList.remove('active'); });
+    var targetCard = document.querySelector('#metricsRow .metric-card[data-kpi="' + urlKpi + '"]');
+    if (targetCard) targetCard.classList.add('active');
+  }
+
+  loadAllScenarioData();
+
+  // Check URL for ?month= param and auto-select
+  var params = new URLSearchParams(window.location.search);
+  var monthParam = params.get('month');
+  // Delay to let chart render first
+  setTimeout(function() {
+    if (monthParam && financialData && financialData.labels) {
+      var needle = monthParam.replace(/\+/g, ' ');
+      for (var ii = 0; ii < financialData.labels.length; ii++) {
+        if (financialData.labels[ii] === needle) {
+          (function(idx) { setTimeout(function() { showMonthDetail(idx); }, 100); })(ii);
+          break;
+        }
+      }
+    }
+  }, 200);
+}
+
+// ── Metric card = KPI filter toggle ──
+(function() {
+  var cards = document.querySelectorAll('#metricsRow .metric-card[data-kpi]');
+  function activateCard(kpi) {
+    cards.forEach(function(c) { c.classList.remove('active'); });
+    var target = document.querySelector('#metricsRow .metric-card[data-kpi="' + kpi + '"]');
+    if (target) target.classList.add('active');
+  }
+  cards.forEach(function(card) {
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', function() {
+      var kpi = card.getAttribute('data-kpi');
+      if (!kpi) return;
+      activateCard(kpi);
+      updateScenarioTargets(kpi);
+      renderFinancialChart(kpi);
+      if (selectedMonthIdx >= 0 && financialChart) {
+        financialChart.setActiveElements([{ datasetIndex: 0, index: selectedMonthIdx }]);
+        financialChart.update('none');
+      }
+    });
+  });
+  // Activate default on load
+  activateCard('ebitda');
+})();
+
+// ── Scenario filter toggle ──
+(function() {
+  var btns = document.querySelectorAll('.scenario-filter .period-btn');
+  btns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var scenario = btn.getAttribute('data-scenario');
+      if (!scenario || scenario === currentScenario) return;
+      // Update active state
+      btns.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      // Persist scenario in URL
+      var url = new URL(window.location);
+      url.searchParams.set('scenario', scenario);
+      history.replaceState(null, '', url);
+      // Reload chart with new scenario
+      loadAllScenarioData();
+    });
+  });
+
+  // Restore scenario from URL on load
+  var urlScenario = new URLSearchParams(window.location.search).get('scenario');
+  var validScenarios = ['conservative','realistic','aspirational'];
+  if (urlScenario && validScenarios.indexOf(urlScenario) >= 0) {
+    var targetBtn = document.querySelector('.scenario-filter .period-btn[data-scenario="' + urlScenario + '"]');
+    if (targetBtn) {
+      btns.forEach(function(b) { b.classList.remove('active'); });
+      targetBtn.classList.add('active');
+      currentScenario = urlScenario;
+    }
+  }
+})();
+
+// ── Clear month selection ──
+document.getElementById('clearMonthBtn')?.addEventListener('click', clearMonthDetail);
+
+// ── Preserve ?month= & ?scenario= & ?kpi= across page nav ──
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var monthParam = params.get('month');
+  var scenarioParam = params.get('scenario');
+  var kpiParam = params.get('kpi');
+  if (!monthParam && !scenarioParam && !kpiParam) return;
+  function enhanceLinks() {
+    var qs = [];
+    if (monthParam) qs.push('month=' + encodeURIComponent(monthParam));
+    if (scenarioParam) qs.push('scenario=' + encodeURIComponent(scenarioParam));
+    if (kpiParam) qs.push('kpi=' + encodeURIComponent(kpiParam));
+    var suffix = qs.length ? (qs.join('&')) : '';
+    if (!suffix) return;
+    document.querySelectorAll('.drawer-links a, .nav-brand').forEach(function(a) {
+      var href = a.getAttribute('href');
+      if (href && !href.startsWith('#') && !href.includes('://') && href.indexOf('=') < 0) {
+        a.setAttribute('href', href + (href.includes('?') ? '&' : '?') + suffix);
+      }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', enhanceLinks);
+  else enhanceLinks();
+})();
+
+// ── Initialize on Page Load ───────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  initFinancialChart();
+});
+</script>
+</body>
+</html>
