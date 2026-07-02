@@ -115,26 +115,28 @@ async function requestOpenAiCompletion(
   sessionToolsEnabled: boolean,
 ): Promise<Response> {
   const tools = buildOpenAiTools(webSearchEnabled, sessionToolsEnabled);
+  const body = {
+    model,
+    messages,
+    ...(tools ? { tools, tool_choice: 'auto' as const } : {}),
+    max_tokens: 1200,
+    ...(webSearchEnabled ? {} : { temperature: 0.7 }),
+    stream,
+  };
+
   return fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      ...(tools ? { tools, tool_choice: 'auto' as const } : {}),
-      max_tokens: 1200,
-      temperature: 0.7,
-      stream,
-    }),
+    body: JSON.stringify(body),
   });
 }
 
 export async function consumeOpenAiStream(
   body: ReadableStream<Uint8Array>,
-  onContent?: (chunk: string) => void,
+  onContent?: (chunk: string) => void | Promise<void>,
 ): Promise<ConsumedOpenAiStream> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -178,7 +180,7 @@ export async function consumeOpenAiStream(
       const delta = choice.delta;
       if (delta?.content) {
         content += delta.content;
-        onContent?.(delta.content);
+        await onContent?.(delta.content);
       }
 
       if (delta?.tool_calls) {
@@ -215,7 +217,7 @@ export async function consumeOpenAiStream(
         const choice = parsed.choices?.[0];
         if (choice?.delta?.content) {
           content += choice.delta.content;
-          onContent?.(choice.delta.content);
+          await onContent?.(choice.delta.content);
         }
         if (choice?.finish_reason) {
           finishReason = choice.finish_reason;
@@ -322,6 +324,7 @@ async function completeChatWithStreaming(options: {
   void (async () => {
     let currentMessages = [...options.messages];
     let streamedChars = 0;
+    let emittedError = false;
 
     try {
       for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
@@ -339,14 +342,15 @@ async function completeChatWithStreaming(options: {
             ? 'The AI service returned an empty stream.'
             : await readOpenAiError(chatResp);
           await writeLine({ error: errMessage });
+          emittedError = true;
           break;
         }
 
         const { finishReason, content, toolCalls } = await consumeOpenAiStream(
           chatResp.body,
-          (chunk) => {
+          async (chunk) => {
             streamedChars += chunk.length;
-            void writeLine({ choices: [{ delta: { content: chunk } }] });
+            await writeLine({ choices: [{ delta: { content: chunk } }] });
           },
         );
 
@@ -381,7 +385,7 @@ async function completeChatWithStreaming(options: {
         break;
       }
 
-      if (streamedChars === 0) {
+      if (streamedChars === 0 && !emittedError) {
         await writeLine({
           error: 'The assistant returned an empty response. Please try again.',
         });

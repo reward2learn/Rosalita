@@ -23,7 +23,9 @@ describe('consumeOpenAiStream', () => {
         'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
         'data: [DONE]',
       ]),
-      (chunk) => chunks.push(chunk),
+      (chunk) => {
+        chunks.push(chunk);
+      },
     );
 
     expect(chunks).toEqual(['Hello', ' world']);
