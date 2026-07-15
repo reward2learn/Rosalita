@@ -12,3 +12,8 @@ Google/
 logs/
 .tmp/
 ~/
+
+# Environment variables (keep .example files tracked)
+.env
+.env.*
+!.env*.example

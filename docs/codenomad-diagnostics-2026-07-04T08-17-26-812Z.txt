@@ -1,0 +1,12 @@
+CodeNomad Diagnostic Report
+============================
+Generated: 2026-07-04T08:17:26.812Z
+Server version: 0.17.1
+UI version: 0.17.1 (source: bundled)
+Runtime: web
+Platform: desktop
+Window context: remote
+OS: macOS (arm)
+Server URL: https://127.0.0.1:9898
+Workspace root: /Users/iliashapiro/Downloads/Rosalita
+UI source: bundled
