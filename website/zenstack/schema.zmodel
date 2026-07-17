@@ -11,6 +11,7 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
   output   = "../../src/generated/prisma"
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x"]
 }
 
 // ── Enums ────────────────────────────────────────────
@@ -308,6 +309,7 @@ model DailyZReport {
   createdAt             DateTime  @default(now()) @map("created_at")
 
   @@unique([reportDate, department])
+  @@allow('all', true)
   @@map("daily_z_reports")
 }
 
@@ -316,6 +318,7 @@ model MonthlyActualInput {
   inputs    Json     @default("{}")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@allow('all', true)
   @@map("monthly_actual_inputs")
 }
 
@@ -328,6 +331,7 @@ model MonthlyActualDepartment {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@id([period, department])
+  @@allow('all', true)
   @@map("monthly_actual_departments")
 }
 
@@ -347,6 +351,7 @@ model DailyMetric {
   notes         String?
   createdAt     DateTime @default(now()) @map("created_at")
 
+  @@allow('all', true)
   @@map("daily_metrics")
 }
 
@@ -359,6 +364,7 @@ model MonthlyTarget {
   targetAvgSpend     Decimal @map("target_avg_spend") @db.Decimal(10, 2)
   targetStaffCostPct Decimal @map("target_staff_cost_pct") @db.Decimal(5, 2)
 
+  @@allow('all', true)
   @@map("monthly_targets")
 }
 
