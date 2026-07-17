@@ -10,7 +10,7 @@ import {
 
 type PosExtraction = Record<string, unknown> & { confidence?: string; method?: string };
 
-const OCR_PROMPT = `You transcribe Rosalita Cantina POS Z Sales Day Report thermal receipt photos (SPICERY -ROSALITA- BALI).
+const OCR_PROMPT = `You transcribe Red Ruby Bali POS Z Sales Day Report thermal receipt photos (SPICERY -REDRUBY- BALI).
 
 Return ONLY valid JSON:
 { "text": "full verbatim transcription as a single string" }
@@ -41,7 +41,7 @@ export async function handlePosScan(body: { images?: unknown }): Promise<{ statu
 
   const imageContent = (images as string[]).map((img) => {
     const url = img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`;
-    return { type: 'image_url', image_url: { url, detail: 'high' } };
+    return { type: 'image_url', image_url: { url, detail: 'auto' } };
   });
 
   try {
@@ -68,7 +68,7 @@ export async function handlePosScan(body: { images?: unknown }): Promise<{ statu
             ],
           },
         ],
-        max_tokens: 4096,
+        max_tokens: 16000,
         temperature: 0.1,
         response_format: { type: 'json_object' },
       }),
@@ -89,7 +89,31 @@ export async function handlePosScan(body: { images?: unknown }): Promise<{ statu
     try {
       parsed = JSON.parse(raw) as { text?: string };
     } catch {
-      return { status: 502, body: { success: false, error: 'Could not parse OCR response' } };
+      // Fallback: try to extract text from markdown code block or raw content
+      const mdMatch = raw.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+      if (mdMatch) {
+        try {
+          parsed = JSON.parse(mdMatch[1].trim()) as { text?: string };
+        } catch {
+          // Second fallback: if the raw looks like an object with a text property
+          const textMatch = raw.match(/"text"\s*:\s*"([\s\S]*?)"\s*[,\}]/);
+          if (textMatch) {
+            parsed = { text: textMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') };
+          } else {
+            // Final fallback: use the raw string as the transcription
+            parsed = { text: raw };
+          }
+        }
+      } else {
+        // Try regex extraction of text field
+        const textMatch = raw.match(/"text"\s*:\s*"([\s\S]*?)"\s*\}/);
+        if (textMatch) {
+          parsed = { text: textMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') };
+        } else {
+          // Last resort: use raw as text
+          parsed = { text: raw };
+        }
+      }
     }
 
     const text = typeof parsed.text === 'string' ? parsed.text.trim() : '';

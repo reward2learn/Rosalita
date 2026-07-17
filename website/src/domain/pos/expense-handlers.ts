@@ -5,7 +5,7 @@ import { resolveOpenAiKey } from '@/lib/openai';
 import { getActualsDepartment } from '@/domain/actuals/monthly-actuals-schema';
 import { parseExpenseText } from '@/domain/pos/expense-extract';
 
-const EXPENSE_OCR_PROMPT = `You transcribe expense invoices, payroll slips, and payment receipts for Rosalita Cantina (Indonesia).
+const EXPENSE_OCR_PROMPT = `You transcribe expense invoices, payroll slips, and payment receipts for Red Ruby Bali (Indonesia).
 
 Return ONLY valid JSON:
 { "text": "full verbatim transcription as a single string" }
@@ -36,7 +36,7 @@ export async function handleExpenseScan(body: { images?: unknown }): Promise<{ s
 
   const imageContent = (images as string[]).map((img) => {
     const url = img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`;
-    return { type: 'image_url', image_url: { url, detail: 'high' } };
+    return { type: 'image_url', image_url: { url, detail: 'auto' } };
   });
 
   try {
@@ -63,7 +63,7 @@ export async function handleExpenseScan(body: { images?: unknown }): Promise<{ s
             ],
           },
         ],
-        max_tokens: 4096,
+        max_tokens: 16000,
         temperature: 0.1,
         response_format: { type: 'json_object' },
       }),
@@ -82,7 +82,27 @@ export async function handleExpenseScan(body: { images?: unknown }): Promise<{ s
     try {
       parsed = JSON.parse(raw) as { text?: string };
     } catch {
-      return { status: 502, body: { success: false, error: 'Could not parse OCR response' } };
+      // Fallback: try to extract text from markdown code block or raw content
+      const mdMatch = raw.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+      if (mdMatch) {
+        try {
+          parsed = JSON.parse(mdMatch[1].trim()) as { text?: string };
+        } catch {
+          const textMatch = raw.match(/"text"\s*:\s*"([\s\S]*?)"\s*[,\}]/);
+          if (textMatch) {
+            parsed = { text: textMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') };
+          } else {
+            parsed = { text: raw };
+          }
+        }
+      } else {
+        const textMatch = raw.match(/"text"\s*:\s*"([\s\S]*?)"\s*\}/);
+        if (textMatch) {
+          parsed = { text: textMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') };
+        } else {
+          parsed = { text: raw };
+        }
+      }
     }
 
     const text = typeof parsed.text === 'string' ? parsed.text.trim() : '';
