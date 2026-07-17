@@ -67,7 +67,14 @@ function isManualSource(source: string | null | undefined): boolean {
 function coerceValue(key: string, val: unknown): unknown {
   if (val === null || val === undefined || val === '') return null;
   if (key === 'report_date') return toIsoDate(val) || String(val).slice(0, 10);
-  if (key === 'report_time') return String(val).slice(0, 8);
+  if (key === 'report_time') {
+    const tt = String(val).trim();
+    if (!tt) return null;
+    // Pad to HH:MM:SS for Postgres TIME compatibility
+    const parts = tt.split(':');
+    while (parts.length < 3) parts.push('00');
+    return parts.slice(0, 3).map((p) => p.padStart(2, '0')).join(':');
+  }
   if (key === 'period_start' || key === 'period_end') {
     const ts = toSqlTimestamp(val);
     return ts || null;
