@@ -327,6 +327,11 @@ function DayPosTab() {
   return (
     <Grid container spacing={2.5}>
       <Grid size={{ xs: 12, lg: 7 }}>
+        <PosOcrPanel
+          onParsed={(parsed) => setValues((current) => ({ ...current, ...parsed }))}
+        />
+      </Grid>
+      <Grid size={{ xs: 12, lg: 5 }}>
         <SectionShell title="Day POS Upload">
           <Stack spacing={2}>
             <TextField
@@ -383,11 +388,6 @@ function DayPosTab() {
             {saveState.isSuccess ? <Typography role="status" color="success.main">Z-report saved.</Typography> : null}
           </Stack>
         </SectionShell>
-      </Grid>
-      <Grid size={{ xs: 12, lg: 5 }}>
-        <PosOcrPanel
-          onParsed={(parsed) => setValues((current) => ({ ...current, ...parsed }))}
-        />
       </Grid>
     </Grid>
   );
@@ -786,7 +786,7 @@ function FillMissingTab() {
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'missing-days');
-    XLSX.writeFile(workbook, `rosalita-missing-${period}.xlsx`);
+    XLSX.writeFile(workbook, `redruby-missing-${period}.xlsx`);
   };
 
   const previewRows = importPreview?.mode === 'daily'
