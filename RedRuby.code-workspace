@@ -1,0 +1,51 @@
+{
+	"folders": [
+		{
+			"name": "RedRuby (root)",
+			"path": "."
+		},
+		{
+			"name": "Website (Next.js)",
+			"path": "website"
+		}
+	],
+	"settings": {
+		"editor.formatOnSave": true,
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": "explicit"
+		},
+		"typescript.tsdk": "website/node_modules/typescript/lib",
+		"typescript.preferences.importModuleSpecifier": "non-relative",
+		"files.exclude": {
+			"**/node_modules": true,
+			"**/.next": true,
+			"**/zenstack/prisma": true
+		},
+		"search.exclude": {
+			"**/node_modules": true,
+			"**/.next": true,
+			"**/generated": true,
+			"**/zenstack/**/generated": true
+		},
+		"[typescript]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[typescriptreact]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[prisma]": {
+			"editor.defaultFormatter": "Prisma.prisma"
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"dbaeumer.vscode-eslint",
+			"esbenp.prettier-vscode",
+			"bradlc.vscode-tailwindcss",
+			"Prisma.prisma",
+			"ZenStack.zenstack",
+			"ms-vscode.vscode-typescript-next"
+		]
+	}
+}
