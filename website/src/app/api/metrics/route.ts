@@ -322,6 +322,13 @@ export async function POST(request: Request) {
     );
   } catch (err) {
     console.error('POST /api/metrics error:', err);
+    if (err instanceof Error && 'code' in err) {
+      console.error('POST /api/metrics detail:', JSON.stringify({
+        message: err.message,
+        code: (err as Record<string, unknown>).code,
+        meta: (err as Record<string, unknown>).meta,
+      }, null, 2));
+    }
     return NextResponse.json(
       { success: false, error: 'Insert failed', detail: err instanceof Error ? err.message : String(err) },
       { status: 500 },
