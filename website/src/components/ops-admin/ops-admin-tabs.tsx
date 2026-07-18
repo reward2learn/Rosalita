@@ -12,6 +12,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
+import LinearProgress from '@mui/material/LinearProgress';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -324,23 +325,56 @@ function PosOcrPanel({ onParsed }: { onParsed: (values: Record<string, string>) 
   const [text, setText] = useState('');
   const [scan, scanState] = useScanPosReceiptMutation();
   const [parse, parseState] = useParsePosTextMutation();
-  const scanRef = useRef<{ abort: () => void } | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number } | null>(null);
 
-  const handleScan = () => {
-    const promise = scan({ images: images.map((image) => image.dataUrl) });
-    scanRef.current = promise;
-    promise.unwrap().then((payload) => {
-      setText(payload.data?.text ?? '');
-      scanRef.current = null;
-    }).catch(() => {
-      scanRef.current = null;
-    });
+  const handleScan = async () => {
+    setScanProgress({ current: 0, total: images.length, failed: 0 });
+    const results: string[] = [];
+    let failed = 0;
+
+    for (let i = 0; i < images.length; i++) {
+      // Check if aborted
+      if (abortRef.current?.signal.aborted) break;
+
+      setScanProgress({ current: i + 1, total: images.length, failed });
+
+      try {
+        const controller = new AbortController();
+        abortRef.current = controller;
+        // Use fetch directly with AbortController for per-image control
+        const resp = await fetch('/api/pos?action=scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images: [images[i].dataUrl] }),
+          signal: controller.signal,
+          credentials: 'include',
+        });
+        if (resp.ok) {
+          const payload = await resp.json();
+          if (payload.data?.text) results.push(payload.data.text);
+        } else {
+          failed++;
+          setScanProgress({ current: i + 1, total: images.length, failed });
+        }
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') break;
+        failed++;
+        setScanProgress({ current: i + 1, total: images.length, failed });
+      }
+    }
+
+    if (!abortRef.current?.signal.aborted) {
+      setText(results.join('\n---\n'));
+    }
+    abortRef.current = null;
+    setScanProgress(null);
   };
 
   const handleStopScan = () => {
-    scanRef.current?.abort();
-    scanRef.current = null;
-    scanState.reset();
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setScanProgress(null);
   };
 
   const handleParse = async () => {
@@ -369,10 +403,14 @@ function PosOcrPanel({ onParsed }: { onParsed: (values: Record<string, string>) 
             onRemove={(i) => setImages((prev) => prev.filter((_, idx) => idx !== i))}
           />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button onClick={handleScan} disabled={!images.length || scanState.isLoading} variant="contained">
-            {scanState.isLoading ? 'Scanning...' : 'Scan'}
+          <Button
+            onClick={handleScan}
+            disabled={!images.length || !!scanProgress}
+            variant="contained"
+          >
+            {scanProgress ? `Scanning ${scanProgress.current}/${scanProgress.total}${scanProgress.failed ? ` (${scanProgress.failed} failed)` : ''}...` : 'Scan'}
           </Button>
-          {scanState.isLoading ? (
+          {scanProgress ? (
             <Button onClick={handleStopScan} variant="outlined" color="warning">
               Stop
             </Button>
@@ -381,6 +419,12 @@ function PosOcrPanel({ onParsed }: { onParsed: (values: Record<string, string>) 
             {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
           </Button>
         </Stack>
+        {scanProgress ? (
+          <LinearProgress
+            variant="determinate"
+            value={Math.round((scanProgress.current / scanProgress.total) * 100)}
+          />
+        ) : null}
         <TextField
           label="Receipt text"
           value={text}
@@ -503,25 +547,55 @@ function ExpenseOcrPanel({
 }) {
   const [images, setImages] = useState<ReceiptImagePayload[]>([]);
   const [text, setText] = useState('');
-  const [scan, scanState] = useScanExpenseReceiptMutation();
+  const [scan] = useScanExpenseReceiptMutation();
   const [parse, parseState] = useParseExpenseTextMutation();
-  const scanRef = useRef<{ abort: () => void } | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number } | null>(null);
 
-  const handleScan = () => {
-    const promise = scan({ images: images.map((image) => image.dataUrl) });
-    scanRef.current = promise;
-    promise.unwrap().then((payload) => {
-      setText(payload.data?.text ?? '');
-      scanRef.current = null;
-    }).catch(() => {
-      scanRef.current = null;
-    });
+  const handleScan = async () => {
+    setScanProgress({ current: 0, total: images.length, failed: 0 });
+    const results: string[] = [];
+    let failed = 0;
+
+    for (let i = 0; i < images.length; i++) {
+      if (abortRef.current?.signal.aborted) break;
+      setScanProgress({ current: i + 1, total: images.length, failed });
+
+      try {
+        const controller = new AbortController();
+        abortRef.current = controller;
+        const resp = await fetch('/api/pos?action=expense-scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images: [images[i].dataUrl] }),
+          signal: controller.signal,
+          credentials: 'include',
+        });
+        if (resp.ok) {
+          const payload = await resp.json();
+          if (payload.data?.text) results.push(payload.data.text);
+        } else {
+          failed++;
+          setScanProgress({ current: i + 1, total: images.length, failed });
+        }
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') break;
+        failed++;
+        setScanProgress({ current: i + 1, total: images.length, failed });
+      }
+    }
+
+    if (!abortRef.current?.signal.aborted) {
+      setText(results.join('\n---\n'));
+    }
+    abortRef.current = null;
+    setScanProgress(null);
   };
 
   const handleStopScan = () => {
-    scanRef.current?.abort();
-    scanRef.current = null;
-    scanState.reset();
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setScanProgress(null);
   };
 
   const handleParse = async () => {
@@ -550,10 +624,14 @@ function ExpenseOcrPanel({
             onRemove={(i) => setImages((prev) => prev.filter((_, idx) => idx !== i))}
           />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <Button onClick={handleScan} disabled={!images.length || scanState.isLoading} variant="contained">
-              {scanState.isLoading ? 'Scanning...' : 'Scan'}
+            <Button
+              onClick={handleScan}
+              disabled={!images.length || !!scanProgress}
+              variant="contained"
+            >
+              {scanProgress ? `Scanning ${scanProgress.current}/${scanProgress.total}${scanProgress.failed ? ` (${scanProgress.failed} failed)` : ''}...` : 'Scan'}
             </Button>
-            {scanState.isLoading ? (
+            {scanProgress ? (
               <Button onClick={handleStopScan} variant="outlined" color="warning">
                 Stop
               </Button>
@@ -562,6 +640,12 @@ function ExpenseOcrPanel({
               {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
             </Button>
           </Stack>
+          {scanProgress ? (
+            <LinearProgress
+              variant="determinate"
+              value={Math.round((scanProgress.current / scanProgress.total) * 100)}
+            />
+          ) : null}
           <TextField
             label="Receipt text"
             value={text}
@@ -569,7 +653,7 @@ function ExpenseOcrPanel({
             multiline
             minRows={6}
             fullWidth
-        />
+          />
       </Stack>
     </SectionShell>
   );
