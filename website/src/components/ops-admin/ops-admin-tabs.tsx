@@ -482,12 +482,21 @@ function DayPosTab() {
   const [save, saveState] = useSaveZReportMutation();
   const [resetKey, setResetKey] = useState(0);
   const [expanded, setExpanded] = useState<string>('step1');
+  const [zrepDetail, setZrepDetail] = useState<{ date: string; dept: string } | null>(null);
+  const [fullscreenImage, setFullscreenImage] = useState<ReceiptImage | null>(null);
   const { data, isFetching } = useGetSchemaQuery(department);
   const { data: recentPayload } = useListMetricsQuery({ page: 1, limit: 5 });
   const schema = dataFromEnvelope<ZReportSchemaPayload>(data);
   const departments = schema?.departments ?? [];
   const sections = schema?.form_sections ?? [];
   const recentRows = (asRecord(recentPayload).rows as MetricsRow[] | undefined) ?? [];
+
+  const { data: zrepDetailPayload, isFetching: zrepLoading } = useGetDetailQuery(
+    { date: zrepDetail?.date ?? '', department: zrepDetail?.dept ?? 'all_pos' },
+    { skip: !zrepDetail },
+  );
+  const zrepDetailData = dataFromEnvelope<Record<string, unknown>>(zrepDetailPayload);
+  const zrepImages = (Array.isArray(zrepDetailData?.receipt_images) ? zrepDetailData?.receipt_images : []) as ReceiptImage[];
 
   const handleChange = (key: string, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -641,7 +650,12 @@ function DayPosTab() {
                 recentRows.map((row) => {
                   const date = row.report_date ?? row.date ?? '';
                   return (
-                    <TableRow key={`${date}-${row.department ?? 'all'}`} hover sx={{ cursor: 'pointer' }}>
+                    <TableRow
+                      key={`${date}-${row.department ?? 'all'}`}
+                      hover
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => setZrepDetail({ date: String(date), dept: String(row.department ?? 'all_pos') })}
+                    >
                       <TableCell>{date}</TableCell>
                       <TableCell>{row.department ?? 'all_pos'}</TableCell>
                       <TableCell>{formatIdr(row.nett_sales)}</TableCell>
@@ -655,6 +669,68 @@ function DayPosTab() {
           </Table>
         </AccordionDetails>
       </Accordion>
+
+      {/* Z-Report Detail Modal */}
+      <Dialog open={!!zrepDetail} onClose={() => setZrepDetail(null)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Z-Report — {zrepDetail?.date} ({zrepDetail?.dept})</span>
+          <IconButton onClick={() => setZrepDetail(null)} size="small">✕</IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {zrepLoading ? (
+            <CircularProgress size={24} />
+          ) : zrepDetailData ? (
+            <Stack spacing={2}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5 }}>
+                {Object.entries(zrepDetailData)
+                  .filter(([k]) => !['receipt_images', 'id'].includes(k))
+                  .map(([key, value]) => (
+                    <Box key={key} sx={{ p: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {key.replace(/_/g, ' ')}
+                      </Typography>
+                      <Typography variant="body2">
+                        {key.endsWith('_amount') || key.endsWith('_sales') ? formatIdr(value)
+                          : key === 'report_date' || key === 'period_start' || key === 'period_end' ? String(value ?? '-').slice(0, 19)
+                          : String(value ?? '-')}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Box>
+              {zrepImages.length > 0 ? (
+                <Box>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Receipt Images ({zrepImages.length})</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                    {zrepImages.map((img, i) => (
+                      <Box
+                        key={i}
+                        sx={{
+                          width: 120,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          borderRadius: 1,
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          '&:hover': { opacity: 0.8 },
+                        }}
+                        onClick={() => setFullscreenImage(img)}
+                      >
+                        <img src={imageToDataUrl(img)} alt={img.name || `receipt-${i}`} style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }} />
+                        <Typography variant="caption" noWrap sx={{ display: 'block', px: 0.5, py: 0.25, fontSize: '0.6rem' }}>
+                          {img.name || `Image ${i + 1}`}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              ) : null}
+            </Stack>
+          ) : (
+            <Typography color="text.secondary">No data found.</Typography>
+          )}
+        </DialogContent>
+      </Dialog>
+      <ImageViewerModal open={!!fullscreenImage} image={fullscreenImage} onClose={() => setFullscreenImage(null)} />
     </Box>
   );
 }
