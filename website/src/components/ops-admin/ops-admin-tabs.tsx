@@ -210,7 +210,11 @@ interface MetricsRow {
   date?: string;
   department?: string;
   nett_sales?: number;
+  total_sales?: number;
   total_covers?: number;
+  total_bills?: number;
+  avg_bills?: number;
+  avg_covers?: number;
   receipt_image_count?: number;
   entry_source?: string;
 }
@@ -582,66 +586,120 @@ function ZReportCalendarView() {
   );
 }
 
-function ZReportChartView({ recentRows }: { recentRows: MetricsRow[] }) {
-  // Aggregate by month
-  const byMonth: Record<string, { sales: number; covers: number }> = {};
-  for (const row of recentRows) {
+function ZReportChartView() {
+  const now = new Date();
+  const [chartYear, setChartYear] = useState(now.getFullYear());
+  const [chartMonth, setChartMonth] = useState(now.getMonth() + 1);
+  const [chartMetric, setChartMetric] = useState('nett_sales');
+  const [chartMetricLabel, setChartMetricLabel] = useState('Nett Sales');
+
+  const from = `${chartYear}-${String(chartMonth).padStart(2, '0')}-01`;
+  const lastDay = new Date(chartYear, chartMonth, 0).getDate();
+  const to = `${chartYear}-${String(chartMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  const { data: chartPayload, isFetching } = useListMetricsQuery({ from, to, limit: 31 });
+  const chartRows = (asRecord(chartPayload).rows as MetricsRow[] | undefined) ?? [];
+
+  const chartMetrics: { key: string; label: string; numeric: boolean }[] = [
+    { key: 'nett_sales', label: 'Nett Sales', numeric: true },
+    { key: 'total_sales', label: 'Total Sales', numeric: true },
+    { key: 'total_covers', label: 'Total Covers', numeric: true },
+    { key: 'total_bills', label: 'Total Bills', numeric: true },
+    { key: 'avg_bills', label: 'Avg Bill', numeric: true },
+    { key: 'avg_covers', label: 'Avg Cover', numeric: true },
+  ];
+
+  // Aggregate by day
+  const byDay: Record<string, number> = {};
+  for (const row of chartRows) {
     const date = row.report_date ?? row.date ?? '';
-    const month = date.slice(0, 7);
-    if (!month) continue;
-    if (!byMonth[month]) byMonth[month] = { sales: 0, covers: 0 };
-    byMonth[month].sales += Number(row.nett_sales ?? 0);
-    byMonth[month].covers += Number(row.total_covers ?? 0);
+    if (!date) continue;
+    const val = Number((row as Record<string, unknown>)[chartMetric] ?? 0);
+    byDay[date] = (byDay[date] ?? 0) + val;
   }
-  const months = Object.keys(byMonth).sort();
-  if (!months.length) return <Typography color="text.secondary">No data for chart.</Typography>;
+
+  const days = Object.keys(byDay).sort();
+  const monthLabel = new Date(chartYear, chartMonth - 1).toLocaleString('default', { month: 'long' });
 
   const chartData = {
-    labels: months,
-    datasets: [
-      {
-        label: 'Nett Sales (IDR)',
-        data: months.map((m) => byMonth[m].sales),
-        backgroundColor: 'rgba(144, 202, 249, 0.6)',
-        borderColor: 'rgb(144, 202, 249)',
-        borderWidth: 1,
-        yAxisID: 'y',
-      },
-      {
-        label: 'Covers',
-        data: months.map((m) => byMonth[m].covers),
-        backgroundColor: 'rgba(255, 167, 38, 0.6)',
-        borderColor: 'rgb(255, 167, 38)',
-        borderWidth: 1,
-        yAxisID: 'y1',
-      },
-    ],
+    labels: days.map((d) => d.slice(8)),
+    datasets: [{
+      label: `${chartMetricLabel} — ${monthLabel}`,
+      data: days.map((d) => byDay[d]),
+      backgroundColor: 'rgba(144, 202, 249, 0.6)',
+      borderColor: 'rgb(144, 202, 249)',
+      borderWidth: 1,
+    }],
   };
 
   return (
-    <Box sx={{ height: 250 }}>
-      <Bar
-        data={chartData}
-        options={{
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index' as const, intersect: false },
-          scales: {
-            y: {
-              type: 'linear' as const,
-              position: 'left' as const,
-              title: { display: true, text: 'Nett Sales (IDR)' },
-            },
-            y1: {
-              type: 'linear' as const,
-              position: 'right' as const,
-              grid: { drawOnChartArea: false },
-              title: { display: true, text: 'Covers' },
-            },
-          },
-        }}
-      />
-    </Box>
+    <Stack spacing={2}>
+      <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+        <TextField
+          select
+          size="small"
+          label="Year"
+          value={chartYear}
+          onChange={(e) => setChartYear(Number(e.target.value))}
+          sx={{ minWidth: 100 }}
+        >
+          {[2025, 2026, 2027].map((y) => (
+            <MenuItem key={y} value={y}>{y}</MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          size="small"
+          label="Month"
+          value={chartMonth}
+          onChange={(e) => setChartMonth(Number(e.target.value))}
+          sx={{ minWidth: 120 }}
+        >
+          {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
+            <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          size="small"
+          label="Metric"
+          value={chartMetric}
+          onChange={(e) => {
+            setChartMetric(e.target.value);
+            const found = chartMetrics.find((cm) => cm.key === e.target.value);
+            if (found) setChartMetricLabel(found.label);
+          }}
+          sx={{ minWidth: 140 }}
+        >
+          {chartMetrics.map((cm) => (
+            <MenuItem key={cm.key} value={cm.key}>{cm.label}</MenuItem>
+          ))}
+        </TextField>
+      </Stack>
+
+      {isFetching ? (
+        <CircularProgress size={24} />
+      ) : days.length === 0 ? (
+        <Typography color="text.secondary">No data for {monthLabel} {chartYear}.</Typography>
+      ) : (
+        <Box sx={{ height: 250 }}>
+          <Bar
+            data={chartData}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: true } },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: { display: true, text: chartMetricLabel },
+                },
+              },
+            }}
+          />
+        </Box>
+      )}
+    </Stack>
   );
 }
 
@@ -817,7 +875,7 @@ function DayPosTab() {
         <AccordionDetails>
           {viewMode === 'list' ? <ZReportListView recentRows={recentRows} setZrepDetail={setZrepDetail} /> : null}
           {viewMode === 'calendar' ? <ZReportCalendarView /> : null}
-          {viewMode === 'chart' ? <ZReportChartView recentRows={recentRows} /> : null}
+          {viewMode === 'chart' ? <ZReportChartView /> : null}
         </AccordionDetails>
       </Accordion>
 
