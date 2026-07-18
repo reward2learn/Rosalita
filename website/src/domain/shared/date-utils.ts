@@ -34,6 +34,49 @@ export function toSqlTimestamp(val: unknown): string {
   return `${local.replace('T', ' ')}:00`;
 }
 
+/** Normalize HH:mm / HH:mm:ss (or extract time from a Date / ISO string). */
+export function toTimeApiValue(val: unknown): string {
+  if (val == null || val === '') return '';
+
+  if (val instanceof Date) {
+    if (Number.isNaN(val.getTime())) return '';
+    const h = String(val.getUTCHours()).padStart(2, '0');
+    const m = String(val.getUTCMinutes()).padStart(2, '0');
+    const s = String(val.getUTCSeconds()).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }
+
+  const raw = String(val).trim();
+  const fromIso = raw.match(/T(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (fromIso) {
+    return `${fromIso[1]}:${fromIso[2]}:${(fromIso[3] || '00').padStart(2, '0')}`;
+  }
+
+  const parts = raw.split(':');
+  if (parts.length < 2) return '';
+  while (parts.length < 3) parts.push('00');
+  const [h, m, s] = parts.slice(0, 3).map((p) => p.padStart(2, '0'));
+  if (!/^\d{2}$/.test(h!) || !/^\d{2}$/.test(m!) || !/^\d{2}$/.test(s!)) return '';
+  return `${h}:${m}:${s}`;
+}
+
+/**
+ * Prisma DateTime/@db.Time input — bare "HH:mm:ss" is rejected;
+ * must be an ISO-8601 DateTime (time portion is what Postgres stores).
+ */
+export function toPrismaTime(val: unknown): Date | null {
+  const time = toTimeApiValue(val);
+  if (!time) return null;
+  return new Date(`1970-01-01T${time}.000Z`);
+}
+
+/** Prisma DateTime input from POS period strings / Date values. */
+export function toPrismaDateTime(val: unknown): Date | null {
+  const ts = toSqlTimestamp(val);
+  if (!ts) return null;
+  return new Date(`${ts.replace(' ', 'T')}.000Z`);
+}
+
 function toDatetimeLocal(val: unknown): string {
   if (val == null || val === '') return '';
 

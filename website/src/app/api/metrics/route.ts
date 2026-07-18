@@ -16,7 +16,7 @@ import {
   Z_REPORT_SECTIONS,
 } from '@/domain/z-report/z-report-schema';
 import { sanitizeReceiptImages } from '@/domain/z-report/receipt-images';
-import { toIsoDate, toPeriodApiValue } from '@/domain/shared/date-utils';
+import { toIsoDate, toPeriodApiValue, toTimeApiValue } from '@/domain/shared/date-utils';
 import { legacyError } from '@/lib/api/response';
 import type { DailyZReport } from '@/generated/prisma';
 
@@ -39,7 +39,7 @@ function normalizeRow(row: DailyZReport | Record<string, unknown>): Record<strin
     r.date = ds;
   }
   if (r.report_time ?? r.reportTime) {
-    r.report_time = String(r.report_time ?? r.reportTime).slice(0, 8);
+    r.report_time = toTimeApiValue(r.report_time ?? r.reportTime);
   }
   for (const [camel, snake] of [
     ['periodStart', 'period_start'],

@@ -1,6 +1,12 @@
 import type { DbClient } from '@/lib/db';
 import type { DailyZReport } from '@/generated/prisma';
-import { monthBounds, periodFromDate, toIsoDate, toSqlTimestamp } from '@/domain/shared/date-utils';
+import {
+  monthBounds,
+  periodFromDate,
+  toIsoDate,
+  toPrismaDateTime,
+  toPrismaTime,
+} from '@/domain/shared/date-utils';
 import { num, snakeToCamel } from '@/domain/shared/number-utils';
 import { SyncMonthlyActuals } from '@/domain/actuals/sync-monthly-actuals';
 import {
@@ -68,16 +74,11 @@ function coerceValue(key: string, val: unknown): unknown {
   if (val === null || val === undefined || val === '') return null;
   if (key === 'report_date') return toIsoDate(val) || String(val).slice(0, 10);
   if (key === 'report_time') {
-    const tt = String(val).trim();
-    if (!tt) return null;
-    // Pad to HH:MM:SS for Postgres TIME compatibility
-    const parts = tt.split(':');
-    while (parts.length < 3) parts.push('00');
-    return parts.slice(0, 3).map((p) => p.padStart(2, '0')).join(':');
+    // Prisma DateTime/@db.Time rejects bare "HH:mm:ss" — needs ISO DateTime
+    return toPrismaTime(val);
   }
   if (key === 'period_start' || key === 'period_end') {
-    const ts = toSqlTimestamp(val);
-    return ts || null;
+    return toPrismaDateTime(val);
   }
   if (key === 'operator' || key === 'pos_group' || key === 'begin_receipt_no' || key === 'end_receipt_no') {
     return String(val).trim();
