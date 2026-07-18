@@ -1,5 +1,3 @@
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/db';
 import { getReviewPartContent } from '@/domain/content/review-part-service';
@@ -30,8 +28,14 @@ function resolveSource(source: string): { type: 'snippet'; key: string } | { typ
   return { type: 'snippet', key: normalized.replace(/[.-]/g, '_') };
 }
 
+/** Lazy-load node:fs to avoid Turbopack tracing the whole project at build time */
 function readBundledHtml(filename: string): string | null {
-  const path = resolve(process.cwd(), filename);
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { readFileSync, existsSync } = require('node:fs');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { resolve } = require('node:path');
+  const safeName = filename.replace(/\.\./g, '').replace(/[/\\]/g, '');
+  const path = resolve(process.cwd(), safeName);
   if (!existsSync(path)) return null;
   return readFileSync(path, 'utf8');
 }
