@@ -1094,9 +1094,8 @@ function RecentEntries() {
     { skip: !actualsDetail },
   );
   const actualsDetailData = dataFromEnvelope<Record<string, unknown>>(actualsDetailPayload);
-  const actualsImages = (Array.isArray(actualsDetailData?.department_detail?.receipt_images ?? actualsDetailData?.receipt_images)
-    ? (actualsDetailData?.department_detail?.receipt_images ?? actualsDetailData?.receipt_images)
-    : []) as ReceiptImage[];
+  const deptDetail = (actualsDetailData?.department_detail ?? actualsDetailData) as Record<string, unknown> | undefined;
+  const actualsImages = (Array.isArray(deptDetail?.receipt_images) ? deptDetail!.receipt_images : []) as ReceiptImage[];
 
   return (
     <>
@@ -1256,7 +1255,7 @@ function RecentEntries() {
           ) : actualsDetailData ? (
             <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 1 }}>
-                {Object.entries(actualsDetailData?.department_detail?.inputs ?? actualsDetailData?.inputs ?? {})
+                {Object.entries((deptDetail?.inputs ?? {}) as Record<string, unknown>)
                   .filter(([, v]) => v != null && v !== '' && v !== 0)
                   .map(([key, value]) => (
                     <Box key={key} sx={{ p: 0.5 }}>
