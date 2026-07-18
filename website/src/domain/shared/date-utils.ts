@@ -62,19 +62,20 @@ export function toTimeApiValue(val: unknown): string {
 
 /**
  * Prisma DateTime/@db.Time input — bare "HH:mm:ss" is rejected;
- * must be an ISO-8601 DateTime (time portion is what Postgres stores).
+ * must be an ISO-8601 DateTime string (time portion is what Postgres stores).
+ * Returns a string (not Date) so values survive any JSON round-trips intact.
  */
-export function toPrismaTime(val: unknown): Date | null {
+export function toPrismaTime(val: unknown): string | null {
   const time = toTimeApiValue(val);
   if (!time) return null;
-  return new Date(`1970-01-01T${time}.000Z`);
+  return `1970-01-01T${time}.000Z`;
 }
 
-/** Prisma DateTime input from POS period strings / Date values. */
-export function toPrismaDateTime(val: unknown): Date | null {
+/** Prisma DateTime input from POS period strings / Date values (ISO-8601). */
+export function toPrismaDateTime(val: unknown): string | null {
   const ts = toSqlTimestamp(val);
   if (!ts) return null;
-  return new Date(`${ts.replace(' ', 'T')}.000Z`);
+  return `${ts.replace(' ', 'T')}.000Z`;
 }
 
 function toDatetimeLocal(val: unknown): string {

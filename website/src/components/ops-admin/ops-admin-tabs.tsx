@@ -6,8 +6,12 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -25,6 +29,7 @@ import { setActiveTab } from '@/store/ui-slice';
 import {
   useDeleteZReportMutation,
   useGetCalendarQuery,
+  useGetDetailQuery,
   useGetSchemaQuery,
   useImportMetricsMutation,
   useListMetricsQuery,
@@ -41,6 +46,8 @@ import {
   useScanExpenseReceiptMutation,
   useScanPosReceiptMutation,
 } from '@/store/apis/pos-api';
+import { imageToDataUrl } from '@/domain/z-report/receipt-images';
+import type { ReceiptImage } from '@/domain/z-report/receipt-images';
 
 type OpsTab = 'day-pos' | 'costs-payroll' | 'fill-missing' | 'recent';
 type ActualsSubtab = 'submit' | 'prefill';
@@ -1038,6 +1045,31 @@ function FillMissingTab() {
   );
 }
 
+/** Full-screen image viewer overlay */
+function ImageViewerModal({
+  open,
+  image,
+  onClose,
+}: {
+  open: boolean;
+  image: ReceiptImage | null;
+  onClose: () => void;
+}) {
+  if (!image) return null;
+  const src = imageToDataUrl(image);
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="body2" noWrap sx={{ maxWidth: '80%' }}>{image.name || 'Receipt'}</Typography>
+        <IconButton onClick={onClose} size="small">✕</IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ p: 0, textAlign: 'center', bgcolor: '#000' }}>
+        <img src={src} alt={image.name || 'receipt'} style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function RecentEntries() {
   const { data: metricsPayload } = useListMetricsQuery({ page: 1, limit: 8 });
   const { data: actualsPayload } = useGetMonthlyActualsQuery({ period: currentPeriod(), recent: true, page: 1, limit: 8 });
@@ -1045,76 +1077,233 @@ function RecentEntries() {
   const metricsRows = asRecord(metricsPayload).rows as MetricsRow[] | undefined;
   const actualsData = dataFromEnvelope<{ rows?: MonthlyRecentRow[] }>(actualsPayload);
 
+  // Detail modal state
+  const [zrepDetail, setZrepDetail] = useState<{ date: string; dept: string } | null>(null);
+  const [actualsDetail, setActualsDetail] = useState<{ period: string; dept: string } | null>(null);
+  const [fullscreenImage, setFullscreenImage] = useState<ReceiptImage | null>(null);
+
+  const { data: zrepDetailPayload, isFetching: zrepLoading } = useGetDetailQuery(
+    { date: zrepDetail?.date ?? '', department: zrepDetail?.dept ?? 'all_pos' },
+    { skip: !zrepDetail },
+  );
+  const zrepDetailData = dataFromEnvelope<Record<string, unknown>>(zrepDetailPayload);
+  const zrepImages = (Array.isArray(zrepDetailData?.receipt_images) ? zrepDetailData?.receipt_images : []) as ReceiptImage[];
+
+  const { data: actualsDetailPayload, isFetching: actualsLoading } = useGetMonthlyActualsQuery(
+    { period: actualsDetail?.period ?? '', department: actualsDetail?.dept ?? '' },
+    { skip: !actualsDetail },
+  );
+  const actualsDetailData = dataFromEnvelope<Record<string, unknown>>(actualsDetailPayload);
+  const actualsImages = (Array.isArray(actualsDetailData?.department_detail?.receipt_images ?? actualsDetailData?.receipt_images)
+    ? (actualsDetailData?.department_detail?.receipt_images ?? actualsDetailData?.receipt_images)
+    : []) as ReceiptImage[];
+
   return (
-    <Grid container spacing={2.5}>
-      <Grid size={{ xs: 12, lg: 7 }}>
-        <SectionShell title="Recent Z-reports">
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Dept</TableCell>
-                <TableCell>Nett Sales</TableCell>
-                <TableCell>Covers</TableCell>
-                <TableCell>Receipts</TableCell>
-                <TableCell />
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {(metricsRows ?? []).map((row) => {
-                const date = row.report_date ?? row.date ?? '';
-                return (
-                  <TableRow key={`${date}-${row.department ?? 'all'}`}>
-                    <TableCell>{date}</TableCell>
-                    <TableCell>{row.department ?? 'all_pos'}</TableCell>
-                    <TableCell>{formatIdr(row.nett_sales)}</TableCell>
-                    <TableCell>{row.total_covers ?? '-'}</TableCell>
-                    <TableCell>{row.receipt_image_count ?? 0}</TableCell>
-                    <TableCell>
-                      <Button
-                        size="small"
-                        color="error"
-                        onClick={() => {
-                          if (globalThis.window.confirm(`Delete Z-report for ${date}?`)) {
-                            void deleteZReport({ report_date: date });
-                          }
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </SectionShell>
-      </Grid>
-      <Grid size={{ xs: 12, lg: 5 }}>
-        <SectionShell title="Recent Actuals">
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Period</TableCell>
-                <TableCell>Scope</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Receipts</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {(actualsData?.rows ?? []).map((row, index) => (
-                <TableRow key={`${row.period}-${row.department_label}-${index}`}>
-                  <TableCell>{row.period}</TableCell>
-                  <TableCell>{row.department_label ?? row.kind}</TableCell>
-                  <TableCell>{formatIdr(row.input_total)}</TableCell>
-                  <TableCell>{row.receipt_count ?? 0}</TableCell>
+    <>
+      <Grid container spacing={2.5}>
+        <Grid size={{ xs: 12, lg: 7 }}>
+          <SectionShell title="Recent Z-reports">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Dept</TableCell>
+                  <TableCell>Nett Sales</TableCell>
+                  <TableCell>Covers</TableCell>
+                  <TableCell>Receipts</TableCell>
+                  <TableCell />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </SectionShell>
+              </TableHead>
+              <TableBody>
+                {(metricsRows ?? []).map((row) => {
+                  const date = row.report_date ?? row.date ?? '';
+                  return (
+                    <TableRow
+                      key={`${date}-${row.department ?? 'all'}`}
+                      hover
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => setZrepDetail({ date: String(date), dept: String(row.department ?? 'all_pos') })}
+                    >
+                      <TableCell>{date}</TableCell>
+                      <TableCell>{row.department ?? 'all_pos'}</TableCell>
+                      <TableCell>{formatIdr(row.nett_sales)}</TableCell>
+                      <TableCell>{row.total_covers ?? '-'}</TableCell>
+                      <TableCell>{row.receipt_image_count ?? 0}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="small"
+                          color="error"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (globalThis.window.confirm(`Delete Z-report for ${date}?`)) {
+                              void deleteZReport({ report_date: date });
+                            }
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </SectionShell>
+        </Grid>
+        <Grid size={{ xs: 12, lg: 5 }}>
+          <SectionShell title="Recent Actuals">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Period</TableCell>
+                  <TableCell>Scope</TableCell>
+                  <TableCell>Total</TableCell>
+                  <TableCell>Receipts</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {(actualsData?.rows ?? []).map((row, index) => (
+                  <TableRow
+                    key={`${row.period}-${row.department_label}-${index}`}
+                    hover
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => setActualsDetail({ period: String(row.period), dept: String(row.department_label ?? row.kind) })}
+                  >
+                    <TableCell>{row.period}</TableCell>
+                    <TableCell>{row.department_label ?? row.kind}</TableCell>
+                    <TableCell>{formatIdr(row.input_total)}</TableCell>
+                    <TableCell>{row.receipt_count ?? 0}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </SectionShell>
+        </Grid>
       </Grid>
-    </Grid>
+
+      {/* Z-Report Detail Modal */}
+      <Dialog open={!!zrepDetail} onClose={() => setZrepDetail(null)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Z-Report — {zrepDetail?.date} ({zrepDetail?.dept})</span>
+          <IconButton onClick={() => setZrepDetail(null)} size="small">✕</IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {zrepLoading ? (
+            <CircularProgress size={24} />
+          ) : zrepDetailData ? (
+            <Stack spacing={2}>
+              {/* Field data */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 1 }}>
+                {Object.entries(zrepDetailData)
+                  .filter(([k]) => !['receipt_images', 'id'].includes(k))
+                  .map(([key, value]) => (
+                    <Box key={key} sx={{ p: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        {key.replace(/_/g, ' ')}
+                      </Typography>
+                      <Typography variant="body2">
+                        {key.endsWith('_amount') || key.endsWith('_sales') ? formatIdr(value)
+                          : key === 'report_date' || key === 'period_start' || key === 'period_end' ? String(value ?? '-').slice(0, 19)
+                          : String(value ?? '-')}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Box>
+              {/* Receipt images */}
+              {zrepImages.length > 0 ? (
+                <Box>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Receipt Images ({zrepImages.length})</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                    {zrepImages.map((img, i) => (
+                      <Box
+                        key={i}
+                        sx={{
+                          width: 120,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          borderRadius: 1,
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          '&:hover': { opacity: 0.8 },
+                        }}
+                        onClick={() => setFullscreenImage(img)}
+                      >
+                        <img src={imageToDataUrl(img)} alt={img.name || `receipt-${i}`} style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }} />
+                        <Typography variant="caption" noWrap sx={{ display: 'block', px: 0.5, py: 0.25, fontSize: '0.6rem' }}>
+                          {img.name || `Image ${i + 1}`}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              ) : null}
+            </Stack>
+          ) : (
+            <Typography color="text.secondary">No data found.</Typography>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Actuals Detail Modal */}
+      <Dialog open={!!actualsDetail} onClose={() => setActualsDetail(null)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Actuals — {actualsDetail?.period} ({actualsDetail?.dept})</span>
+          <IconButton onClick={() => setActualsDetail(null)} size="small">✕</IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {actualsLoading ? (
+            <CircularProgress size={24} />
+          ) : actualsDetailData ? (
+            <Stack spacing={2}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 1 }}>
+                {Object.entries(actualsDetailData?.department_detail?.inputs ?? actualsDetailData?.inputs ?? {})
+                  .filter(([, v]) => v != null && v !== '' && v !== 0)
+                  .map(([key, value]) => (
+                    <Box key={key} sx={{ p: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        {key.replace(/_/g, ' ')}
+                      </Typography>
+                      <Typography variant="body2">{formatIdr(value)}</Typography>
+                    </Box>
+                  ))}
+              </Box>
+              {actualsImages.length > 0 ? (
+                <Box>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Receipt Images ({actualsImages.length})</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                    {actualsImages.map((img, i) => (
+                      <Box
+                        key={i}
+                        sx={{
+                          width: 120,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          borderRadius: 1,
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          '&:hover': { opacity: 0.8 },
+                        }}
+                        onClick={() => setFullscreenImage(img)}
+                      >
+                        <img src={imageToDataUrl(img)} alt={img.name || `receipt-${i}`} style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }} />
+                        <Typography variant="caption" noWrap sx={{ display: 'block', px: 0.5, py: 0.25, fontSize: '0.6rem' }}>
+                          {img.name || `Image ${i + 1}`}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              ) : null}
+            </Stack>
+          ) : (
+            <Typography color="text.secondary">No data found.</Typography>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Fullscreen Image Viewer */}
+      <ImageViewerModal open={!!fullscreenImage} image={fullscreenImage} onClose={() => setFullscreenImage(null)} />
+    </>
   );
 }
 

@@ -3,18 +3,15 @@
  * Do not use dotenv/config here; POSTGRES_URL must be set by the host (Vercel / vercel dev).
  */
 import { PrismaClient } from '@/generated/prisma';
-import {
-  enhance,
-  type Enhanced,
-  type PrismaClient as ZenPrismaClient,
-} from '@zenstackhq/runtime';
+import { enhance } from '@zenstackhq/runtime';
 
 export interface DbSession {
   tier: 'public' | 'pin' | 'google';
   sub?: string;
 }
 
-export type DbClient = Enhanced<ZenPrismaClient>;
+/** Policy-aware client; avoid Enhanced<> which hits TS recursion limits with Auth. */
+export type DbClient = ReturnType<typeof createClient>;
 
 const globalForPrisma = globalThis as typeof globalThis & {
   __redrubyPrisma?: PrismaClient;
@@ -37,13 +34,14 @@ function getBasePrisma(): PrismaClient {
   return globalForPrisma.__redrubyPrisma;
 }
 
-/** Request-scoped ZenStack client; pass session tier for future @@allow policies. */
-export function createClient(session: DbSession = { tier: 'public' }): DbClient {
+/** Request-scoped ZenStack client; pass session tier for @@allow policies. */
+export function createClient(session: DbSession = { tier: 'public' }) {
   const prisma = getBasePrisma();
   return enhance(prisma, {
     user: {
+      id: session.sub ?? session.tier,
       tier: session.tier,
       ...(session.sub !== undefined ? { sub: session.sub } : {}),
     },
-  }) as DbClient;
+  });
 }

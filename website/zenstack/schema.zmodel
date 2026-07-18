@@ -22,6 +22,15 @@ enum AuthTier {
   google
 }
 
+/// JWT session context passed to enhance({ user }) — not a DB table
+type Auth {
+  id   String    @id @default("session")
+  tier AuthTier
+  sub  String?
+
+  @@auth
+}
+
 enum Scenario {
   actual
   conservative
@@ -224,6 +233,8 @@ model FinancialProjection {
   @@index([period])
   // Public dashboard chart + P&L reads (server-side createClient, tier public)
   @@allow('read', true)
+  // Z-report / monthly-actuals sync upserts data_type=actual rows (route-gated pin|google)
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
   @@map("financial_projections")
 }
 

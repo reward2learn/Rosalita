@@ -4,341 +4,341 @@
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 datasource db {
-    provider = "postgresql"
-    url = env("POSTGRES_URL")
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
 }
 
 generator client {
-    provider = "prisma-client-js"
-    output = "../../src/generated/prisma"
-    binaryTargets = ["native", "linux-arm64-openssl-3.0.x"]
+  provider      = "prisma-client-js"
+  output        = "../../src/generated/prisma"
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x"]
 }
 
 enum AuthTier {
-    public
-    pin
-    google
+  public
+  pin
+  google
 }
 
 enum Scenario {
-    actual
-    conservative
-    realistic
-    aspirational
+  actual
+  conservative
+  realistic
+  aspirational
 }
 
 enum DataType {
-    actual
-    forecast
+  actual
+  forecast
 }
 
 enum ActionPriority {
-    P0
-    P1
-    P2
+  P0
+  P1
+  P2
 }
 
 enum BlockType {
-    hero
-    metric_grid
-    chart_financial
-    lever_accordion
-    action_checklist
-    doc_markdown
-    pnl_table
-    z_report_form
-    costs_form
-    calendar_import
-    chat_panel
-    kpi_cards
-    ops_admin_tabs
-    review_blocks
-    reports_rollup
+  hero
+  metric_grid
+  chart_financial
+  lever_accordion
+  action_checklist
+  doc_markdown
+  pnl_table
+  z_report_form
+  costs_form
+  calendar_import
+  chat_panel
+  kpi_cards
+  ops_admin_tabs
+  review_blocks
+  reports_rollup
 }
 
 enum JobStatus {
-    PENDING
-    PROCESSING
-    COMPLETED
-    FAILED
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 model AppPage {
-    id String @id() @default(cuid())
-    slug String @unique()
-    title String
-    authTier AuthTier @default(public) @map("auth_tier")
-    sortOrder Int @default(0) @map("sort_order")
-    sections PageSection[]
+  id        String        @id() @default(cuid())
+  slug      String        @unique()
+  title     String
+  authTier  AuthTier      @default(public) @map("auth_tier")
+  sortOrder Int           @default(0) @map("sort_order")
+  sections  PageSection[]
 
-    @@map("app_pages")
+  @@map("app_pages")
 }
 
 model PageSection {
-    id String @id() @default(cuid())
-    pageId String @map("page_id")
-    page AppPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
-    sortOrder Int @map("sort_order")
-    blockType BlockType @map("block_type")
-    config Json @default("{}")
+  id        String    @id() @default(cuid())
+  pageId    String    @map("page_id")
+  page      AppPage   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  sortOrder Int       @map("sort_order")
+  blockType BlockType @map("block_type")
+  config    Json      @default("{}")
 
-    @@index([pageId, sortOrder])
-    @@map("page_sections")
+  @@index([pageId, sortOrder])
+  @@map("page_sections")
 }
 
 model BusinessReviewPart {
-    id String @id() @default(cuid())
-    partKey String @unique() @map("part_key")
-    slug String @unique()
-    title String
-    sortOrder Int @map("sort_order")
-    authTier AuthTier @default(google) @map("auth_tier")
-    markdown String @db.Text()
+  id        String   @id() @default(cuid())
+  partKey   String   @unique() @map("part_key")
+  slug      String   @unique()
+  title     String
+  sortOrder Int      @map("sort_order")
+  authTier  AuthTier @default(google) @map("auth_tier")
+  markdown  String   @db.Text()
 
-    @@map("business_review_parts")
+  @@map("business_review_parts")
 }
 
 model Lever {
-    id String @id() @default(cuid())
-    num Int @unique()
-    name String
-    impact String
-    description String @db.Text()
+  id          String @id() @default(cuid())
+  num         Int    @unique()
+  name        String
+  impact      String
+  description String @db.Text()
 
-    @@map("levers")
+  @@map("levers")
 }
 
 model ActionItem {
-    id String @id() @default(cuid())
-    priority ActionPriority
-    label String
-    completed Boolean @default(false)
-    sortOrder Int @default(0) @map("sort_order")
+  id        String         @id() @default(cuid())
+  priority  ActionPriority
+  label     String
+  completed Boolean        @default(false)
+  sortOrder Int            @default(0) @map("sort_order")
 
-    @@map("action_items")
+  @@map("action_items")
 }
 
 model KnowledgeSnippet {
-    id String @id() @default(cuid())
-    key String @unique()
-    content String @db.Text()
-    category String
+  id       String @id() @default(cuid())
+  key      String @unique()
+  content  String @db.Text()
+  category String
 
-    @@map("knowledge_snippets")
+  @@map("knowledge_snippets")
 }
 
 model Secret {
-    keyName String @id() @map("key_name")
-    encryptedValue String @map("encrypted_value")
-    iv String
-    authTag String @map("auth_tag")
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt() @map("updated_at")
+  keyName        String   @id() @map("key_name")
+  encryptedValue String   @map("encrypted_value")
+  iv             String
+  authTag        String   @map("auth_tag")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt() @map("updated_at")
 
-    @@map("secrets")
+  @@map("secrets")
 }
 
 /// Singleton app settings (chat flags, etc.).
 model AppSetting {
-    id String @id() @default("default")
-    webSearchEnabled Boolean @default(false) @map("web_search_enabled")
-    updatedAt DateTime @updatedAt() @map("updated_at")
+  id               String   @id() @default("default")
+  webSearchEnabled Boolean  @default(false) @map("web_search_enabled")
+  updatedAt        DateTime @updatedAt() @map("updated_at")
 
-    @@map("app_settings")
+  @@map("app_settings")
 }
 
 /// Singleton Google OAuth credentials — client_secret encrypted at rest (AES-256-GCM).
 model GoogleOAuthConfig {
-    id String @id() @default("default")
-    clientId String @map("client_id")
-    projectId String @map("project_id")
-    authUri String @map("auth_uri")
-    tokenUri String @default("https://oauth2.googleapis.com/token") @map("token_uri")
-    encryptedSecret String @map("encrypted_secret")
-    iv String
-    authTag String @map("auth_tag")
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt() @map("updated_at")
+  id              String   @id() @default("default")
+  clientId        String   @map("client_id")
+  projectId       String   @map("project_id")
+  authUri         String   @map("auth_uri")
+  tokenUri        String   @default("https://oauth2.googleapis.com/token") @map("token_uri")
+  encryptedSecret String   @map("encrypted_secret")
+  iv              String
+  authTag         String   @map("auth_tag")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt() @map("updated_at")
 
-    @@map("google_oauth_config")
+  @@map("google_oauth_config")
 }
 
 model Conversation {
-    id Int @id() @default(autoincrement())
-    userName String @default("Anonymous") @map("user_name")
-    title String @default("Chat Conversation")
-    messages Json @default("[]")
-    messageCount Int @default(0) @map("message_count")
-    createdAt DateTime @default(now()) @map("created_at")
+  id           Int      @id() @default(autoincrement())
+  userName     String   @default("Anonymous") @map("user_name")
+  title        String   @default("Chat Conversation")
+  messages     Json     @default("[]")
+  messageCount Int      @default(0) @map("message_count")
+  createdAt    DateTime @default(now()) @map("created_at")
 
-    @@map("conversations")
+  @@map("conversations")
 }
 
 model PdfJob {
-    jobId String @id() @default(uuid()) @map("job_id") @db.Uuid()
-    requestedBySession String? @map("requested_by_session")
-    payload Json
-    status JobStatus @default(PENDING)
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt() @map("updated_at")
-    completedData Json? @map("completed_data")
+  jobId              String    @id() @default(uuid()) @map("job_id") @db.Uuid()
+  requestedBySession String?   @map("requested_by_session")
+  payload            Json
+  status             JobStatus @default(PENDING)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt() @map("updated_at")
+  completedData      Json?     @map("completed_data")
 
-    @@index([status])
-    @@map("job_queue")
+  @@index([status])
+  @@map("job_queue")
 }
 
 /// Financial projections — preserve data_type + scenario (tri-review requirement)
 model FinancialProjection {
-    id Int @id() @default(autoincrement())
-    period String
-    year Int
-    month Int
-    dataType String @map("data_type")
-    scenario String @default("conservative")
-    revenue Decimal @default(0) @db.Decimal(14, 2)
-    ebitda Decimal @default(0) @db.Decimal(14, 2)
-    netIncome Decimal @default(0) @map("net_income") @db.Decimal(14, 2)
-    guests Int @default(0)
-    staffCost Decimal @default(0) @map("staff_cost") @db.Decimal(14, 2)
-    pnlLines Json? @map("pnl_lines")
+  id        Int     @id() @default(autoincrement())
+  period    String
+  year      Int
+  month     Int
+  dataType  String  @map("data_type")
+  scenario  String  @default("conservative")
+  revenue   Decimal @default(0) @db.Decimal(14, 2)
+  ebitda    Decimal @default(0) @db.Decimal(14, 2)
+  netIncome Decimal @default(0) @map("net_income") @db.Decimal(14, 2)
+  guests    Int     @default(0)
+  staffCost Decimal @default(0) @map("staff_cost") @db.Decimal(14, 2)
+  pnlLines  Json?   @map("pnl_lines")
 
-    @@unique([period, dataType, scenario])
-    @@index([period])
-    @@map("financial_projections")
+  @@unique([period, dataType, scenario])
+  @@index([period])
+  @@map("financial_projections")
 }
 
 model DailyZReport {
-    id Int @id() @default(autoincrement())
-    reportDate DateTime @map("report_date") @db.Date()
-    department String @default("all_pos")
-    reportTime DateTime? @map("report_time") @db.Time()
-    operator String?
-    reportNo Int? @map("report_no")
-    posGroup String? @map("pos_group")
-    periodStart DateTime? @map("period_start")
-    periodEnd DateTime? @map("period_end")
-    itemSalesQty Int @default(0) @map("item_sales_qty")
-    itemSalesAmount Decimal @default(0) @map("item_sales_amount") @db.Decimal(14, 2)
-    itemDiscountQty Int @default(0) @map("item_discount_qty")
-    itemDiscountAmount Decimal @default(0) @map("item_discount_amount") @db.Decimal(14, 2)
-    billDiscountQty Int @default(0) @map("bill_discount_qty")
-    billDiscountAmount Decimal @default(0) @map("bill_discount_amount") @db.Decimal(14, 2)
-    focItemsQty Int @default(0) @map("foc_items_qty")
-    focItemsAmount Decimal @default(0) @map("foc_items_amount") @db.Decimal(14, 2)
-    focBillQty Int @default(0) @map("foc_bill_qty")
-    focBillAmount Decimal @default(0) @map("foc_bill_amount") @db.Decimal(14, 2)
-    totalSales Decimal @default(0) @map("total_sales") @db.Decimal(14, 2)
-    estimatedSales Decimal @default(0) @map("estimated_sales") @db.Decimal(14, 2)
-    cashQty Int @default(0) @map("cash_qty")
-    cashAmount Decimal @default(0) @map("cash_amount") @db.Decimal(14, 2)
-    bcaQty Int @default(0) @map("bca_qty")
-    bcaAmount Decimal @default(0) @map("bca_amount") @db.Decimal(14, 2)
-    gojekPayQty Int @default(0) @map("gojek_pay_qty")
-    gojekPayAmount Decimal @default(0) @map("gojek_pay_amount") @db.Decimal(14, 2)
-    mandiriQty Int @default(0) @map("mandiri_qty")
-    mandiriAmount Decimal @default(0) @map("mandiri_amount") @db.Decimal(14, 2)
-    totalCardQty Int @default(0) @map("total_card_qty")
-    totalCardAmount Decimal @default(0) @map("total_card_amount") @db.Decimal(14, 2)
-    totalCashQty Int @default(0) @map("total_cash_qty")
-    totalCashAmount Decimal @default(0) @map("total_cash_amount") @db.Decimal(14, 2)
-    refundQty Int @default(0) @map("refund_qty")
-    refundAmount Decimal @default(0) @map("refund_amount") @db.Decimal(14, 2)
-    preSendVoidQty Int @default(0) @map("pre_send_void_qty")
-    preSendVoidAmount Decimal @default(0) @map("pre_send_void_amount") @db.Decimal(14, 2)
-    postSendVoidQty Int @default(0) @map("post_send_void_qty")
-    postSendVoidAmount Decimal @default(0) @map("post_send_void_amount") @db.Decimal(14, 2)
-    totCollectionQty Int @default(0) @map("tot_collection_qty")
-    totCollectionAmount Decimal @default(0) @map("tot_collection_amount") @db.Decimal(14, 2)
-    tax10Amount Decimal @default(0) @map("tax_10_amount") @db.Decimal(14, 2)
-    service7Amount Decimal @default(0) @map("service_7_amount") @db.Decimal(14, 2)
-    nettSales Decimal @default(0) @map("nett_sales") @db.Decimal(14, 2)
-    billsPendingQty Int @default(0) @map("bills_pending_qty")
-    billsPendingAmount Decimal @default(0) @map("bills_pending_amount") @db.Decimal(14, 2)
-    totalBills Int @default(0) @map("total_bills")
-    avgBills Decimal @default(0) @map("avg_bills") @db.Decimal(14, 2)
-    totalCovers Int @default(0) @map("total_covers")
-    avgCovers Decimal @default(0) @map("avg_covers") @db.Decimal(14, 2)
-    beginReceiptNo String? @map("begin_receipt_no")
-    endReceiptNo String? @map("end_receipt_no")
-    groupBeverageQty Int @default(0) @map("group_beverage_qty")
-    groupBeverageAmount Decimal @default(0) @map("group_beverage_amount") @db.Decimal(14, 2)
-    groupFoodQty Int @default(0) @map("group_food_qty")
-    groupFoodAmount Decimal @default(0) @map("group_food_amount") @db.Decimal(14, 2)
-    groupTotalQty Int @default(0) @map("group_total_qty")
-    groupTotalAmount Decimal @default(0) @map("group_total_amount") @db.Decimal(14, 2)
-    groupFocBeverageQty Int @default(0) @map("group_foc_beverage_qty")
-    groupFocBeverageAmount Decimal @default(0) @map("group_foc_beverage_amount") @db.Decimal(14, 2)
-    groupFocFoodQty Int @default(0) @map("group_foc_food_qty")
-    groupFocFoodAmount Decimal @default(0) @map("group_foc_food_amount") @db.Decimal(14, 2)
-    dineInQty Int @default(0) @map("dine_in_qty")
-    dineInAmount Decimal @default(0) @map("dine_in_amount") @db.Decimal(14, 2)
-    gofoodQty Int @default(0) @map("gofood_qty")
-    gofoodAmount Decimal @default(0) @map("gofood_amount") @db.Decimal(14, 2)
-    totalCtgryQty Int @default(0) @map("total_ctgry_qty")
-    totalCtgryAmount Decimal @default(0) @map("total_ctgry_amount") @db.Decimal(14, 2)
-    billDisc20Qty Int @default(0) @map("bill_disc_20_qty")
-    billDisc20Amount Decimal @default(0) @map("bill_disc_20_amount") @db.Decimal(14, 2)
-    totalItemDiscountQty Int @default(0) @map("total_item_discount_qty")
-    totalItemDiscountAmount Decimal @default(0) @map("total_item_discount_amount") @db.Decimal(14, 2)
-    rawText String? @map("raw_text") @db.Text()
-    entrySource String @default("manual") @map("entry_source")
-    receiptImages Json @default("[]") @map("receipt_images")
-    correctedAt DateTime? @map("corrected_at")
-    correctionField String? @map("correction_field")
-    correctionReason String? @map("correction_reason")
-    createdAt DateTime @default(now()) @map("created_at")
+  id                      Int       @id() @default(autoincrement())
+  reportDate              DateTime  @map("report_date") @db.Date()
+  department              String    @default("all_pos")
+  reportTime              DateTime? @map("report_time") @db.Time()
+  operator                String?
+  reportNo                Int?      @map("report_no")
+  posGroup                String?   @map("pos_group")
+  periodStart             DateTime? @map("period_start")
+  periodEnd               DateTime? @map("period_end")
+  itemSalesQty            Int       @default(0) @map("item_sales_qty")
+  itemSalesAmount         Decimal   @default(0) @map("item_sales_amount") @db.Decimal(14, 2)
+  itemDiscountQty         Int       @default(0) @map("item_discount_qty")
+  itemDiscountAmount      Decimal   @default(0) @map("item_discount_amount") @db.Decimal(14, 2)
+  billDiscountQty         Int       @default(0) @map("bill_discount_qty")
+  billDiscountAmount      Decimal   @default(0) @map("bill_discount_amount") @db.Decimal(14, 2)
+  focItemsQty             Int       @default(0) @map("foc_items_qty")
+  focItemsAmount          Decimal   @default(0) @map("foc_items_amount") @db.Decimal(14, 2)
+  focBillQty              Int       @default(0) @map("foc_bill_qty")
+  focBillAmount           Decimal   @default(0) @map("foc_bill_amount") @db.Decimal(14, 2)
+  totalSales              Decimal   @default(0) @map("total_sales") @db.Decimal(14, 2)
+  estimatedSales          Decimal   @default(0) @map("estimated_sales") @db.Decimal(14, 2)
+  cashQty                 Int       @default(0) @map("cash_qty")
+  cashAmount              Decimal   @default(0) @map("cash_amount") @db.Decimal(14, 2)
+  bcaQty                  Int       @default(0) @map("bca_qty")
+  bcaAmount               Decimal   @default(0) @map("bca_amount") @db.Decimal(14, 2)
+  gojekPayQty             Int       @default(0) @map("gojek_pay_qty")
+  gojekPayAmount          Decimal   @default(0) @map("gojek_pay_amount") @db.Decimal(14, 2)
+  mandiriQty              Int       @default(0) @map("mandiri_qty")
+  mandiriAmount           Decimal   @default(0) @map("mandiri_amount") @db.Decimal(14, 2)
+  totalCardQty            Int       @default(0) @map("total_card_qty")
+  totalCardAmount         Decimal   @default(0) @map("total_card_amount") @db.Decimal(14, 2)
+  totalCashQty            Int       @default(0) @map("total_cash_qty")
+  totalCashAmount         Decimal   @default(0) @map("total_cash_amount") @db.Decimal(14, 2)
+  refundQty               Int       @default(0) @map("refund_qty")
+  refundAmount            Decimal   @default(0) @map("refund_amount") @db.Decimal(14, 2)
+  preSendVoidQty          Int       @default(0) @map("pre_send_void_qty")
+  preSendVoidAmount       Decimal   @default(0) @map("pre_send_void_amount") @db.Decimal(14, 2)
+  postSendVoidQty         Int       @default(0) @map("post_send_void_qty")
+  postSendVoidAmount      Decimal   @default(0) @map("post_send_void_amount") @db.Decimal(14, 2)
+  totCollectionQty        Int       @default(0) @map("tot_collection_qty")
+  totCollectionAmount     Decimal   @default(0) @map("tot_collection_amount") @db.Decimal(14, 2)
+  tax10Amount             Decimal   @default(0) @map("tax_10_amount") @db.Decimal(14, 2)
+  service7Amount          Decimal   @default(0) @map("service_7_amount") @db.Decimal(14, 2)
+  nettSales               Decimal   @default(0) @map("nett_sales") @db.Decimal(14, 2)
+  billsPendingQty         Int       @default(0) @map("bills_pending_qty")
+  billsPendingAmount      Decimal   @default(0) @map("bills_pending_amount") @db.Decimal(14, 2)
+  totalBills              Int       @default(0) @map("total_bills")
+  avgBills                Decimal   @default(0) @map("avg_bills") @db.Decimal(14, 2)
+  totalCovers             Int       @default(0) @map("total_covers")
+  avgCovers               Decimal   @default(0) @map("avg_covers") @db.Decimal(14, 2)
+  beginReceiptNo          String?   @map("begin_receipt_no")
+  endReceiptNo            String?   @map("end_receipt_no")
+  groupBeverageQty        Int       @default(0) @map("group_beverage_qty")
+  groupBeverageAmount     Decimal   @default(0) @map("group_beverage_amount") @db.Decimal(14, 2)
+  groupFoodQty            Int       @default(0) @map("group_food_qty")
+  groupFoodAmount         Decimal   @default(0) @map("group_food_amount") @db.Decimal(14, 2)
+  groupTotalQty           Int       @default(0) @map("group_total_qty")
+  groupTotalAmount        Decimal   @default(0) @map("group_total_amount") @db.Decimal(14, 2)
+  groupFocBeverageQty     Int       @default(0) @map("group_foc_beverage_qty")
+  groupFocBeverageAmount  Decimal   @default(0) @map("group_foc_beverage_amount") @db.Decimal(14, 2)
+  groupFocFoodQty         Int       @default(0) @map("group_foc_food_qty")
+  groupFocFoodAmount      Decimal   @default(0) @map("group_foc_food_amount") @db.Decimal(14, 2)
+  dineInQty               Int       @default(0) @map("dine_in_qty")
+  dineInAmount            Decimal   @default(0) @map("dine_in_amount") @db.Decimal(14, 2)
+  gofoodQty               Int       @default(0) @map("gofood_qty")
+  gofoodAmount            Decimal   @default(0) @map("gofood_amount") @db.Decimal(14, 2)
+  totalCtgryQty           Int       @default(0) @map("total_ctgry_qty")
+  totalCtgryAmount        Decimal   @default(0) @map("total_ctgry_amount") @db.Decimal(14, 2)
+  billDisc20Qty           Int       @default(0) @map("bill_disc_20_qty")
+  billDisc20Amount        Decimal   @default(0) @map("bill_disc_20_amount") @db.Decimal(14, 2)
+  totalItemDiscountQty    Int       @default(0) @map("total_item_discount_qty")
+  totalItemDiscountAmount Decimal   @default(0) @map("total_item_discount_amount") @db.Decimal(14, 2)
+  rawText                 String?   @map("raw_text") @db.Text()
+  entrySource             String    @default("manual") @map("entry_source")
+  receiptImages           Json      @default("[]") @map("receipt_images")
+  correctedAt             DateTime? @map("corrected_at")
+  correctionField         String?   @map("correction_field")
+  correctionReason        String?   @map("correction_reason")
+  createdAt               DateTime  @default(now()) @map("created_at")
 
-    @@unique([reportDate, department])
-    @@map("daily_z_reports")
+  @@unique([reportDate, department])
+  @@map("daily_z_reports")
 }
 
 model MonthlyActualInput {
-    period String @id()
-    inputs Json @default("{}")
-    updatedAt DateTime @updatedAt() @map("updated_at")
+  period    String   @id()
+  inputs    Json     @default("{}")
+  updatedAt DateTime @updatedAt() @map("updated_at")
 
-    @@map("monthly_actual_inputs")
+  @@map("monthly_actual_inputs")
 }
 
 model MonthlyActualDepartment {
-    period String
-    department String
-    inputs Json @default("{}")
-    receiptImages Json @default("[]") @map("receipt_images")
-    notes String @default("")
-    updatedAt DateTime @updatedAt() @map("updated_at")
+  period        String
+  department    String
+  inputs        Json     @default("{}")
+  receiptImages Json     @default("[]") @map("receipt_images")
+  notes         String   @default("")
+  updatedAt     DateTime @updatedAt() @map("updated_at")
 
-    @@id([period, department])
-    @@map("monthly_actual_departments")
+  @@id([period, department])
+  @@map("monthly_actual_departments")
 }
 
 /// Legacy — schema.sql only; ensure migration creates if missing (see website-db-migration ensureLegacyTables)
 model DailyMetric {
-    id Int @id() @default(autoincrement())
-    date DateTime @unique() @db.Date()
-    revenue Decimal @default(0) @db.Decimal(12, 2)
-    guestsCount Int @default(0) @map("guests_count")
-    avgSpend Decimal? @map("avg_spend") @db.Decimal(10, 2)
-    staffCount Int @default(0) @map("staff_count")
-    staffCost Decimal @default(0) @map("staff_cost") @db.Decimal(12, 2)
-    foodCost Decimal @default(0) @map("food_cost") @db.Decimal(12, 2)
-    beverageCost Decimal @default(0) @map("beverage_cost") @db.Decimal(12, 2)
-    gofoodRevenue Decimal @default(0) @map("gofood_revenue") @db.Decimal(12, 2)
-    directOrders Decimal @default(0) @map("direct_orders") @db.Decimal(12, 2)
-    notes String?
-    createdAt DateTime @default(now()) @map("created_at")
+  id            Int      @id() @default(autoincrement())
+  date          DateTime @unique() @db.Date()
+  revenue       Decimal  @default(0) @db.Decimal(12, 2)
+  guestsCount   Int      @default(0) @map("guests_count")
+  avgSpend      Decimal? @map("avg_spend") @db.Decimal(10, 2)
+  staffCount    Int      @default(0) @map("staff_count")
+  staffCost     Decimal  @default(0) @map("staff_cost") @db.Decimal(12, 2)
+  foodCost      Decimal  @default(0) @map("food_cost") @db.Decimal(12, 2)
+  beverageCost  Decimal  @default(0) @map("beverage_cost") @db.Decimal(12, 2)
+  gofoodRevenue Decimal  @default(0) @map("gofood_revenue") @db.Decimal(12, 2)
+  directOrders  Decimal  @default(0) @map("direct_orders") @db.Decimal(12, 2)
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
 
-    @@map("daily_metrics")
+  @@map("daily_metrics")
 }
 
 model MonthlyTarget {
-    id Int @id() @default(autoincrement())
-    month String @unique()
-    targetRevenue Decimal @map("target_revenue") @db.Decimal(12, 2)
-    targetEbitda Decimal @map("target_ebitda") @db.Decimal(12, 2)
-    targetGuests Int @map("target_guests")
-    targetAvgSpend Decimal @map("target_avg_spend") @db.Decimal(10, 2)
-    targetStaffCostPct Decimal @map("target_staff_cost_pct") @db.Decimal(5, 2)
+  id                 Int     @id() @default(autoincrement())
+  month              String  @unique()
+  targetRevenue      Decimal @map("target_revenue") @db.Decimal(12, 2)
+  targetEbitda       Decimal @map("target_ebitda") @db.Decimal(12, 2)
+  targetGuests       Int     @map("target_guests")
+  targetAvgSpend     Decimal @map("target_avg_spend") @db.Decimal(10, 2)
+  targetStaffCostPct Decimal @map("target_staff_cost_pct") @db.Decimal(5, 2)
 
-    @@map("monthly_targets")
+  @@map("monthly_targets")
 }
