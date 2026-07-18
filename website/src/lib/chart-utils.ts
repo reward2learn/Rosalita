@@ -15,33 +15,33 @@ export const SCENARIO_TARGETS: Record<
   { conservative: string; realistic: string; aspirational: string; label: string }
 > = {
   ebitda: {
-    conservative: 'IDR 101M',
-    realistic: 'IDR 150-200M',
-    aspirational: 'IDR 298M',
+    conservative: 'IDR 7.5B',
+    realistic: 'IDR 8.4B',
+    aspirational: 'IDR 15.5B',
     label: 'EBITDA',
   },
   revenue: {
-    conservative: 'IDR 613M',
-    realistic: 'IDR 873M',
-    aspirational: 'IDR 1,053M',
+    conservative: 'IDR 3.5B',
+    realistic: 'IDR 3.8B',
+    aspirational: 'IDR 5.5B',
     label: 'Revenue',
   },
   net_income: {
-    conservative: 'IDR 507M',
-    realistic: 'IDR 722M',
-    aspirational: 'IDR 870M',
+    conservative: 'IDR 2.9B',
+    realistic: 'IDR 3.1B',
+    aspirational: 'IDR 4.5B',
     label: 'Net Profit',
   },
   guests: {
-    conservative: '78/day',
-    realistic: '93/day',
-    aspirational: '103/day',
+    conservative: '8,850/mo',
+    realistic: '9,180/mo',
+    aspirational: '10,110/mo',
     label: 'Guests',
   },
   staff_cost: {
-    conservative: '22.4%',
-    realistic: '20%',
-    aspirational: '18%',
+    conservative: '16.5%',
+    realistic: '15.5%',
+    aspirational: '11.5%',
     label: 'Staff Cost %',
   },
 };

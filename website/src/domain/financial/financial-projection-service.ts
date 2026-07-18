@@ -6,9 +6,9 @@ import { isExcelLedgerMonth, parsePnlLines } from '@/domain/financial/pnl-calcul
 import { toIdrInt } from '@/domain/shared/number-utils';
 
 export const SCENARIO_MAP = {
-  conservative: { year: 2027, label: 'Conservative', target: 'IDR 101M/mo EBITDA' },
-  realistic: { year: 2029, label: 'Realistic', target: 'IDR 150M/mo EBITDA' },
-  aspirational: { year: 2030, label: 'Aspirational', target: 'IDR 298M/mo EBITDA' },
+  conservative: { year: 2027, label: 'Conservative', target: 'IDR 7.5B/yr EBITDA' },
+  realistic: { year: 2029, label: 'Realistic', target: 'IDR 8.4B/yr EBITDA' },
+  aspirational: { year: 2030, label: 'Aspirational', target: 'IDR 15.5B/yr EBITDA' },
 } as const;
 
 export type ForecastScenarioKey = keyof typeof SCENARIO_MAP;

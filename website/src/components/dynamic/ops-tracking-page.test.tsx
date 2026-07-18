@@ -49,7 +49,7 @@ const overviewPayload = {
     scenario: 'conservative',
     scenario_year: 2027,
     scenario_label: 'Conservative',
-    ebitda_target: 'IDR 101M/mo EBITDA',
+    ebitda_target: 'IDR 7.5B/yr EBITDA',
   },
 };
 

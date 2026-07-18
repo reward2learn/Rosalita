@@ -1,5 +1,5 @@
 /**
- * Auth API — JWT session cookie (rosalita.session).
+ * Auth API — JWT session cookie (redruby.session).
  * Legacy reference: website/api/auth.js (read-only)
  */
 import { NextResponse } from 'next/server';

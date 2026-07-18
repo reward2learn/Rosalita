@@ -1,6 +1,6 @@
-# Rosalita Website — AGENTS.md
+# Red Ruby Website — AGENTS.md
 
-Development guide for the Rosalita website migration (plan v2).
+Development guide for the Red Ruby Bali website migration (plan v2).
 
 ## Stack (target)
 
@@ -12,7 +12,7 @@ Development guide for the Rosalita website migration (plan v2).
 | UI | MUI v7 |
 | State | **Hybrid:** RTK Query + `uiSlice` + `chatStreamSlice` + React Hook Form — **no Zustand** |
 | Pages (MVP) | **Code-first** `src/lib/page-catalog.ts` (DB `AppPage` seeded P6; catalog wins at runtime) |
-| Auth | JWT cookie `rosalita.session` — write APIs use tier claims (`pin` \| `google`) |
+| Auth | JWT cookie `redruby.session` — write APIs use tier claims (`pin` \| `google`) |
 | Database | Neon Postgres via ZenStack `createClient` |
 | Testing | Vitest + RTL |
 | Deploy | Vercel |
@@ -33,12 +33,12 @@ bun run seed                # upsert financial_projections + content (requires P
 
 ### Production database seed
 
-Chart data comes from `financial_projections`, loaded from `../Rosallita Cashflow May 24th 2026.xlsx` via the seed script. **Seeding does not run on Vercel deploy** — run manually after first deploy or when the workbook changes.
+Chart data comes from `financial_projections`, loaded from `../Red Ruby Club & Terrace Bar Cashflow Budgets.xlsx` via the seed script. **Seeding does not run on Vercel deploy** — run manually after first deploy or when the workbook changes.
 
 1. Copy production `POSTGRES_URL` from Vercel → Project → Settings → Environment Variables (or use the same value in local `.env.local`).
 2. From `website/`: `bun run seed -- --dry-run` (expect `financial_projections: 48`).
 3. `bun run seed` (idempotent upserts).
-4. Verify: `curl -s 'https://rosalita-business-review.vercel.app/api/financial-overview?scenario=conservative' | head -c 200` — `labels` should list `Jan 2026` … `Dec 2027`, not `[]`.
+4. Verify: `curl -s 'https://redrubybali.vercel.app/api/financial-overview?scenario=conservative' | head -c 200` — `labels` should list `Jan 2026` … `Dec 2027`, not `[]`.
 
 Legacy transition (optional): `vercel dev` if you need side-by-side with unmigrated `api/*.js`.
 
@@ -49,7 +49,7 @@ Do **not** use Prestix deploy commands from other projects.
 1. **Legacy read-only:** Do not modify `api/*.js`, `lib/*.js`, or `*.html` during migration.
 2. **Schema:** Introspection-first — `@@map` to existing production tables. Preserve `financial_projections.data_type` + `scenario`.
 3. **Currency:** Full IDR integers in DB/API (e.g. `411_000_000`). `K` notation is UI-only (`menu.txt`).
-4. **Write auth:** JWT session claims — **not** `x-admin-key: rosalita2026` in client or new route handlers.
+4. **Write auth:** JWT session claims — **not** `x-admin-key: redruby2026` in client or new route handlers.
 5. **PDF:** Server-side only (`GET /api/auth?action=pdf`); Puppeteer + `@sparticuz/chromium`.
 6. **No `dotenv/config`** in `src/`.
 
@@ -61,7 +61,7 @@ Do **not** use Prestix deploy commands from other projects.
 | `pin` | `verify-pin` | ops-admin writes |
 | `google` | Google OAuth | Full app, review, chat, PDF |
 
-Cookie: `rosalita.session` (JWT via `jose`, `ENCRYPTION_KEY` 64 hex chars).
+Cookie: `redruby.session` (JWT via `jose`, `ENCRYPTION_KEY` 64 hex chars).
 
 ## Environment
 

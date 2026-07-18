@@ -63,12 +63,12 @@ const VOICE_PHASE_LABEL: Record<string, string> = {
 
 function formatTranscript(messages: ChatStreamMessage[]): string {
   const lines = [
-    'Rosalita Cantina — AI Chat Transcript',
+    'Red Ruby Bali — AI Chat Transcript',
     `Generated: ${new Date().toLocaleString()}`,
     '',
   ];
   for (const msg of messages) {
-    const role = msg.role === 'user' ? 'You' : 'Rosalita AI';
+      const role = msg.role === 'user' ? 'You' : 'Red Ruby AI';
     lines.push(`── ${role} ──`);
     lines.push(msg.content);
     lines.push('');
@@ -216,7 +216,7 @@ export function ChatPanel() {
   const handleCopy = async () => {
     if (!messages.length) return;
     const text = messages.map((msg) => {
-      const role = msg.role === 'user' ? 'You' : 'Rosalita AI';
+    const role = msg.role === 'user' ? 'You' : 'Red Ruby AI';
       return `[${role}]\n${msg.content}`;
     }).join('\n\n');
     try {
@@ -233,7 +233,7 @@ export function ChatPanel() {
     const url = URL.createObjectURL(blob);
     const anchor = globalThis.document.createElement('a');
     anchor.href = url;
-    anchor.download = `rosalita-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+    anchor.download = `redruby-chat-${new Date().toISOString().slice(0, 10)}.txt`;
     globalThis.document.body.appendChild(anchor);
     anchor.click();
     globalThis.document.body.removeChild(anchor);

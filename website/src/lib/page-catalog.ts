@@ -43,97 +43,49 @@ export interface ReviewPartDefinition {
   authTier: AuthTier;
 }
 
-/** Parts A–O from Business Review MD (Part O also on /tax-structure). */
+/** Parts A–G from Red Ruby Business Review. */
 export const REVIEW_PART_CATALOG: Record<string, ReviewPartDefinition> = {
   'part-a': {
     partSlug: 'part-a',
     partKey: 'A',
-    title: 'Part A: Current Situation — The Numbers That Matter',
+    title: 'Part A: Current Situation — The Numbers',
     authTier: 'google',
   },
   'part-b': {
     partSlug: 'part-b',
     partKey: 'B',
-    title: 'Part B: Step-by-Step Action Plan',
+    title: 'Part B: The 10-Year Growth Model',
     authTier: 'google',
   },
   'part-c': {
     partSlug: 'part-c',
     partKey: 'C',
-    title: 'Part C: Financial Projection — The 12-Month Target',
+    title: 'Part C: Revenue Optimization Strategy',
     authTier: 'google',
   },
   'part-d': {
     partSlug: 'part-d',
     partKey: 'D',
-    title: 'Part D: Risk Register',
+    title: 'Part D: Cost Management',
     authTier: 'google',
   },
   'part-e': {
     partSlug: 'part-e',
     partKey: 'E',
-    title: 'Part E: Menu Consolidation Decision Matrix',
+    title: 'Part E: Risk Register',
     authTier: 'google',
   },
   'part-f': {
     partSlug: 'part-f',
     partKey: 'F',
-    title: 'Part F: Timeline at a Glance',
+    title: 'Part F: StarWORLD Membership Program',
     authTier: 'google',
   },
   'part-g': {
     partSlug: 'part-g',
     partKey: 'G',
-    title: 'Part G: Immediate Actions — Next 7 Days',
+    title: 'Part G: Immediate Actions (Next 30 Days)',
     authTier: 'google',
-  },
-  'part-h': {
-    partSlug: 'part-h',
-    partKey: 'H',
-    title: 'Part H: Website Review — rosalitasbali.com',
-    authTier: 'google',
-  },
-  'part-i': {
-    partSlug: 'part-i',
-    partKey: 'I',
-    title: 'Part I: Revenue Driver Analysis',
-    authTier: 'google',
-  },
-  'part-j': {
-    partSlug: 'part-j',
-    partKey: 'J',
-    title: 'Part J: Area & Competitive Analysis',
-    authTier: 'google',
-  },
-  'part-k': {
-    partSlug: 'part-k',
-    partKey: 'K',
-    title: 'Part K: AI & Automation Strategy',
-    authTier: 'google',
-  },
-  'part-l': {
-    partSlug: 'part-l',
-    partKey: 'L',
-    title: 'Part L: Revised & Final Assessment',
-    authTier: 'google',
-  },
-  'part-m': {
-    partSlug: 'part-m',
-    partKey: 'M',
-    title: 'Part M: Strategic Partnership Analysis',
-    authTier: 'google',
-  },
-  'part-n': {
-    partSlug: 'part-n',
-    partKey: 'N',
-    title: 'Part N: Ecosystem Hub Strategy',
-    authTier: 'google',
-  },
-  'part-o': {
-    partSlug: 'part-o',
-    partKey: 'O',
-    title: 'Part O: Tax Structure Notes',
-    authTier: 'public',
   },
 };
 
@@ -151,7 +103,7 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
           badge: 'June 2026 · 12-Month Plan',
           headline: 'Business Review',
           subtitle:
-            'From +IDR 434K/month to IDR 100-200M+/month EBITDA within 12 months.',
+            'From +IDR 166M/month EBITDA toward IDR 7.5B+/year EBITDA by 2027.',
           minTier: 'public',
         },
       },

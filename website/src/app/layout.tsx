@@ -6,8 +6,8 @@ import { ThemeRegistry } from '@/theme/theme-registry';
 import { AppShell } from '@/components/layout/app-shell';
 
 export const metadata: Metadata = {
-  title: 'Rosalita Cantina',
-  description: 'Rosalita business operations dashboard',
+  title: 'Red Ruby Bali',
+  description: 'Red Ruby Bali business operations dashboard',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

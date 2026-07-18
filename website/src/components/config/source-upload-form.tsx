@@ -47,7 +47,7 @@ const FILE_FIELDS: {
     apiName: CONFIG_UPLOAD_FIELD_NAMES.excel,
     label: 'Cashflow workbook (XLSX)',
     accept: '.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel',
-    hint: 'Rosallita Cashflow May 24th 2026.xlsx',
+    hint: 'Red Ruby Club & Terrace Bar Cashflow Budgets.xlsx',
   },
   {
     key: 'businessReview',
@@ -55,7 +55,7 @@ const FILE_FIELDS: {
     apiName: CONFIG_UPLOAD_FIELD_NAMES.businessReview,
     label: 'Business Review (Markdown)',
     accept: '.md,.markdown,.txt,text/markdown,text/plain',
-    hint: 'Rosalita Business Review — June 2026.md',
+    hint: 'Red Ruby Business Review — June 2026.md',
   },
   {
     key: 'executiveSummary',
@@ -63,7 +63,7 @@ const FILE_FIELDS: {
     apiName: CONFIG_UPLOAD_FIELD_NAMES.executiveSummary,
     label: 'Executive Summary (Markdown)',
     accept: '.md,.markdown,.txt,text/markdown,text/plain',
-    hint: 'Rosalita Executive Summary — June 2026.md',
+    hint: 'Red Ruby Executive Summary — June 2026.md',
   },
 ];
 

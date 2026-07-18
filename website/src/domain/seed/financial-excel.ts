@@ -39,11 +39,11 @@ interface SheetConfig {
 }
 
 const SHEET_CONFIG: Record<string, SheetConfig> = {
-  Rosalita: {
-    ebitda: 84,
-    revenue: { actual: 29, forecast: 27 },
+  RedRuby: {
+    ebitda: 94,
+    revenue: { actual: 29, forecast: 28 },
     guests: { actual: 23, forecast: 22 },
-    netIncome: { actual: 18, forecast: 16 },
+    netIncome: { actual: 19, forecast: 16 },
   },
   '2027': {
     ebitda: 66,
@@ -73,7 +73,7 @@ function getCell(sheet: WorkSheet, col: number, row: number): unknown {
 
 function getStaffCost(sheet: WorkSheet, col: number, sheetName: string): number {
   const costRows =
-    sheetName === 'Rosalita' ? [45, 47, 49, 51, 53, 55, 57, 58] : [35, 37, 39, 41, 43, 44];
+    sheetName === 'RedRuby' ? [47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 66] : [35, 37, 39, 41, 43, 44];
   let total = 0;
   for (const r of costRows) {
     const v = getCell(sheet, col, r);
@@ -146,10 +146,10 @@ function projectionRow(args: {
 function parseWorkbook(wb: WorkBook): FinancialProjectionRow[] {
   const projections: FinancialProjectionRow[] = [];
 
-  const s2026 = wb.Sheets['Rosalita'];
-  const cfg26 = SHEET_CONFIG['Rosalita'];
+  const s2026 = wb.Sheets['RedRuby'];
+  const cfg26 = SHEET_CONFIG['RedRuby'];
   if (!s2026 || !cfg26) {
-    throw new Error('Rosalita sheet missing from workbook');
+    throw new Error('RedRuby sheet missing from workbook');
   }
 
   for (let col = 4; col <= 8; col++) {
@@ -163,7 +163,7 @@ function parseWorkbook(wb: WorkBook): FinancialProjectionRow[] {
         scenario: 'actual',
         sheet: s2026,
         col,
-        sheetName: 'Rosalita',
+        sheetName: 'RedRuby',
         cfg: cfg26,
       }),
     );
@@ -180,7 +180,7 @@ function parseWorkbook(wb: WorkBook): FinancialProjectionRow[] {
         scenario: 'conservative',
         sheet: s2026,
         col,
-        sheetName: 'Rosalita',
+        sheetName: 'RedRuby',
         cfg: cfg26,
       }),
     );

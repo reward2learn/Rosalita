@@ -12,8 +12,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
 const BUSINESS_REVIEW_PATHS = [
-  resolve(ROOT, '../Rosalita Business Review — June 2026.md'),
-  resolve(ROOT, 'Rosalita Business Review — June 2026.md'),
+  resolve(ROOT, '../Red Ruby Business Review — June 2026.md'),
+  resolve(ROOT, 'Red Ruby Business Review — June 2026.md'),
 ];
 
 const sourcePath = BUSINESS_REVIEW_PATHS.find((p) => existsSync(p));
@@ -35,7 +35,7 @@ const entries = parsed.map((part) => {
   }`;
 });
 
-const output = `/** Auto-generated from Rosalita Business Review — June 2026.md — do not edit manually. */
+const output = `/** Auto-generated from Red Ruby Business Review — June 2026.md — do not edit manually. */
 /** Regenerate: bun run scripts/generate-review-part-fallbacks.ts */
 
 export interface ReviewPartFallback {

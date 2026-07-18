@@ -20,7 +20,7 @@ export function buildExpenseAiPrompt(department) {
   const dept = getActualsDepartment(department);
   const fields = fieldMeta(department);
   const keys = fields.map((f) => `"${f.key}": number|null`).join(', ');
-  return `You extract cost amounts from an expense invoice, payroll slip, or payment receipt for Rosalita Cantina.
+  return `You extract cost amounts from an expense invoice, payroll slip, or payment receipt for Red Ruby Bali.
 
 Cost account: ${dept?.label || department}
 
@@ -37,29 +37,34 @@ Rules:
 }
 
 const LABEL_HINTS = {
-  purchases_food: [/food/i, /bahan\s*makanan/i, /grocery/i],
   purchases_beverage: [/beverage/i, /minuman/i, /bar\b/i],
-  costs_entertainment: [/entertainment/i, /hiburan/i],
+  purchases_food: [/food/i, /bahan\s*makanan/i, /grocery/i],
+  promoter_costs: [/promoter/i, /influencer/i, /promo/i],
+  costs_entertainment: [/entertainment/i, /hiburan/i, /ticket/i, /event/i],
   other_direct: [/direct/i, /supplier/i, /invoice/i],
   staff_mgmt_cost: [/management/i, /manager/i, /gaji\s*manager/i],
-  staff_dj_cost: [/\bdj\b/i, /music/i],
-  staff_reception_cost: [/reception/i, /cashier/i, /supervisor/i],
-  staff_waiter_cost: [/waiter/i, /waitress/i, /server/i],
+  staff_supervisor_cost: [/supervisor/i, /spv/i],
+  staff_admin_cost: [/admin/i, /cashier/i, /kasir/i],
   staff_bar_cost: [/bar\s*staff/i, /bartender/i],
+  staff_host_cost: [/host/i, /waiter/i, /waitress/i, /server/i, /floor/i],
+  staff_marketing_cost: [/marketing/i, /\bgro\b/i],
   staff_kitchen_cost: [/kitchen/i, /koki/i, /chef/i],
-  staff_store_cost: [/store/i, /cleaning/i, /\bgro\b/i],
-  staff_travel: [/travel/i, /meal/i, /pbjs/i],
+  staff_security_cost: [/security/i, /valet/i, /satpam/i],
+  staff_store_cost: [/store/i, /cleaning/i, /kebersihan/i],
+  staff_daily_cost: [/daily/i, /contract/i, /harian/i],
+  staff_travel: [/travel/i, /meal/i, /medical/i, /bpjs/i, /jamsostek/i],
   advertising: [/advertis/i, /promotion/i, /iklan/i],
   marketing_material: [/printing/i, /material/i, /marketing/i],
+  rental_equipment: [/rental/i, /equipment/i, /sewa\s*alat/i],
   rents_leases: [/rent/i, /sewa/i, /lease/i],
-  body_corporate: [/body\s*corp/i, /iuran/i],
   repairs: [/repair/i, /maintenance/i, /perbaikan/i],
   electric_gas: [/electric/i, /pln/i, /gas/i, /listrik/i],
-  admin_fees: [/admin/i, /management\s*fee/i],
+  accounting_fees: [/accounting/i, /audit/i, /pajak/i],
   bank_fees: [/bank/i, /card\s*fee/i, /interest/i],
   communication: [/communication/i, /internet/i, /telkom/i, /phone/i],
+  legal_permits: [/legal/i, /permit/i, /izin/i, /ceremon/i, /banjar/i],
   sundry: [/sundry/i, /overhead/i, /misc/i],
-  starpoints_addback: [/starpoint/i, /add\s*back/i],
+  travel_accom: [/travel/i, /accommodation/i, /hotel/i, /tiket/i],
 };
 
 export function parseExpenseHeuristic(text, department) {

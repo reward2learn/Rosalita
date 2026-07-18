@@ -17,7 +17,7 @@ export interface DbSession {
 export type DbClient = Enhanced<ZenPrismaClient>;
 
 const globalForPrisma = globalThis as typeof globalThis & {
-  __rosalitaPrisma?: PrismaClient;
+  __redrubyPrisma?: PrismaClient;
 };
 
 function getPostgresUrl(): string {
@@ -29,12 +29,12 @@ function getPostgresUrl(): string {
 }
 
 function getBasePrisma(): PrismaClient {
-  if (!globalForPrisma.__rosalitaPrisma) {
-    globalForPrisma.__rosalitaPrisma = new PrismaClient({
+  if (!globalForPrisma.__redrubyPrisma) {
+    globalForPrisma.__redrubyPrisma = new PrismaClient({
       datasources: { db: { url: getPostgresUrl() } },
     });
   }
-  return globalForPrisma.__rosalitaPrisma;
+  return globalForPrisma.__redrubyPrisma;
 }
 
 /** Request-scoped ZenStack client; pass session tier for future @@allow policies. */

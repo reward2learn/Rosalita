@@ -65,7 +65,7 @@ export async function getSession(): Promise<SessionClaims | null> {
   return verifySession(token);
 }
 
-const PRODUCTION_APP_URL = 'https://rosalita-business-review.vercel.app';
+const PRODUCTION_APP_URL = 'https://redrubybali.vercel.app';
 
 function resolveCanonicalAppUrl(): string {
   const fromPublic = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');

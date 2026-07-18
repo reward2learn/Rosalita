@@ -33,7 +33,7 @@ export function PdfExportButton({ page = '/', label = 'Export PDF' }: PdfExportB
         if (job.status === 'completed' && job.pdfBase64) {
           const link = globalThis.document.createElement('a');
           link.href = `data:application/pdf;base64,${job.pdfBase64}`;
-          link.download = 'rosalita-export.pdf';
+          link.download = 'redruby-export.pdf';
           link.click();
           setStatus('done');
           return;

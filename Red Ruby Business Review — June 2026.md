@@ -1,17 +1,9 @@
-/** Auto-generated from Red Ruby Business Review — June 2026.md — do not edit manually. */
-/** Regenerate: bun run scripts/generate-review-part-fallbacks.ts */
+# Red Ruby Club & Terrace Bar — Business Review
+### PT Taman Bintang Bali | June 2026
 
-export interface ReviewPartFallback {
-  slug: string;
-  title: string;
-  markdown: string;
-}
+---
 
-export const REVIEW_PART_FALLBACKS: Record<string, ReviewPartFallback> = {
-  'part-a': {
-    slug: 'part-a',
-    title: 'Part A: Current Situation — The Numbers',
-    markdown: `## Part A: Current Situation — The Numbers
+## Part A: Current Situation — The Numbers
 
 ### A.1 Revenue Streams (Jan–Jun 2026)
 
@@ -64,12 +56,11 @@ Red Ruby operates two main revenue streams plus a planned third:
 | Apr (Transition) | IDR 1.86B | IDR 1,055M | -IDR 87M |
 | May (Peak) | IDR 2.24B | IDR 1,104M | +IDR 166M |
 
-**The seasonal swing is IDR 636M between peak and trough revenue** (Jan vs Feb). Fixed costs remain stubbornly at IDR 950M–1.1B/month regardless of season.`,
-  },
-  'part-b': {
-    slug: 'part-b',
-    title: 'Part B: The 10-Year Growth Model',
-    markdown: `## Part B: The 10-Year Growth Model
+**The seasonal swing is IDR 636M between peak and trough revenue** (Jan vs Feb). Fixed costs remain stubbornly at IDR 950M–1.1B/month regardless of season. The business needs either (a) cash reserves of IDR 500M+ to cover 2-3 low months, or (b) flexible staffing that scales down 20-30% during low season.
+
+---
+
+## Part B: The 10-Year Growth Model
 
 ### B.1 Revenue Growth Trajectory
 
@@ -95,14 +86,17 @@ Red Ruby operates two main revenue streams plus a planned third:
 | 2028 | 8.37B | 22.5% | 37.2B |
 | 2029 | 15.47B | 28.6% | 54.1B |
 | 2030 | 18.44B | 29.1% | 63.4B |
+| 2031 | 19.00B | 27.7% | 68.6B |
+| 2032 | 21.10B | 28.5% | 74.0B |
+| 2033 | 22.61B | 28.4% | 79.5B |
+| 2034 | 24.59B | 28.8% | 85.2B |
 | 2035 | 26.91B | 29.5% | 91.1B |
 
-**Key projection**: EBITDA margin improves from 8.6% (2026) to 21.5% (2027) as the business scales past BEP. The Sky Lounge launch (2029) adds IDR 13B revenue and pushes EBITDA to IDR 15.5B (28.6% margin). By 2035, the business targets IDR 110.2B revenue with 29.5% EBITDA margin.`,
-  },
-  'part-c': {
-    slug: 'part-c',
-    title: 'Part C: Revenue Optimization Strategy',
-    markdown: `## Part C: Revenue Optimization Strategy
+**Key projection**: EBITDA margin improves from 8.6% (2026) to 21.5% (2027) as the business scales past BEP. The Sky Lounge launch (2029) adds IDR 13B revenue and pushes EBITDA to IDR 15.5B (28.6% margin). By 2035, the business targets IDR 110.2B revenue with 29.5% EBITDA margin.
+
+---
+
+## Part C: Revenue Optimization Strategy
 
 ### C.1 Club Revenue (70% of total)
 
@@ -113,7 +107,7 @@ Growth levers:
 - **Ticket pricing**: Current average IDR 519M/month from ticket sales. Tiered pricing (early bird, standard, VIP, table service) can increase yield by 15-20%.
 - **Table service**: Premium bottle service currently under-monetized. Target 5-10 VIP tables/night at IDR 3M-10M each.
 - **Promoter/influencer ROI**: Currently spending IDR 55M/month on promoter fees. Track cost-per-guest and optimize channel mix.
-- **Event calendar**: Weekly themed nights — measure which nights drive the highest margin guests.
+- **Event calendar**: Weekly themed nights (already established) — measure which nights drive the highest margin guests.
 
 ### C.2 Terrace Revenue (20% of total)
 
@@ -121,20 +115,19 @@ Growth levers:
 **Target (2027)**: 85 guests/night, IDR 230K spend/guest
 
 Growth levers:
-- **Food menu optimization**: Current food purchases at IDR 64M/month (2.9% of revenue). Expand food offering as a traffic driver for daytime hours.
+- **Food menu optimization**: Current food purchases at IDR 64M/month (2.9% of revenue). Expand food offering as a traffic driver for the Terrace during daytime hours.
 - **Shisha**: IDR 11.5M/month — explore premium shisha offerings at higher price points.
-- **24-hour advantage**: The Terrace is the only 24h venue in the area. Market this aggressively.
+- **24-hour advantage**: The Terrace is the only 24h venue in the area. Market this aggressively for late-night/early-morning crowds.
 
 ### C.3 Sky Lounge (2029 Launch)
 
 **Target**: 80 guests/night, IDR 450K spend/guest = IDR 12.96B/year
 **Investment required**: Build-out costs, premium fit-out, additional staffing (est. 15-20 FTE)
-**Payback period**: Estimated 18-24 months based on projected margins`,
-  },
-  'part-d': {
-    slug: 'part-d',
-    title: 'Part D: Cost Management',
-    markdown: `## Part D: Cost Management
+**Payback period**: Estimated 18-24 months based on projected margins
+
+---
+
+## Part D: Cost Management
 
 ### D.1 Staff Optimization
 
@@ -142,7 +135,7 @@ Growth levers:
 |--------|------------|-------------|-------------|
 | Jan-Apr 2026 | 80 | IDR 571M | 24.5-31.9% |
 | May 2026 | 75 | IDR 545M | 26.1% |
-| Jun 2026 | 73 | IDR 535M | 27.1% |
+| Jun 2026 (target) | 73 | IDR 535M | 27.1% |
 | 2027 Budget | 72 | IDR 558M | 15.9% |
 
 **Key changes (Jan→Jun)**:
@@ -150,33 +143,23 @@ Growth levers:
 - Marketing & GRO: 15→12 (saving IDR 13.5M/month)
 - Security & Valet: 12→10 (saving IDR 9M/month)
 
-### D.2 Staff Structure (73 FTE, IDR 6.58B/year)
+### D.2 Beverage Cost Control
 
-| Department | Headcount | Annual Cost |
-|-----------|-----------|-------------|
-| Management | 4 | IDR 1,680M |
-| Supervisor | 2 | IDR 360M |
-| Admin/Cashier/Merchandiser | 6 | IDR 468M |
-| Bar Staff | 10 | IDR 720M |
-| Host/Floor/Waiter | 12 | IDR 760M |
-| Marketing & GRO | 12 | IDR 702M |
-| Kitchen | 7 | IDR 378M |
-| Security & Valet | 10 | IDR 585M |
-| Store/Cleaning | 6 | IDR 288M |
-| Daily/Contract Worker | 4 | IDR 72M |
-| Staff Travel/Meal/Medical | — | IDR 565M |
-| **Total** | **73** | **IDR 6,578M** |
+Beverage purchases are 26% of beverage revenue (target-range for nightclub operations). Key opportunities:
+- Bulk spirits purchasing for top 5 moving brands
+- House pour standardization to reduce over-pouring
+- Inventory management system to track wastage
 
-### D.3 Cost Control Priorities
+### D.3 Entertainment Cost
 
-- **Beverage**: 26% COS — explore bulk purchasing for top brands, implement inventory tracking
-- **Entertainment**: IDR 325M/month (14.5%) — negotiate residency deals, develop in-house DJ roster
-- **Property**: IDR 75M/month rent — locked at current rate through lease agreement`,
-  },
-  'part-e': {
-    slug: 'part-e',
-    title: 'Part E: Risk Register',
-    markdown: `## Part E: Risk Register
+Entertainment (performers, DJs, tickets) is the single largest COS line at IDR 325M/month (14.5% of revenue). For 2026-2027 multi-year model, this reduces to 8% of revenue as the business scales. Key actions:
+- Negotiate residency deals with performers instead of per-night fees
+- Develop in-house DJ roster to reduce external booking costs
+- Track ROI per performer/event
+
+---
+
+## Part E: Risk Register
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|------|-----------|--------|------------|
@@ -186,12 +169,11 @@ Growth levers:
 | 4 | Key staff turnover during scaling | Low-Med | Medium | Competitive above-market salaries; management bonus tied to EBITDA targets |
 | 5 | Entertainment talent costs escalating | Medium | Medium | Develop in-house talent pipeline; 3-6 month residency contracts |
 | 6 | Currency/exchange rate risk (USD-IDR) | Low | Low | Most revenue in IDR; StarWORLD USD revenue provides natural partial hedge |
-| 7 | Sky Lounge launch delays or cost overruns | Low-Med | High | Phased launch (soft opening first); contingency budget of 20% above projected cost |`,
-  },
-  'part-f': {
-    slug: 'part-f',
-    title: 'Part F: StarWORLD Membership Program',
-    markdown: `## Part F: StarWORLD Membership Program
+| 7 | Sky Lounge launch delays or cost overruns | Low-Med | High | Phased launch (soft opening first); contingency budget of 20% above projected cost |
+
+---
+
+## Part F: StarWORLD Membership Program
 
 The StarWORLD membership program creates recurring revenue and guest loyalty across 5 tiers:
 
@@ -206,12 +188,9 @@ The StarWORLD membership program creates recurring revenue and guest loyalty acr
 
 Membership benefits include priority entry, table reservations, drink discounts, and cross-venue access. Average member value: IDR 90 StarXP (USD $1,530/year).
 
-The program targets 120,000 total members across all tiers, with a projected annual value of IDR 183.6B. The membership revenue model provides a stable recurring revenue base that offsets seasonal venue revenue fluctuations.`,
-  },
-  'part-g': {
-    slug: 'part-g',
-    title: 'Part G: Immediate Actions (Next 30 Days)',
-    markdown: `## Part G: Immediate Actions (Next 30 Days)
+---
+
+## Part G: Immediate Actions (Next 30 Days)
 
 | Priority | Action | Impact |
 |----------|--------|--------|
@@ -221,6 +200,8 @@ The program targets 120,000 total members across all tiers, with a projected ann
 | P1 | Implement beverage inventory tracking system | Reduces wastage by 10% |
 | P1 | Launch StarWORLD membership drive | Recurring revenue growth |
 | P2 | Prepare Sky Lounge business case and investment proposal | 2029 launch planning |
-| P2 | Develop seasonal staffing model (high/low season templates) | Operational flexibility |`,
-  },
-};
+| P2 | Develop seasonal staffing model (high/low season templates) | Operational flexibility |
+
+---
+
+> *Full data sourced from: Red Ruby Club & Terrace Bar Cashflow Budgets.xlsx and June 2026 - Red Ruby PT.TAMAN BINTANG BALI.xlsx. Live analysis at redrubybali.vercel.app*

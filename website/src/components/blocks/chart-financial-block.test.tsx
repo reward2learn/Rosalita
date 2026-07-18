@@ -28,7 +28,7 @@ const mockOverview = {
     scenario: 'conservative' as const,
     scenario_year: 2027,
     scenario_label: 'Conservative',
-    ebitda_target: 'IDR 101M/mo EBITDA',
+    ebitda_target: 'IDR 7.5B/yr EBITDA',
   },
 };
 
@@ -99,6 +99,6 @@ describe('ChartFinancialBlock', () => {
     );
 
     expect(screen.getByText('Conservative')).toBeInTheDocument();
-    expect(screen.getByText('IDR 101M')).toBeInTheDocument();
+    expect(screen.getByText('IDR 7.5B')).toBeInTheDocument();
   });
 });

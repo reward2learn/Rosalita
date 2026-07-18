@@ -35,7 +35,7 @@ export default async function ReviewPartPage({ params }: ReviewPartPageProps) {
         sx={{
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
-          maxWidth: 1180,
+          width: '100%',
           mx: 'auto',
           gap: { xs: 0, md: 2 },
         }}

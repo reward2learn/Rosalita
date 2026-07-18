@@ -91,7 +91,7 @@ export function ReviewBlocks() {
   };
 
   return (
-    <Box component="section" sx={{ maxWidth: 1180, mx: 'auto', px: 3, py: 4, minWidth: 0 }}>
+    <Box component="section" sx={{ mx: 'auto', px: 3, py: 4, minWidth: 0 }}>
       <Stack spacing={3}>
         <Box>
           <Typography variant="overline" color="primary.main" sx={{ fontWeight: 700 }}>

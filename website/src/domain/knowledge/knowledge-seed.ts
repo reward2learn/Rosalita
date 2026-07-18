@@ -1,100 +1,69 @@
-/** Seed fallback snippets — sourced from knowledge-base.js for P6 seed; not runtime SSoT. */
-export const EXECUTIVE_SUMMARY_FALLBACK = `# Rosalita Cantina — Executive Summary
-### 12-Month Turnaround Plan | June 2026
+/** Seed fallback snippets — sourced from Red Ruby Business Review & Executive Summary. */
+export const EXECUTIVE_SUMMARY_FALLBACK = `# Red Ruby Club & Terrace Bar — Executive Summary
+### Business Overview | June 2026
 
-**The situation in one sentence**: After losing IDR 443M in Jan-Apr, May 2026 was the first EBITDA-positive month (+IDR 434K). The model works when costs are controlled. Now we scale it.
-
----
-
-## The 5 Levers
-
-| # | Lever | What It Does | Est. EBITDA Impact |
-|---|-------|-------------|-------------------|
-| 1 | **Staff costs** | 54-68% → 22% of revenue (already 34→22 staff) | IDR 50-80M/month |
-| 2 | **Menu consolidation** | 60 → 48 items, remove Asian Corner, fix promos | IDR 10-20M/month |
-| 3 | **New revenue windows** | Happy Hour (daily 4-7PM), Brunch (Sat-Sun), Late-night | IDR 50-100M/month |
-| 4 | **AI automation** | ChatGPT + Canva (free), 7shifts, Winnow | IDR 20-50M/month |
-| 5 | **Partnerships** | Red Ruby breakfast, Prestix.vip, StarPOINTS deepening | IDR 20-40M/month |
+**The situation**: Red Ruby Club & Terrace Bar (PT Taman Bintang Bali) in Petitenget generated IDR 2.24B revenue in May 2026 with 61.1% gross margin and BEP coverage of 1.24x. The business operates across three revenue streams — Club (nightclub), Terrace 24h, and is planning Sky Lounge/Private Rooms (2029 launch). January 2026 was EBITDA-positive at +IDR 250M, but Feb-Apr saw EBITDA losses due to seasonal low season and high fixed costs. May rebounded to +IDR 166M EBITDA.
 
 ---
 
-## The Target
+## Business Model
 
-| Metric | May 2026 Now | Jun 2027 Conservative | Jun 2027 Realistic | Jun 2027 Aspirational |
-|--------|-------------|----------------------|--------------------|-----------------------|
-| Monthly Revenue | IDR 411M | IDR 615M | IDR 699M | IDR 819M+ |
-| **Monthly EBITDA** | **+IDR 434K** | **+IDR 101M** | **IDR 150-200M** | **IDR 298M** |
-| EBITDA Margin | 0.1% | 16.5% | ~25% | ~32% |
-| Guests/Day | 56 | 82 | 88-100 | 100+ |
-| Avg Spend/Guest | ~IDR 220K | IDR 250K | IDR 265K | IDR 275K+ |
+| Stream | Guests/Night | Spend/Guest | Monthly Revenue (Budget) | Description |
+|--------|-------------|-------------|------------------------|-------------|
+| **Club** | 146-200 | IDR 400K-438K | IDR 1.6B-2.2B | Nightclub with beverage, ticket, and VIP table revenue |
+| **Terrace 24h** | 50-80 | IDR 225K-270K | IDR 342M-503M | All-day terrace bar with food, beverage, shisha, cigarettes |
+| **Sky Lounge** | — (2029) | IDR 450K-510K | — (2029+) | Private rooms and premium lounge (planned expansion) |
 
 ---
 
-## Do This Week (P0 — Zero Cost, Immediate ROI)
+## The Numbers
 
-- [ ] **Create ChatGPT + Canva accounts** — free, 15min setup → start posting daily content, responding to reviews
-- [ ] **Remove Asian Corner** from GoFood, website, and Instagram menu photos (brand mismatch, 6 items gone)
-- [ ] **Fix Monday promo** — change "25% off everything" to a bundle deal (e.g., 2 tacos + drink IDR 120K)
-- [ ] **Fix Wednesday promo** — change "67% off wings" to wing + beer bundle (6 wings + beer IDR 85K)
-- [ ] **Check 5AM alcohol licensing** — verify if early-morning service is allowed (unlocks Red Ruby partnership)
-- [ ] **Set up Prestix.vip profile** — list Rosalita's on the booking platform (takes 2 hours)
+### Revenue & Cost Structure (May 2026 Actuals)
 
----
+| Line Item | Amount (IDR) | % of Revenue |
+|-----------|-------------|-------------|
+| Revenue | **2,235,602,109** | 100% |
+| Cost of Sales | 868,619,170 | 38.8% |
+| **Gross Profit** | **1,366,982,939** | **61.1%** |
+| Payroll | 616,978,740 | 27.6% |
+| Other Fixed Costs | 487,469,676 | 21.8% |
+| **Total Fixed Costs** | **1,104,448,416** | **49.4%** |
+| **EBITDA** | **+IDR 166,480,378** | **7.5%** |
 
-## Do This Month (P1)
+### 10-Year Growth Projection (2026–2035)
 
-- [ ] Launch daily **Happy Hour** (4-7PM): 20% off cocktails + half-price appetizers
-- [ ] Document **cocktail menu pricing** in menu.txt (highest-margin, not yet documented)
-- [ ] Pilot **5AM breakfast** at Rosalita's (2 weekends, limited menu)
-- [ ] Launch **"Dinner + Red Ruby VIP"** cross-promotion package
-- [ ] Sign up for **7shifts AI scheduling** software
-
----
-
-## Do This Quarter (P2 — Oct-Dec 2026)
-
-- [ ] Launch **weekend brunch** (Sat-Sun 10AM-2PM)
-- [ ] Extend **Fri-Sat hours to 1AM**
-- [ ] Contact **5 five-star hotels** within 1km for concierge partnerships
-- [ ] Expand 5AM breakfast to **Fri-Sun** (12 mornings/month)
-- [ ] Activate **bonus StarPOINTS** program (first visit, slow days, cocktail orders)
-- [ ] Implement **Winnow** or equivalent food waste tracking
+| Metric | 2026 | 2035 |
+|--------|------|------|
+| Total Revenue | IDR 30.7B | IDR 110.2B |
+| EBITDA | IDR 2.2B | IDR 26.9B |
+| EBITDA Margin | 8.6% | 29.5% |
+| Total Staff | 73 | 117 |
+| Annual Guests | 76,468 | 177,480 |
 
 ---
 
-## Key Numbers to Watch
+## Break-Even Analysis
 
-| Metric | Current (May) | Target (Jun 2027) |
-|--------|--------------|-------------------|
-| Staff cost as % of revenue | 40% | **22%** |
-| Average spend per guest | ~IDR 220K | **IDR 265K** |
-| Guests per day | 56 | **82+** |
-| AI tool investment | IDR 0 | IDR 350K-1.5M/month |
-| GoFood commission cost | 20-30% of delivery | **IDR 15-25M saved** via direct ordering |
-| Partnership EBITDA contribution | IDR 0 | **IDR 34-115M/month** |
-| Management fee tax risk | IDR 6.25M/mo undocumented | **Formalized MSA needed** |
+| Metric | May 2026 | Target |
+|--------|----------|--------|
+| Gross Margin | 61.1% | 60%+ |
+| Fixed Costs/mo | IDR 1,104M | IDR 950M |
+| BEP Revenue/mo | IDR 1,806M | IDR 1,600M |
+| BEP Coverage | 1.24x | 1.5x+ |
 
 ---
 
-## Part O — Tax Loss Recovery Notes
+## Key Actions
 
-A short reference tracking Rosalita's ~IDR 1.2B accumulated loss pool (worth ~IDR 260M in future tax savings at 22% CIT) and general Indonesian tax context. **[Previous draft's inter-company analysis has been removed — Rosalita, Red Ruby, and Island Bali Villas are not under common ownership.]** Available on the Tax Notes page.
+- **Stabilize BEP**: Target fixed costs below IDR 950M/month through seasonal staffing adjustments
+- **Grow Club revenue**: Increase Club guests from 146 to 200/night through promoter partnerships  
+- **Optimize beverage margin**: Beverage COS at 26% — explore bulk purchasing
+- **Launch Sky Lounge**: 2029 target — 80 guests/night at IDR 450K spend = IDR 12.96B annual revenue
+- **Scale StarWORLD**: Build membership base to 120,000 across all tiers
 
----
+> **Bottom line**: Red Ruby is a viable, growing nightlife-entertainment business. May 2026 proved the operational model works (BEP coverage 1.24x). The 10-year trajectory targets EBITDA of IDR 26.9B/year by 2035 at 29.5% margin.
 
-## AI Tools — Start in 15 Minutes, All Free
-
-| Tool | Cost | First Task |
-|------|------|-----------|
-| **ChatGPT** | Free | "Write 5 Instagram captions for Taco Tuesday" |
-| **Canva** | Free | "Create Instagram story template for our promotions" |
-| **Meta Business Suite** | Free | Link Instagram account, schedule this week's posts |
-
----
-
-> **Bottom line**: The fundamentals work (May proved it). Execute the P0 list this week and P1 list this month, and Rosalita's goes from barely breaking even (**+IDR 434K/mo**) to generating **IDR 100-200M/month EBITDA** within 12 months. The cost-cutting alone gets you to IDR 101M. The AI tools, new hours, and partnerships push it higher.
-
-*Full analysis: Parts A–N in the main Business Review. Part O (Tax Structure Analysis) available as a dedicated section. Live at rosalita-business-review.vercel.app*`;
+*Live at redrubybali.vercel.app*`;
 
 export const KNOWLEDGE_SEED_SNIPPETS = [
   {
@@ -103,51 +72,66 @@ export const KNOWLEDGE_SEED_SNIPPETS = [
     content: EXECUTIVE_SUMMARY_FALLBACK,
   },
   {
-    key: 'situation_summary',
+    key: 'business_overview',
     category: 'overview',
-    content: `Rosalita Cantina is a Tex-Mex restaurant in Seminyak Square, Bali. After losing IDR 443 million in January-April 2026 due to staff costs at 54-68% of revenue (target: 22%), May 2026 was the first EBITDA-positive month at +IDR 434K. Staff was reduced from 34 to 22 people.`,
+    content: `Red Ruby Club & Terrace Bar (PT Taman Bintang Bali) is a nightclub and bar in Petitenget, Bali. The venue operates across three revenue streams: Club (nightclub with beverage, ticket, and VIP table service), Terrace 24h (all-day bar with food and beverage), and a planned Sky Lounge (2029 launch). May 2026 revenue was IDR 2.24B with 61.1% gross margin and BEP coverage of 1.24x. The business has a seasonal pattern — strong Jan and May, weak Feb-Mar during Bali's low season.`,
   },
   {
-    key: 'five_levers',
+    key: 'revenue_streams',
     category: 'strategy',
-    content: `The 12-month turnaround plan targets EBITDA growth through 5 levers: (1) Staff cost reduction to 22% of revenue, (2) Menu consolidation 60→48 items, (3) New revenue windows (Happy Hour, brunch), (4) AI automation, (5) Partnerships & Ecosystem Hub.`,
+    content: `Three revenue streams: (1) Club — 146-200 guests/night at IDR 400K-438K spend, ~70% of revenue from beverage, tickets, shisha, cigarettes. (2) Terrace 24h — 50-80 guests/night at IDR 225K-270K spend, ~20% of revenue. (3) Sky Lounge (2029+) — planned 80-110 guests/night at IDR 450K-510K spend. StarWORLD membership program with 5 tiers (Blue, Green, Gold, Platinum, Black/VVIP).`,
   },
   {
     key: 'may_2026_metrics',
     category: 'metrics',
-    content: `May 2026 actuals: Revenue IDR 411M, EBITDA IDR 434K, 56 guests/day, IDR 220K avg spend, staff cost 40%, 22 staff.`,
+    content: `May 2026 actuals: Revenue IDR 2,235,602,109, COS IDR 868,619,170 (38.8%), Gross Profit IDR 1,366,982,939 (61.1%), Payroll IDR 616,978,740 (27.6%), Other Fixed IDR 487,469,676 (21.8%), Total Fixed IDR 1,104,448,416, EBITDA +IDR 166,480,378 (7.5%), BEP Revenue IDR 1.8B, BEP Coverage 1.24x.`,
   },
   {
-    key: 'jun_2027_targets',
+    key: 'june_2026_variance',
     category: 'metrics',
-    content: `June 2027 targets — Conservative: IDR 615M/mo revenue, IDR 101M EBITDA; Realistic: IDR 699M, IDR 150M; Aspirational: IDR 819M, IDR 298M.`,
+    content: `June 2026 vs May 2026: Revenue IDR 1,975M (-11.6%), COS IDR 757M (-12.8%), Gross Margin 61.7% (+0.5pp), Payroll IDR 620M (+0.5%), BEP Coverage 1.11x (-0.13x). June shows seasonal decline but improved cost efficiency.`,
   },
   {
-    key: 'priority_actions_p0',
+    key: 'ten_year_targets',
+    category: 'metrics',
+    content: `2026-2035 growth targets: Revenue IDR 30.7B → IDR 110.2B, EBITDA IDR 2.2B → IDR 26.9B (8.6% → 29.5% margin), Staff 73 → 117, Annual guests 76,468 → 177,480, Avg spend IDR 402K → IDR 621K. Sky Lounge launches 2029 adding IDR 13B revenue.`,
+  },
+  {
+    key: 'priority_actions',
     category: 'actions',
-    content: `P0 this week: Create ChatGPT + Canva accounts, remove Asian Corner from all digital menus, fix Monday/Wednesday promos, check Red Ruby licensing, set up Prestix.vip profile.`,
+    content: `P0: Build cash reserve to IDR 500M for seasonal coverage, finalize staff restructuring to 73 FTE. P1: Negotiate DJ/performer residencies (saves 15-20% entertainment cost), implement beverage inventory tracking, launch StarWORLD membership drive. P2: Sky Lounge business case, seasonal staffing model.`,
   },
   {
     key: 'key_risks',
     category: 'risks',
-    content: `Key risks: staff costs must stay under 22%, cocktail menu pricing gap, no POS item-level data yet, GoFood 20-30% commission, Asian Corner brand mismatch, tax loss carryforward IDR 1.1-1.2B expiring in 5 years.`,
+    content: `Key risks: seasonal revenue collapse Jan-Mar (high fixed costs IDR 1B/month vs low revenue), new venue competition in Petitenget/Seminyak, regulatory/permitting risk for nightclub hours, entertainment talent cost escalation, Sky Lounge launch delays. Mitigation: cash reserves, StarWORLD loyalty, flex staffing, legal budget.`,
+  },
+  {
+    key: 'staff_structure',
+    category: 'overview',
+    content: `73 FTE across 10 departments: Management (4), Supervisor (2), Admin/Cashier/Merchandiser (6), Bar Staff (10), Host/Floor/Waiter (12), Marketing & GRO (12), Kitchen (7), Security & Valet (10), Store/Cleaning (6), Daily/Contract Worker (4). Annual payroll: IDR 6.58B. Flexible staffing needed for low season (Jan-Mar).`,
+  },
+  {
+    key: 'cost_structure',
+    category: 'metrics',
+    content: `Cost structure: COS 38.8% (Beverage 17.9%, Food 2.9%, Entertainment 14.5%, Promoter fees 2.5%). Fixed costs 49.4% (Payroll 27.6%, Operating 7.8%, Marketing 5.1%, Property 6.9%, Overhead 4.8%). Target: reduce fixed costs to IDR 950M/month for sustainable BEP coverage at 1.5x.`,
   },
 ] as const;
 
 export const MONTHLY_TARGETS_SEED = [
-  { month: '2026-06', revenue: 411_000_000, ebitda: 400_000, guests: 56, spend: 220_000, staffPct: 40 },
-  { month: '2026-07', revenue: 430_000_000, ebitda: 5_000_000, guests: 60, spend: 225_000, staffPct: 38 },
-  { month: '2026-08', revenue: 450_000_000, ebitda: 10_000_000, guests: 63, spend: 228_000, staffPct: 35 },
-  { month: '2026-09', revenue: 480_000_000, ebitda: 20_000_000, guests: 65, spend: 230_000, staffPct: 32 },
-  { month: '2026-10', revenue: 520_000_000, ebitda: 35_000_000, guests: 70, spend: 235_000, staffPct: 30 },
-  { month: '2026-11', revenue: 550_000_000, ebitda: 50_000_000, guests: 73, spend: 238_000, staffPct: 28 },
-  { month: '2026-12', revenue: 600_000_000, ebitda: 70_000_000, guests: 78, spend: 240_000, staffPct: 26 },
-  { month: '2027-01', revenue: 620_000_000, ebitda: 85_000_000, guests: 80, spend: 245_000, staffPct: 25 },
-  { month: '2027-02', revenue: 630_000_000, ebitda: 95_000_000, guests: 82, spend: 248_000, staffPct: 24 },
-  { month: '2027-03', revenue: 650_000_000, ebitda: 110_000_000, guests: 85, spend: 250_000, staffPct: 23 },
-  { month: '2027-04', revenue: 670_000_000, ebitda: 130_000_000, guests: 88, spend: 255_000, staffPct: 23 },
-  { month: '2027-05', revenue: 685_000_000, ebitda: 155_000_000, guests: 92, spend: 260_000, staffPct: 22 },
-  { month: '2027-06', revenue: 699_000_000, ebitda: 175_000_000, guests: 95, spend: 265_000, staffPct: 22 },
+  { month: '2026-06', revenue: 1975_000_000, ebitda: 262_000_000, guests: 4392, spend: 527_000, staffPct: 27 },
+  { month: '2026-07', revenue: 2100_000_000, ebitda: 280_000_000, guests: 4600, spend: 500_000, staffPct: 26 },
+  { month: '2026-08', revenue: 2250_000_000, ebitda: 320_000_000, guests: 4800, spend: 480_000, staffPct: 25 },
+  { month: '2026-09', revenue: 2400_000_000, ebitda: 360_000_000, guests: 5000, spend: 470_000, staffPct: 24 },
+  { month: '2026-10', revenue: 2550_000_000, ebitda: 400_000_000, guests: 5300, spend: 460_000, staffPct: 23 },
+  { month: '2026-11', revenue: 2650_000_000, ebitda: 430_000_000, guests: 5500, spend: 455_000, staffPct: 22 },
+  { month: '2026-12', revenue: 2786_000_000, ebitda: 450_000_000, guests: 5700, spend: 450_000, staffPct: 22 },
+  { month: '2027-01', revenue: 2800_000_000, ebitda: 460_000_000, guests: 5800, spend: 448_000, staffPct: 21 },
+  { month: '2027-02', revenue: 2100_000_000, ebitda: 200_000_000, guests: 4200, spend: 455_000, staffPct: 23 },
+  { month: '2027-03', revenue: 2250_000_000, ebitda: 250_000_000, guests: 4500, spend: 450_000, staffPct: 22 },
+  { month: '2027-04', revenue: 2600_000_000, ebitda: 350_000_000, guests: 5000, spend: 445_000, staffPct: 21 },
+  { month: '2027-05', revenue: 2900_000_000, ebitda: 500_000_000, guests: 5600, spend: 440_000, staffPct: 20 },
+  { month: '2027-06', revenue: 3200_000_000, ebitda: 600_000_000, guests: 6000, spend: 438_000, staffPct: 19 },
 ] as const;
 
 function formatIdr(n: number): string {
@@ -168,15 +152,15 @@ export function buildStructuredPromptFromSnippets(
   }
 
   const sections: string[] = [
-    'You are Rosalita AI — a business intelligence assistant for Rosalita Cantina, a Tex-Mex restaurant in Seminyak Square, Bali.',
+    'You are Red Ruby AI — a business intelligence assistant for Red Ruby Club & Terrace Bar, a nightclub and bar in Petitenget, Bali, operated by PT Taman Bintang Bali.',
     '',
     '## Your Role',
-    'Help management understand the turnaround plan, track KPIs, analyze operational data, and provide actionable insights.',
+    'Help management track KPIs, analyze operational data, monitor break-even performance, and provide actionable insights for the club, terrace bar, and planned Sky Lounge.',
   ];
 
   const categoryTitles: Record<string, string> = {
-    overview: '## Key Business Situation',
-    strategy: '## Turnaround Strategy',
+    overview: '## Key Business Information',
+    strategy: '## Revenue & Growth Strategy',
     metrics: '## Metrics & Targets',
     actions: '## Priority Actions',
     risks: '## Key Risks to Monitor',
@@ -188,7 +172,7 @@ export function buildStructuredPromptFromSnippets(
   }
 
   const targetsBlock = MONTHLY_TARGETS_SEED.map(
-    (t) => `- ${t.month}: Rev ${formatIdr(t.revenue)}, EBITDA ${formatIdr(t.ebitda)}, ${t.guests} guests/day`,
+    (t) => `- ${t.month}: Rev ${formatIdr(t.revenue)}, EBITDA ${formatIdr(t.ebitda)}, ${t.guests} guests/month`,
   ).join('\n');
 
   sections.push(
@@ -197,10 +181,11 @@ export function buildStructuredPromptFromSnippets(
     targetsBlock,
     '',
     '## How You Answer',
-    '1. Cite specific Business Review parts when relevant.',
-    '2. Use live database data for performance questions.',
-    '3. Use IDR formatting (e.g., "IDR 150M").',
+    '1. Use IDR formatting (e.g., "IDR 2.2B", "IDR 166M").',
+    '2. Reference specific Business Review parts when relevant.',
+    '3. Use live database data for performance tracking questions.',
     '4. Be concise and data-driven.',
+    '5. Highlight BEP coverage and margin metrics.',
   );
 
   return sections.join('\n');

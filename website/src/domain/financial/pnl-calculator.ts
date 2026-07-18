@@ -8,76 +8,78 @@ export interface PnlLineItemDef {
 
 export const PNL_LINE_ITEMS: PnlLineItemDef[] = [
   { key: 'header_title', label: 'Profit & Loss Projections', header: true },
-  { key: 'venue', label: "Rosalita's Cantina", header: true },
+  { key: 'venue', label: 'Red Ruby Bali', header: true },
   { key: 'gross_income_idr', label: 'Gross Income IDR', header: true },
-  { key: 'target_guests_day', label: 'Target Number of Guests - per day' },
-  { key: 'target_guests_month', label: 'Target Number of Guests - per month' },
-  { key: 'target_spend_net', label: 'Target Spend - Net of Tax & Service' },
-  { key: 'target_spend_gross', label: 'Target Spend - Including Tax & Service' },
-  { key: 'target_revenue_food', label: 'Target Revenue - Food' },
-  { key: 'target_revenue_beverage', label: 'Target Revenue - Beverage' },
-  { key: 'gofood_revenue', label: 'GoFood/Chickenria Container Dewi Sri' },
-  { key: 'starcard_provision', label: 'StarCARD Cash Back Provision/Discounts/FOC' },
+  { key: 'club_guests_night', label: 'Guests - Club per night' },
+  { key: 'club_guests_month', label: 'Guests - Club per month' },
+  { key: 'club_target_spend', label: 'Target Spend - Club' },
+  { key: 'club_target_revenue', label: 'Target Revenue - Club' },
+  { key: 'terrace_guests_night', label: 'Guests - Terrace per night' },
+  { key: 'terrace_guests_month', label: 'Guests - Terrace per month' },
+  { key: 'terrace_target_spend', label: 'Target Spend - Terrace' },
+  { key: 'terrace_target_revenue', label: 'Target Revenue - Terrace' },
+  { key: 'discounts_foc', label: 'Discounts / FOC / Cash Back' },
   { key: 'net_income_pre_tax', label: 'Net Income pre Tax/Service' },
   { key: 'net_income_pre_tax_accum', label: 'Accumulated Net Income pre Tax/Service' },
-  { key: 'total_income_per_day', label: 'Total Income per Day' },
+  { key: 'avg_net_income_per_day', label: 'Average Net Income per Day' },
   { key: 'total_guests_month', label: 'Total Guests per month' },
-  { key: 'spend_per_guest', label: 'Spend per Guest - Actual' },
+  { key: 'spend_per_guest', label: 'Spend per Guest' },
   { key: 'taxes_service', label: 'Taxes and Service Charge Provision' },
   { key: 'total_income_idr', label: 'Total Income IDR' },
   { key: 'total_income_accum', label: 'Total Income IDR - Accumulated' },
   { key: 'less_direct_costs', label: 'Less Direct Costs', header: true },
-  { key: 'purchases_food', label: 'Purchases Food' },
-  { key: 'purchases_beverage', label: 'Purchases Beverage & Other' },
-  { key: 'costs_entertainment', label: 'Costs of Entertainment' },
+  { key: 'purchases_beverage', label: 'Purchases Beverage' },
+  { key: 'purchases_food', label: 'Purchases Food & Other' },
+  { key: 'promoter_costs', label: 'Promoter / Influencer Costs' },
+  { key: 'costs_entertainment', label: 'Net Ticket Costs / Entertainment' },
   { key: 'other_direct', label: 'Other Direct Expenses' },
   { key: 'total_direct_costs', label: 'Total Direct Costs' },
   { key: 'gross_profit', label: 'Gross Profit' },
   { key: 'gross_profit_margin', label: 'Gross Profit Margin', pct: true },
   { key: 'overhead_expenses', label: 'Overhead Expenses', header: true },
   { key: 'salary_wages_pkg', label: 'Salary & Wages Package', header: true },
-  { key: 'staff_mgmt_count', label: 'Staff Wages - Management' },
-  { key: 'staff_mgmt_cost', label: 'Staff Wages - Management', sub: true },
-  { key: 'staff_dj_count', label: 'Staff Wages - Music/DJ' },
-  { key: 'staff_dj_cost', label: 'Staff Wages - Music/DJ', sub: true },
-  { key: 'staff_reception_count', label: 'Staff Wages - Reception/Cashier/Supervisor' },
-  { key: 'staff_reception_cost', label: 'Staff Wages - Reception/Cashier/Supervisor', sub: true },
-  { key: 'staff_waiter_count', label: 'Staff Wages - Waiter/Waitress' },
-  { key: 'staff_waiter_cost', label: 'Staff Wages - Waiter/Waitress', sub: true },
-  { key: 'staff_bar_count', label: 'Staff Wages - Bar Staff' },
-  { key: 'staff_bar_cost', label: 'Staff Wages - Bar Staff', sub: true },
-  { key: 'staff_kitchen_count', label: 'Staff Wages - Kitchen' },
-  { key: 'staff_kitchen_cost', label: 'Staff Wages - Kitchen', sub: true },
-  { key: 'staff_store_count', label: 'Staff Wages - Store/Cleaning & GRO' },
-  { key: 'staff_store_cost', label: 'Staff Wages - Store/Cleaning & GRO', sub: true },
-  { key: 'staff_travel', label: 'Staff Travel/Meal/PBJS etc' },
+  { key: 'staff_mgmt_count', label: 'Management - headcount' },
+  { key: 'staff_mgmt_cost', label: 'Management - cost', sub: true },
+  { key: 'staff_supervisor_count', label: 'Supervisor - headcount' },
+  { key: 'staff_supervisor_cost', label: 'Supervisor - cost', sub: true },
+  { key: 'staff_admin_count', label: 'Admin/Cashier/Merc - headcount' },
+  { key: 'staff_admin_cost', label: 'Admin/Cashier/Merc - cost', sub: true },
+  { key: 'staff_bar_count', label: 'Bar Staff - headcount' },
+  { key: 'staff_bar_cost', label: 'Bar Staff - cost', sub: true },
+  { key: 'staff_host_count', label: 'Host/Floor/Waiter - headcount' },
+  { key: 'staff_host_cost', label: 'Host/Floor/Waiter - cost', sub: true },
+  { key: 'staff_marketing_count', label: 'Marketing & GRO - headcount' },
+  { key: 'staff_marketing_cost', label: 'Marketing & GRO - cost', sub: true },
+  { key: 'staff_kitchen_count', label: 'Kitchen - headcount' },
+  { key: 'staff_kitchen_cost', label: 'Kitchen - cost', sub: true },
+  { key: 'staff_security_count', label: 'Security & Valet - headcount' },
+  { key: 'staff_security_cost', label: 'Security & Valet - cost', sub: true },
+  { key: 'staff_store_count', label: 'Store/Cleaning - headcount' },
+  { key: 'staff_store_cost', label: 'Store/Cleaning - cost', sub: true },
+  { key: 'staff_daily_count', label: 'Daily/Contract Worker - headcount' },
+  { key: 'staff_daily_cost', label: 'Daily/Contract Worker - cost', sub: true },
+  { key: 'staff_travel', label: 'Staff Travel/Meal/Medical etc' },
   { key: 'total_staff_fte', label: 'Total Staff - Full Time' },
   { key: 'total_staff_cost', label: 'Total Staff - Full Time', sub: true },
   { key: 'sales_marketing', label: 'Sales & Marketing Costs', header: true },
   { key: 'advertising', label: 'Advertising & Promotion' },
   { key: 'marketing_material', label: 'Marketing Material/Printing etc' },
+  { key: 'rental_equipment', label: 'Rental Equipment etc' },
   { key: 'property_header', label: 'Property Rents, Repairs & Maintenance', header: true },
   { key: 'rents_leases', label: 'Rents & Leases' },
-  { key: 'body_corporate', label: 'Body Corporate' },
   { key: 'repairs', label: 'Repairs & Maintenance/Replacements' },
   { key: 'electric_gas', label: 'Electric & Gas' },
   { key: 'overhead_general', label: 'Overhead & General Expenses', header: true },
-  { key: 'admin_fees', label: 'Admin/Management Fees' },
+  { key: 'accounting_fees', label: 'Accounting Fees' },
   { key: 'bank_fees', label: 'Bank & Card Fees/Interest' },
   { key: 'communication', label: 'Communication Costs' },
+  { key: 'legal_permits', label: 'Legal/Permits/Ceremony/Banjar' },
   { key: 'sundry', label: 'Sundry Overhead & Costs' },
+  { key: 'travel_accom', label: 'Travel & Accommodation Costs' },
   { key: 'total_overhead', label: 'Total Overhead Expenses' },
   { key: 'total_expenses', label: 'Total Expenses' },
-  { key: 'starpoints_addback', label: 'Add Back StarPOINTS Benefit' },
   { key: 'ebitda', label: 'EBITDA' },
   { key: 'ebitda_margin', label: 'EBITDA Margin', pct: true },
-  { key: 'breakeven_header', label: 'Breakeven Calculation', header: true },
-  { key: 'fixed_costs', label: 'Fixed Costs' },
-  { key: 'variable_costs', label: 'Variable Costs' },
-  { key: 'gross_income_req_month', label: 'Gross Income Requirement per month' },
-  { key: 'gross_revenue_req_day', label: 'Gross Revenue Requirement per Day' },
-  { key: 'gross_income_req_day_budget', label: 'Gross Income Requirement per Day - Budgeted' },
-  { key: 'breakeven_actual', label: 'Actual' },
 ];
 
 export interface ManualField {
@@ -96,11 +98,12 @@ export interface ManualInputSection {
 export const MANUAL_INPUT_SECTIONS: ManualInputSection[] = [
   {
     id: 'direct',
-    title: 'Direct Costs (Kitchen / Bar / GM)',
+    title: 'Direct Costs',
     fields: [
-      { key: 'purchases_food', label: 'Purchases Food', type: 'amount' },
-      { key: 'purchases_beverage', label: 'Purchases Beverage & Other', type: 'amount' },
-      { key: 'costs_entertainment', label: 'Costs of Entertainment', type: 'amount' },
+      { key: 'purchases_beverage', label: 'Purchases Beverage', type: 'amount' },
+      { key: 'purchases_food', label: 'Purchases Food & Other', type: 'amount' },
+      { key: 'promoter_costs', label: 'Promoter / Influencer Costs', type: 'amount' },
+      { key: 'costs_entertainment', label: 'Net Ticket Costs / Entertainment', type: 'amount' },
       { key: 'other_direct', label: 'Other Direct Expenses', type: 'amount' },
     ],
   },
@@ -110,19 +113,25 @@ export const MANUAL_INPUT_SECTIONS: ManualInputSection[] = [
     fields: [
       { key: 'staff_mgmt_count', label: 'Management — headcount', type: 'int' },
       { key: 'staff_mgmt_cost', label: 'Management — cost (IDR)', type: 'amount', sub: true },
-      { key: 'staff_dj_count', label: 'Music/DJ — headcount', type: 'int' },
-      { key: 'staff_dj_cost', label: 'Music/DJ — cost (IDR)', type: 'amount', sub: true },
-      { key: 'staff_reception_count', label: 'Reception/Cashier/Supervisor — headcount', type: 'int' },
-      { key: 'staff_reception_cost', label: 'Reception/Cashier/Supervisor — cost (IDR)', type: 'amount', sub: true },
-      { key: 'staff_waiter_count', label: 'Waiter/Waitress — headcount', type: 'int' },
-      { key: 'staff_waiter_cost', label: 'Waiter/Waitress — cost (IDR)', type: 'amount', sub: true },
+      { key: 'staff_supervisor_count', label: 'Supervisor — headcount', type: 'int' },
+      { key: 'staff_supervisor_cost', label: 'Supervisor — cost (IDR)', type: 'amount', sub: true },
+      { key: 'staff_admin_count', label: 'Admin/Cashier/Merc — headcount', type: 'int' },
+      { key: 'staff_admin_cost', label: 'Admin/Cashier/Merc — cost (IDR)', type: 'amount', sub: true },
       { key: 'staff_bar_count', label: 'Bar Staff — headcount', type: 'int' },
       { key: 'staff_bar_cost', label: 'Bar Staff — cost (IDR)', type: 'amount', sub: true },
+      { key: 'staff_host_count', label: 'Host/Floor/Waiter — headcount', type: 'int' },
+      { key: 'staff_host_cost', label: 'Host/Floor/Waiter — cost (IDR)', type: 'amount', sub: true },
+      { key: 'staff_marketing_count', label: 'Marketing & GRO — headcount', type: 'int' },
+      { key: 'staff_marketing_cost', label: 'Marketing & GRO — cost (IDR)', type: 'amount', sub: true },
       { key: 'staff_kitchen_count', label: 'Kitchen — headcount', type: 'int' },
       { key: 'staff_kitchen_cost', label: 'Kitchen — cost (IDR)', type: 'amount', sub: true },
-      { key: 'staff_store_count', label: 'Store/Cleaning & GRO — headcount', type: 'int' },
-      { key: 'staff_store_cost', label: 'Store/Cleaning & GRO — cost (IDR)', type: 'amount', sub: true },
-      { key: 'staff_travel', label: 'Staff Travel/Meal/PBJS etc', type: 'amount' },
+      { key: 'staff_security_count', label: 'Security & Valet — headcount', type: 'int' },
+      { key: 'staff_security_cost', label: 'Security & Valet — cost (IDR)', type: 'amount', sub: true },
+      { key: 'staff_store_count', label: 'Store/Cleaning — headcount', type: 'int' },
+      { key: 'staff_store_cost', label: 'Store/Cleaning — cost (IDR)', type: 'amount', sub: true },
+      { key: 'staff_daily_count', label: 'Daily/Contract Worker — headcount', type: 'int' },
+      { key: 'staff_daily_cost', label: 'Daily/Contract Worker — cost (IDR)', type: 'amount', sub: true },
+      { key: 'staff_travel', label: 'Staff Travel/Meal/Medical etc', type: 'amount' },
     ],
   },
   {
@@ -131,6 +140,7 @@ export const MANUAL_INPUT_SECTIONS: ManualInputSection[] = [
     fields: [
       { key: 'advertising', label: 'Advertising & Promotion', type: 'amount' },
       { key: 'marketing_material', label: 'Marketing Material/Printing etc', type: 'amount' },
+      { key: 'rental_equipment', label: 'Rental Equipment etc', type: 'amount' },
     ],
   },
   {
@@ -138,7 +148,6 @@ export const MANUAL_INPUT_SECTIONS: ManualInputSection[] = [
     title: 'Property Rents, Repairs & Maintenance',
     fields: [
       { key: 'rents_leases', label: 'Rents & Leases', type: 'amount' },
-      { key: 'body_corporate', label: 'Body Corporate', type: 'amount' },
       { key: 'repairs', label: 'Repairs & Maintenance/Replacements', type: 'amount' },
       { key: 'electric_gas', label: 'Electric & Gas', type: 'amount' },
     ],
@@ -147,11 +156,12 @@ export const MANUAL_INPUT_SECTIONS: ManualInputSection[] = [
     id: 'overhead',
     title: 'Overhead & General',
     fields: [
-      { key: 'admin_fees', label: 'Admin/Management Fees', type: 'amount' },
+      { key: 'accounting_fees', label: 'Accounting Fees', type: 'amount' },
       { key: 'bank_fees', label: 'Bank & Card Fees/Interest', type: 'amount' },
       { key: 'communication', label: 'Communication Costs', type: 'amount' },
+      { key: 'legal_permits', label: 'Legal/Permits/Ceremony/Banjar', type: 'amount' },
       { key: 'sundry', label: 'Sundry Overhead & Costs', type: 'amount' },
-      { key: 'starpoints_addback', label: 'Add Back StarPOINTS Benefit', type: 'amount' },
+      { key: 'travel_accom', label: 'Travel & Accommodation Costs', type: 'amount' },
     ],
   },
 ];
@@ -160,6 +170,7 @@ export const COMPUTED_PREVIEW_KEYS = [
   { key: 'total_direct_costs', label: 'Total Direct Costs' },
   { key: 'gross_profit', label: 'Gross Profit' },
   { key: 'gross_profit_margin', label: 'Gross Profit Margin', pct: true },
+  { key: 'total_staff_fte', label: 'Total Staff FTE' },
   { key: 'total_staff_cost', label: 'Total Staff Cost' },
   { key: 'total_overhead', label: 'Total Overhead Expenses' },
   { key: 'total_expenses', label: 'Total Expenses' },
@@ -170,19 +181,21 @@ export const COMPUTED_PREVIEW_KEYS = [
 ] as const;
 
 const STAFF_COUNT_KEYS = [
-  'staff_mgmt_count', 'staff_dj_count', 'staff_reception_count', 'staff_waiter_count',
-  'staff_bar_count', 'staff_kitchen_count', 'staff_store_count',
+  'staff_mgmt_count', 'staff_supervisor_count', 'staff_admin_count', 'staff_bar_count',
+  'staff_host_count', 'staff_marketing_count', 'staff_kitchen_count',
+  'staff_security_count', 'staff_store_count', 'staff_daily_count',
 ];
 
 const STAFF_COST_KEYS = [
-  'staff_mgmt_cost', 'staff_dj_cost', 'staff_reception_cost', 'staff_waiter_cost',
-  'staff_bar_cost', 'staff_kitchen_cost', 'staff_store_cost', 'staff_travel',
+  'staff_mgmt_cost', 'staff_supervisor_cost', 'staff_admin_cost', 'staff_bar_cost',
+  'staff_host_cost', 'staff_marketing_cost', 'staff_kitchen_cost',
+  'staff_security_cost', 'staff_store_cost', 'staff_daily_cost', 'staff_travel',
 ];
 
-const DIRECT_KEYS = ['purchases_food', 'purchases_beverage', 'costs_entertainment', 'other_direct'];
-const MARKETING_KEYS = ['advertising', 'marketing_material'];
-const PROPERTY_KEYS = ['rents_leases', 'body_corporate', 'repairs', 'electric_gas'];
-const GENERAL_OVERHEAD_KEYS = ['admin_fees', 'bank_fees', 'communication', 'sundry'];
+const DIRECT_KEYS = ['purchases_beverage', 'purchases_food', 'promoter_costs', 'costs_entertainment', 'other_direct'];
+const MARKETING_KEYS = ['advertising', 'marketing_material', 'rental_equipment'];
+const PROPERTY_KEYS = ['rents_leases', 'repairs', 'electric_gas'];
+const GENERAL_OVERHEAD_KEYS = ['accounting_fees', 'bank_fees', 'communication', 'legal_permits', 'sundry', 'travel_accom'];
 
 export function isExcelLedgerMonth(period: string): boolean {
   const [y, m] = String(period).split('-').map(Number);
@@ -259,18 +272,15 @@ export function applyZAggregateToValues(
   const revenue = num(agg.revenue) || 0;
   const taxService = (num(agg.tax_10) || 0) + (num(agg.service_7) || 0);
 
-  v.target_revenue_food = num(agg.food_revenue);
-  v.target_revenue_beverage = num(agg.beverage_revenue);
-  v.gofood_revenue = num(agg.gofood_revenue);
-  v.starcard_provision = num(agg.discounts);
+  v.discounts_foc = num(agg.discounts);
   v.net_income_pre_tax = revenue || null;
-  v.total_income_per_day = days ? revenue / days : null;
+  v.avg_net_income_per_day = days ? revenue / days : null;
   v.total_guests_month = guests || null;
-  v.target_guests_month = guests || null;
-  v.target_guests_day = days && guests ? Math.round(guests / days) : null;
+  v.club_guests_month = guests || null;
+  v.club_guests_night = days && guests ? Math.round(guests / days) : null;
   v.spend_per_guest = guests ? revenue / guests : null;
-  v.target_spend_net = v.spend_per_guest;
-  v.target_spend_gross = guests ? (revenue + taxService) / guests : null;
+  v.club_target_spend = v.spend_per_guest;
+  v.terrace_target_spend = guests ? (revenue + taxService) / guests : null;
   v.taxes_service = taxService || null;
   v.total_income_idr = revenue || null;
 
@@ -326,19 +336,9 @@ export function buildComputedPnl(
   }
 
   if (v.gross_profit != null && v.total_overhead != null) {
-    const addback = num(v.starpoints_addback) || 0;
-    v.ebitda = v.gross_profit - v.total_overhead + addback;
+    v.ebitda = v.gross_profit - v.total_overhead;
     if (revenue) v.ebitda_margin = (v.ebitda / revenue) * 100;
   }
-
-  v.variable_costs = v.total_direct_costs ?? null;
-  v.fixed_costs = v.total_overhead ?? null;
-  if (v.gross_profit_margin != null && v.gross_profit_margin > 0 && v.fixed_costs != null) {
-    v.gross_income_req_month = v.fixed_costs / (v.gross_profit_margin / 100);
-    const dim = period ? daysInMonth(period) : 30;
-    v.gross_revenue_req_day = v.gross_income_req_month / dim;
-  }
-  if (revenue != null) v.breakeven_actual = revenue;
 
   const priorNet = num(ytdBefore?.net_income_pre_tax) || 0;
   const priorIncome = num(ytdBefore?.total_income_idr) || 0;

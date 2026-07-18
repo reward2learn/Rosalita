@@ -2,7 +2,7 @@
 import { Z_REPORT_FIELD_KEYS } from '@/domain/z-report/z-report-schema';
 import { toPeriodApiValue } from '@/domain/shared/date-utils';
 
-export const POS_EXTRACTION_PROMPT = `You extract ALL fields from a Rosalita Cantina POS Z Sales Day Report (SPICERY -ROSALITA- BALI) OCR text.
+export const POS_EXTRACTION_PROMPT = `You extract ALL fields from a Red Ruby Bali POS Z Sales Day Report (SPICERY -REDRUBY- BALI) OCR text.
 
 Return ONLY valid JSON using these snake_case keys (null if missing):
 report_date (YYYY-MM-DD), report_time (HH:MM), operator, report_no, pos_group,
@@ -181,7 +181,7 @@ export function parsePosTextHeuristic(rawText) {
   raw.tax_10_amount = firstLooseIdrAfterLabel(flat, /Tax\s*10\s*%/i, 60, 100_000, 20_000_000);
   raw.service_7_amount = firstLooseIdrAfterLabel(flat, /Service\s*7\s*%/i, 60, 100_000, 20_000_000);
 
-  const seq = flat.match(/(?:^|\s)(\d{1,3})\s+([\d,]+\.\d{1,2})\s+(\d{1,4})\s+([\d,]+\.\d{1,2})/);
+  const seq = flat.match(/(?:^|\s)(\d{1,3})\s+([\d,]+(?:\.\d{1,2})?)\s+(\d{1,4})\s+([\d,]+(?:\.\d{1,2})?)/);
   if (seq) {
     raw.total_bills = parseInt(seq[1], 10);
     raw.avg_bills = parseIdrAmount(seq[2]);
@@ -245,10 +245,11 @@ export function sanitizeExtraction(raw) {
     }
   }
 
-  // Legacy aliases from older extractors
+  // Fallbacks for missing fields
   if (!out.report_date && raw.date) out.report_date = raw.date.slice(0, 10);
   if (!out.nett_sales && raw.revenue) out.nett_sales = toInt(raw.revenue);
   if (!out.total_sales && raw.revenue) out.total_sales = toInt(raw.revenue);
+  if (!out.total_covers && out.item_sales_qty) out.total_covers = out.item_sales_qty;
   if (!out.total_covers && raw.guests_count) out.total_covers = toInt(raw.guests_count);
   if (!out.avg_covers && raw.avg_spend) out.avg_covers = toInt(raw.avg_spend);
   if (!out.gofood_amount && raw.gofood_revenue) out.gofood_amount = toInt(raw.gofood_revenue);

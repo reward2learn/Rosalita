@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 
-export const COOKIE_NAME = 'rosalita.session';
+export const COOKIE_NAME = 'redruby.session';
 export const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 
 export type AuthTier = 'pin' | 'google';

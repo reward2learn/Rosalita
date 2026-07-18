@@ -2,9 +2,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
 export const SOURCE_FILENAMES = {
-  excel: 'Rosallita Cashflow May 24th 2026.xlsx',
-  businessReview: 'Rosalita Business Review — June 2026.md',
-  executiveSummary: 'Rosalita Executive Summary — June 2026.md',
+  excel: 'Red Ruby Club & Terrace Bar Cashflow Budgets.xlsx',
+  businessReview: 'Red Ruby Business Review — June 2026.md',
+  executiveSummary: 'Red Ruby Executive Summary — June 2026.md',
 } as const;
 
 export type SourceFileKey = keyof typeof SOURCE_FILENAMES;
@@ -22,15 +22,15 @@ export function getDefaultRepoRoot(): string {
 
 /** Directory for persisted source files (repo root locally, /tmp on Vercel unless overridden). */
 export function getSourceDir(): string {
-  if (process.env.ROSALITA_SOURCE_DIR) {
-    return resolve(process.env.ROSALITA_SOURCE_DIR);
+  if (process.env.REDRUBY_SOURCE_DIR) {
+    return resolve(process.env.REDRUBY_SOURCE_DIR);
   }
   const repoRoot = DEFAULT_REPO_ROOT;
   if (sourceFileExists('excel', repoRoot)) {
     return repoRoot;
   }
   if (process.env.VERCEL === '1' && process.env.VERCEL_REGION) {
-    return '/tmp/rosalita-sources';
+    return '/tmp/redruby-sources';
   }
   return repoRoot;
 }

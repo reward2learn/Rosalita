@@ -2,7 +2,7 @@
 
 import { createTheme } from '@mui/material/styles';
 
-/** Rosalita dark theme — tokens from style.css */
+/** Red Ruby Bali dark theme — tokens from style.css */
 export const theme = createTheme({
   palette: {
     mode: 'dark',

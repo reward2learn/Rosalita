@@ -4,7 +4,7 @@ export type TtsVoiceId = (typeof TTS_VOICE_IDS)[number];
 
 export const DEFAULT_TTS_VOICE: TtsVoiceId = 'alloy';
 
-export const TTS_VOICE_STORAGE_KEY = 'rosalita.ttsVoice';
+export const TTS_VOICE_STORAGE_KEY = 'redruby.ttsVoice';
 
 export interface TtsVoiceProfile {
   id: TtsVoiceId;

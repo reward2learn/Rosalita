@@ -1,12 +1,12 @@
 /**
- * Ordered P&L line items matching the Excel workbook layout.
- * Ported from lib/pnl-rows.mjs for P6 seed.
+ * Ordered P&L line items matching the Red Ruby Excel workbook layout.
+ * Based on: Red Ruby Club & Terrace Bar Cashflow Budgets.xlsx
  */
 export interface PnlLineItem {
   key: string;
   label: string;
   header?: boolean;
-  row?: { rosalita: number; forecast: number | null };
+  row?: { redruby: number; forecast: number | null };
   pct?: boolean;
   sub?: boolean;
   altLabel?: string;
@@ -14,82 +14,102 @@ export interface PnlLineItem {
 
 export const PNL_LINE_ITEMS: PnlLineItem[] = [
   { key: 'header_title', label: 'Profit & Loss Projections', header: true },
-  { key: 'venue', label: "Rosalita's Cantina", header: true },
+  { key: 'venue', label: 'Red Ruby Bali', header: true },
   { key: 'gross_income_idr', label: 'Gross Income IDR', header: true },
-  { key: 'target_guests_day', label: 'Target Number of Guests - per day', row: { rosalita: 8, forecast: 9 } },
-  { key: 'target_guests_month', label: 'Target Number of Guests - per month', row: { rosalita: 9, forecast: 10 } },
-  { key: 'target_spend_net', label: 'Target Spend - Net of Tax & Service', row: { rosalita: 10, forecast: 11 } },
-  { key: 'target_spend_gross', label: 'Target Spend - Including Tax & Service', row: { rosalita: 11, forecast: 12 } },
-  { key: 'target_revenue_food', label: 'Target Revenue - Food', row: { rosalita: 12, forecast: 13 } },
-  { key: 'target_revenue_beverage', label: 'Target Revenue - Beverage', row: { rosalita: 13, forecast: 14 } },
-  { key: 'gofood_revenue', label: 'GoFood/Chickenria Container Dewi Sri', row: { rosalita: 14, forecast: 15 } },
-  { key: 'starcard_provision', label: 'StarCARD Cash Back Provision/Discounts/FOC', row: { rosalita: 15, forecast: 16 }, altLabel: 'StarCARD Cash Back Provision' },
-  { key: 'net_income_pre_tax', label: 'Net Income pre Tax/Service', row: { rosalita: 16, forecast: 17 } },
-  { key: 'net_income_pre_tax_accum', label: 'Accumulated Net Income pre Tax/Service', row: { rosalita: 17, forecast: 18 } },
-  { key: 'total_income_per_day', label: 'Total Income per Day', row: { rosalita: 20, forecast: 23 } },
-  { key: 'total_guests_month', label: 'Total Guests per month', row: { rosalita: 22, forecast: 19 } },
-  { key: 'spend_per_guest', label: 'Spend per Guest - Actual', row: { rosalita: 24, forecast: null } },
-  { key: 'taxes_service', label: 'Taxes and Service Charge Provision', row: { rosalita: 25, forecast: 20 } },
-  { key: 'total_income_idr', label: 'Total Income IDR', row: { rosalita: 27, forecast: 21 } },
-  { key: 'total_income_accum', label: 'Total Income IDR - Accumulated', row: { rosalita: 28, forecast: 22 } },
+
+  // ── Club Revenue ──
+  { key: 'club_guests_night', label: 'Guests - Club per night', row: { redruby: 7, forecast: null } },
+  { key: 'club_guests_month', label: 'Guests - Club per month', row: { redruby: 8, forecast: null } },
+  { key: 'club_target_spend', label: 'Target Spend - Club', row: { redruby: 9, forecast: null } },
+  { key: 'club_target_revenue', label: 'Target Revenue - Club', row: { redruby: 10, forecast: null } },
+
+  // ── Terrace Revenue ──
+  { key: 'terrace_guests_night', label: 'Guests - Terrace per night', row: { redruby: 11, forecast: null } },
+  { key: 'terrace_guests_month', label: 'Guests - Terrace per month', row: { redruby: 12, forecast: null } },
+  { key: 'terrace_target_spend', label: 'Target Spend - Terrace', row: { redruby: 13, forecast: null } },
+  { key: 'terrace_target_revenue', label: 'Target Revenue - Terrace', row: { redruby: 14, forecast: null } },
+
+  // ── Aggregates ──
+  { key: 'discounts_foc', label: 'Discounts / FOC / Cash Back', row: { redruby: 15, forecast: null } },
+  { key: 'net_income_pre_tax', label: 'Net Income pre Tax/Service', row: { redruby: 16, forecast: null } },
+  { key: 'net_income_pre_tax_accum', label: 'Accumulated Net Income pre Tax/Service', row: { redruby: 17, forecast: null } },
+  { key: 'avg_net_income_per_day', label: 'Average Net Income per Day', row: { redruby: 20, forecast: null } },
+  { key: 'total_guests_month', label: 'Total Guests per month', row: { redruby: 22, forecast: null } },
+  { key: 'spend_per_guest', label: 'Spend per Guest (incl. tax & service)', row: { redruby: 24, forecast: null } },
+  { key: 'taxes_service', label: 'Taxes and Service Charge Provision', row: { redruby: 26, forecast: null } },
+  { key: 'total_income_idr', label: 'Total Income IDR', row: { redruby: 28, forecast: null } },
+
+  // ── Direct Costs ──
   { key: 'less_direct_costs', label: 'Less Direct Costs', header: true },
-  { key: 'purchases_food', label: 'Purchases Food', row: { rosalita: 32, forecast: 25 } },
-  { key: 'purchases_beverage', label: 'Purchases Beverage & Other', row: { rosalita: 33, forecast: 26 } },
-  { key: 'costs_entertainment', label: 'Costs of Entertainment', row: { rosalita: 34, forecast: 27 } },
-  { key: 'other_direct', label: 'Other Direct Expenses', row: { rosalita: 35, forecast: 28 } },
-  { key: 'total_direct_costs', label: 'Total Direct Costs', row: { rosalita: 36, forecast: 29 } },
-  { key: 'gross_profit', label: 'Gross Profit', row: { rosalita: 38, forecast: 30 } },
-  { key: 'gross_profit_margin', label: 'Gross Profit Margin', row: { rosalita: 39, forecast: 31 }, pct: true },
-  { key: 'overhead_expenses', label: 'Overhead Expenses', header: true },
-  { key: 'salary_wages_pkg', label: 'Salary & Wages Package', header: true },
-  { key: 'staff_mgmt_count', label: 'Staff Wages - Management', row: { rosalita: 44, forecast: 34 } },
-  { key: 'staff_mgmt_cost', label: 'Staff Wages - Management', row: { rosalita: 45, forecast: 35 }, sub: true },
-  { key: 'staff_dj_count', label: 'Staff Wages - Music/DJ', row: { rosalita: 46, forecast: null } },
-  { key: 'staff_dj_cost', label: 'Staff Wages - Music/DJ', row: { rosalita: 47, forecast: null }, sub: true },
-  { key: 'staff_reception_count', label: 'Staff Wages - Reception/Cashier/Supervisor', row: { rosalita: 48, forecast: 36 } },
-  { key: 'staff_reception_cost', label: 'Staff Wages - Reception/Cashier/Supervisor', row: { rosalita: 49, forecast: 37 }, sub: true },
-  { key: 'staff_waiter_count', label: 'Staff Wages - Waiter/Waitress', row: { rosalita: 50, forecast: 38 } },
-  { key: 'staff_waiter_cost', label: 'Staff Wages - Waiter/Waitress', row: { rosalita: 51, forecast: 39 }, sub: true },
-  { key: 'staff_bar_count', label: 'Staff Wages - Bar Staff', row: { rosalita: 52, forecast: 40 } },
-  { key: 'staff_bar_cost', label: 'Staff Wages - Bar Staff', row: { rosalita: 53, forecast: 41 }, sub: true },
-  { key: 'staff_kitchen_count', label: 'Staff Wages - Kitchen', row: { rosalita: 54, forecast: 42 } },
-  { key: 'staff_kitchen_cost', label: 'Staff Wages - Kitchen', row: { rosalita: 55, forecast: 43 }, sub: true },
-  { key: 'staff_store_count', label: 'Staff Wages - Store/Cleaning & GRO', row: { rosalita: 56, forecast: null } },
-  { key: 'staff_store_cost', label: 'Staff Wages - Store/Cleaning & GRO', row: { rosalita: 57, forecast: null }, sub: true },
-  { key: 'staff_travel', label: 'Staff Travel/Meal/PBJS etc', row: { rosalita: 58, forecast: 44 } },
-  { key: 'total_staff_fte', label: 'Total Staff - Full Time', row: { rosalita: 59, forecast: 45 } },
-  { key: 'total_staff_cost', label: 'Total Staff - Full Time', row: { rosalita: 60, forecast: null }, sub: true, altLabel: 'Total Staff Cost' },
+  { key: 'purchases_beverage', label: 'Purchases Beverage', row: { redruby: 33, forecast: null } },
+  { key: 'purchases_food', label: 'Purchases Food & Other', row: { redruby: 34, forecast: null } },
+  { key: 'promoter_costs', label: 'Promoter / Influencer Costs', row: { redruby: 35, forecast: null } },
+  { key: 'costs_entertainment', label: 'Net Ticket Costs / Entertainment', row: { redruby: 36, forecast: null } },
+  { key: 'other_direct', label: 'Other Direct Expenses', row: { redruby: 37, forecast: null } },
+  { key: 'total_direct_costs', label: 'Total Direct Costs', row: { redruby: 38, forecast: null } },
+  { key: 'gross_profit', label: 'Gross Profit', row: { redruby: 39, forecast: null } },
+  { key: 'gross_profit_margin', label: 'Gross Profit Margin', pct: true, row: { redruby: 40, forecast: null } },
+
+  // ── Salary & Wages ──
+  { key: 'salary_wages_pkg', label: 'Salary & Wages', header: true },
+  { key: 'staff_mgmt_count', label: 'Management — headcount', row: { redruby: 46, forecast: null } },
+  { key: 'staff_mgmt_cost', label: 'Management — cost', sub: true, row: { redruby: 47, forecast: null } },
+  { key: 'staff_supervisor_count', label: 'Supervisor — headcount', row: { redruby: 48, forecast: null } },
+  { key: 'staff_supervisor_cost', label: 'Supervisor — cost', sub: true, row: { redruby: 49, forecast: null } },
+  { key: 'staff_admin_count', label: 'Admin/Cashier/Merc — headcount', row: { redruby: 50, forecast: null } },
+  { key: 'staff_admin_cost', label: 'Admin/Cashier/Merc — cost', sub: true, row: { redruby: 51, forecast: null } },
+  { key: 'staff_bar_count', label: 'Bar Staff — headcount', row: { redruby: 52, forecast: null } },
+  { key: 'staff_bar_cost', label: 'Bar Staff — cost', sub: true, row: { redruby: 53, forecast: null } },
+  { key: 'staff_host_count', label: 'Host/Floor/Waiter — headcount', row: { redruby: 54, forecast: null } },
+  { key: 'staff_host_cost', label: 'Host/Floor/Waiter — cost', sub: true, row: { redruby: 55, forecast: null } },
+  { key: 'staff_marketing_count', label: 'Marketing & GRO — headcount', row: { redruby: 56, forecast: null } },
+  { key: 'staff_marketing_cost', label: 'Marketing & GRO — cost', sub: true, row: { redruby: 57, forecast: null } },
+  { key: 'staff_kitchen_count', label: 'Kitchen — headcount', row: { redruby: 58, forecast: null } },
+  { key: 'staff_kitchen_cost', label: 'Kitchen — cost', sub: true, row: { redruby: 59, forecast: null } },
+  { key: 'staff_security_count', label: 'Security & Valet — headcount', row: { redruby: 60, forecast: null } },
+  { key: 'staff_security_cost', label: 'Security & Valet — cost', sub: true, row: { redruby: 61, forecast: null } },
+  { key: 'staff_store_count', label: 'Store/Cleaning — headcount', row: { redruby: 62, forecast: null } },
+  { key: 'staff_store_cost', label: 'Store/Cleaning — cost', sub: true, row: { redruby: 63, forecast: null } },
+  { key: 'staff_daily_count', label: 'Daily/Contract Worker — headcount', row: { redruby: 64, forecast: null } },
+  { key: 'staff_daily_cost', label: 'Daily/Contract Worker — cost', sub: true, row: { redruby: 65, forecast: null } },
+  { key: 'staff_travel', label: 'Staff Travel/Meal/Medical/etc', row: { redruby: 66, forecast: null } },
+  { key: 'total_staff_fte', label: 'Total Staff — Full Time', row: { redruby: 67, forecast: null } },
+  { key: 'total_staff_cost', label: 'Total Salary & Wage Costs', sub: true, row: { redruby: 68, forecast: null } },
+
+  // ── Sales & Marketing ──
   { key: 'sales_marketing', label: 'Sales & Marketing Costs', header: true },
-  { key: 'advertising', label: 'Advertising & Promotion', row: { rosalita: 64, forecast: 49 } },
-  { key: 'marketing_material', label: 'Marketing Material/Printing etc', row: { rosalita: 65, forecast: 50 } },
+  { key: 'advertising', label: 'Advertising & Promotion', row: { redruby: 73, forecast: null } },
+  { key: 'marketing_material', label: 'Marketing Material/Printing etc', row: { redruby: 74, forecast: null } },
+  { key: 'rental_equipment', label: 'Rental Equipment etc', row: { redruby: 75, forecast: null } },
+
+  // ── Property ──
   { key: 'property_header', label: 'Property Rents, Repairs & Maintenance', header: true },
-  { key: 'rents_leases', label: 'Rents & Leases', row: { rosalita: 68, forecast: 53 } },
-  { key: 'body_corporate', label: 'Body Corporate', row: { rosalita: 69, forecast: 54 }, altLabel: 'Body Corporate & Maintenance' },
-  { key: 'repairs', label: 'Repairs & Maintenance/Replacements', row: { rosalita: 70, forecast: 55 } },
-  { key: 'electric_gas', label: 'Electric & Gas', row: { rosalita: 71, forecast: 56 } },
+  { key: 'rents_leases', label: 'Rents & Leases', row: { redruby: 78, forecast: null } },
+  { key: 'repairs', label: 'Repairs & Maintenance / Replacements', row: { redruby: 79, forecast: null } },
+  { key: 'electric_gas', label: 'Electric & Gas', row: { redruby: 80, forecast: null } },
+
+  // ── Overhead & General ──
   { key: 'overhead_general', label: 'Overhead & General Expenses', header: true },
-  { key: 'admin_fees', label: 'Admin/Management Fees', row: { rosalita: 74, forecast: 59 }, altLabel: 'Management' },
-  { key: 'bank_fees', label: 'Bank & Card Fees/Interest', row: { rosalita: 75, forecast: 60 } },
-  { key: 'communication', label: 'Communication Costs', row: { rosalita: 76, forecast: null } },
-  { key: 'sundry', label: 'Sundry Overhead & Costs', row: { rosalita: 77, forecast: 61 } },
-  { key: 'total_overhead', label: 'Total Overhead Expenses', row: { rosalita: 78, forecast: 62 } },
-  { key: 'total_expenses', label: 'Total Expenses', row: { rosalita: 80, forecast: 63 } },
-  { key: 'starpoints_addback', label: 'Add Back StarPOINTS Benefit', row: { rosalita: 83, forecast: 65 }, altLabel: 'Add Back StarCARD Benefit' },
-  { key: 'ebitda', label: 'EBITDA', row: { rosalita: 84, forecast: 66 } },
-  { key: 'ebitda_margin', label: 'EBITDA Margin', row: { rosalita: 85, forecast: 67 }, pct: true },
-  { key: 'breakeven_header', label: 'Breakeven Calculation', header: true },
-  { key: 'fixed_costs', label: 'Fixed Costs', row: { rosalita: 91, forecast: 71 } },
-  { key: 'variable_costs', label: 'Variable Costs', row: { rosalita: 92, forecast: 72 } },
-  { key: 'gross_income_req_month', label: 'Gross Income Requirement per month', row: { rosalita: 93, forecast: 74 }, altLabel: 'Revenue Requirement per month' },
-  { key: 'gross_revenue_req_day', label: 'Gross Revenue Requirement per Day', row: { rosalita: 94, forecast: 75 }, altLabel: 'Revenue Requirement per Day' },
-  { key: 'gross_income_req_day_budget', label: 'Gross Income Requirement per Day - Budgeted', row: { rosalita: 95, forecast: null } },
-  { key: 'breakeven_actual', label: 'Actual', row: { rosalita: 96, forecast: null } },
+  { key: 'accounting_fees', label: 'Accounting Fees', row: { redruby: 83, forecast: null } },
+  { key: 'bank_fees', label: 'Bank & Card Fees / Interest', row: { redruby: 84, forecast: null } },
+  { key: 'communication', label: 'Communication Costs', row: { redruby: 85, forecast: null } },
+  { key: 'legal_permits', label: 'Legal / Permits / Ceremony / Banjar', row: { redruby: 86, forecast: null } },
+  { key: 'sundry', label: 'Sundry Overhead & Costs', row: { redruby: 87, forecast: null } },
+  { key: 'travel_accom', label: 'Travel & Accommodation Costs', row: { redruby: 88, forecast: null } },
+
+  // ── Totals ──
+  { key: 'total_overhead', label: 'Total Overhead Expenses', row: { redruby: 89, forecast: null } },
+  { key: 'total_expenses', label: 'Total Expenses', row: { redruby: 91, forecast: null } },
+
+  // ── EBITDA ──
+  { key: 'ebitda', label: 'EBITDA', row: { redruby: 94, forecast: null } },
+  { key: 'ebitda_margin', label: 'EBITDA Margin', pct: true, row: { redruby: 95, forecast: null } },
 ];
 
-export type SheetLayout = 'rosalita' | 'forecast';
+export type SheetLayout = 'redruby' | 'forecast';
 
 export function layoutForSheet(sheetName: string): SheetLayout {
-  return sheetName === 'Rosalita' ? 'rosalita' : 'forecast';
+  return sheetName === 'RedRuby' ? 'redruby' : 'forecast';
 }
 
 export function rowForItem(item: PnlLineItem, layout: SheetLayout): number | null {

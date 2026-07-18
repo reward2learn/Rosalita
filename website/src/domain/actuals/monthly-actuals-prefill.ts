@@ -25,19 +25,23 @@ export const NET_INCOME_RATIOS: Record<string, number> = {
 };
 
 const COPY_PRIOR_KEYS = [
-  'staff_mgmt_count', 'staff_dj_count', 'staff_reception_count', 'staff_waiter_count',
-  'staff_bar_count', 'staff_kitchen_count', 'staff_store_count',
-  'admin_fees', 'body_corporate', 'rents_leases', 'starpoints_addback',
+  'staff_mgmt_count', 'staff_supervisor_count', 'staff_admin_count', 'staff_bar_count',
+  'staff_host_count', 'staff_marketing_count', 'staff_kitchen_count',
+  'staff_security_count', 'staff_store_count', 'staff_daily_count',
+  'accounting_fees', 'bank_fees', 'legal_permits', 'sundry',
 ];
 
 const STAFF_WAGE_CONFIG = [
-  { count: 'staff_mgmt_count', cost: 'staff_mgmt_cost', rate: 15_000_000 },
-  { count: 'staff_dj_count', cost: 'staff_dj_cost', rate: 5_500_000 },
-  { count: 'staff_reception_count', cost: 'staff_reception_cost', rate: 5_500_000 },
-  { count: 'staff_waiter_count', cost: 'staff_waiter_cost', rate: 4_000_000 },
-  { count: 'staff_bar_count', cost: 'staff_bar_cost', rate: 4_500_000 },
-  { count: 'staff_kitchen_count', cost: 'staff_kitchen_cost', rate: 5_000_000 },
-  { count: 'staff_store_count', cost: 'staff_store_cost', rate: 3_500_000 },
+  { count: 'staff_mgmt_count', cost: 'staff_mgmt_cost', rate: 35_000_000 },
+  { count: 'staff_supervisor_count', cost: 'staff_supervisor_cost', rate: 15_000_000 },
+  { count: 'staff_admin_count', cost: 'staff_admin_cost', rate: 6_500_000 },
+  { count: 'staff_bar_count', cost: 'staff_bar_cost', rate: 6_000_000 },
+  { count: 'staff_host_count', cost: 'staff_host_cost', rate: 5_000_000 },
+  { count: 'staff_marketing_count', cost: 'staff_marketing_cost', rate: 4_500_000 },
+  { count: 'staff_kitchen_count', cost: 'staff_kitchen_cost', rate: 4_500_000 },
+  { count: 'staff_security_count', cost: 'staff_security_cost', rate: 4_500_000 },
+  { count: 'staff_store_count', cost: 'staff_store_cost', rate: 4_000_000 },
+  { count: 'staff_daily_count', cost: 'staff_daily_cost', rate: 1_500_000 },
 ];
 
 const STAFF_WAGE_MULTIPLIER = 1.1;

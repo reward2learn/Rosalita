@@ -57,7 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 color: 'text.primary',
               }}
             >
-              Rosalita <Box component="span" sx={{ color: 'primary.main' }}>Cantina</Box>
+              Red Ruby <Box component="span" sx={{ color: 'primary.main' }}>Bali</Box>
             </Typography>
           </Link>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>

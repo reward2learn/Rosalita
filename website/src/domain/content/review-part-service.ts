@@ -12,8 +12,8 @@ export interface ReviewPartContent {
 }
 
 const BUSINESS_REVIEW_PATHS = [
-  resolve(process.cwd(), '../Rosalita Business Review — June 2026.md'),
-  resolve(process.cwd(), 'Rosalita Business Review — June 2026.md'),
+  resolve(process.cwd(), '../Red Ruby Business Review — June 2026.md'),
+  resolve(process.cwd(), 'Red Ruby Business Review — June 2026.md'),
 ];
 
 let cachedParts: Map<string, ReviewPartContent> | null = null;

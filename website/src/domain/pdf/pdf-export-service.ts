@@ -5,7 +5,7 @@ import { Buffer } from 'node:buffer';
 import type { DbClient } from '@/lib/db';
 import type { JobStatus } from '@/generated/prisma';
 
-export const PDF_FILENAME = 'Rosalita-Business-Review-June-2026.pdf';
+export const PDF_FILENAME = 'RedRuby-Business-Review-June-2026.pdf';
 
 const LOCAL_CHROME_PATHS = [
   process.env.CHROME_PATH,

@@ -10,7 +10,7 @@ export async function setSessionTier(
     sub: tier === 'pin' ? 'admin' : 'e2e-google-user',
     tier,
     name: tier === 'pin' ? 'Ops Admin' : 'E2E Google User',
-    email: tier === 'google' ? 'e2e@rosalita.test' : undefined,
+    email: tier === 'google' ? 'e2e@redrubybali.com' : undefined,
   });
 
   await page.context().addCookies([

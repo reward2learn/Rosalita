@@ -10,7 +10,7 @@ import type { Route } from 'next';
 import { AuthGate } from '@/components/auth/auth-gate';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
 
-const EMBER = 'Cantina';
+const EMBER = 'Bali';
 
 export function HeroBlock({ config }: { config: Record<string, unknown> }) {
   const { headline, subtitle, badge } = parseBlockConfig('hero', config);
@@ -52,7 +52,7 @@ export function HeroBlock({ config }: { config: Record<string, unknown> }) {
           lineHeight: 1.08,
         }}
       >
-        {headline ?? 'Rosalita'}
+        {headline ?? 'Red Ruby'}
         <br />
         <Box component="span" sx={{ color: 'primary.main' }}>
           {headline ? '& Turnaround Strategy' : EMBER}

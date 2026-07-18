@@ -1130,7 +1130,7 @@ export function OpsAdminTabs({ initialTab = 'day-pos' }: { initialTab?: OpsTab }
   };
 
   return (
-    <Box component="section" sx={{ maxWidth: 1180, mx: 'auto', px: 3, py: 4 }}>
+    <Box component="section" sx={{  mx: 'auto', px: 3, py: 4 }}>
       <Stack spacing={3}>
         <Box>
           <Typography variant="overline" color="primary.main" sx={{ fontWeight: 700 }}>
