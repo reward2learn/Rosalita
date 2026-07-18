@@ -2,6 +2,9 @@
 
 import { useMemo, useRef, useState } from 'react';
 import type { ReactNode, SyntheticEvent } from 'react';
+import Accordion from '@mui/material/Accordion';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import AccordionSummary from '@mui/material/AccordionSummary';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -26,6 +29,7 @@ import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setActiveTab } from '@/store/ui-slice';
 import {
@@ -331,10 +335,12 @@ function SectionShell({ title, tooltip, children }: { title: string; tooltip?: s
 function PosOcrPanel({
   onParsed,
   onImagesReady,
+  onParseComplete,
   resetKey,
 }: {
   onParsed: (values: Record<string, string>) => void;
   onImagesReady?: (images: ReceiptImagePayload[]) => void;
+  onParseComplete?: () => void;
   resetKey?: number;
 }) {
   const [images, setImages] = useState<ReceiptImagePayload[]>([]);
@@ -411,6 +417,7 @@ function PosOcrPanel({
     if (onImagesReady && images.length) {
       onImagesReady(images);
     }
+    if (onParseComplete) onParseComplete();
   };
 
   return (
@@ -474,6 +481,7 @@ function DayPosTab() {
   const [receiptImages, setReceiptImages] = useState<ReceiptImagePayload[]>([]);
   const [save, saveState] = useSaveZReportMutation();
   const [resetKey, setResetKey] = useState(0);
+  const [expanded, setExpanded] = useState<string>('step1');
   const { data, isFetching } = useGetSchemaQuery(department);
   const { data: recentPayload } = useListMetricsQuery({ page: 1, limit: 5 });
   const schema = dataFromEnvelope<ZReportSchemaPayload>(data);
@@ -490,19 +498,28 @@ function DayPosTab() {
       department,
       receipt_images: receiptImages,
     })).unwrap();
-    // Clear form after successful save
     setValues({ report_date: today() });
     setReceiptImages([]);
     setResetKey((k) => k + 1);
+    setExpanded('step3');
+  };
+
+  const handleAccordion = (panel: string) => (_: SyntheticEvent, isExpanded: boolean) => {
+    setExpanded(isExpanded ? panel : '');
   };
 
   return (
-    <Grid container spacing={2.5}>
-      <Grid size={{ xs: 12, lg: 6 }}>
-        <SectionShell
-          title="Step 1: POS OCR Prefill"
-          tooltip="Scan POS receipt images to extract Z-report data automatically"
-        >
+    <Box>
+      <Accordion expanded={expanded === 'step1'} onChange={handleAccordion('step1')} sx={{ mb: 1 }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+            Step 1: POS OCR Prefill
+            <Tooltip title="Scan POS receipt images to extract Z-report data automatically" arrow>
+              <Box component="span" sx={{ cursor: 'help', color: 'text.secondary', fontSize: '0.8rem' }}>ⓘ</Box>
+            </Tooltip>
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
           <PosOcrPanel
             resetKey={resetKey}
             onParsed={(parsed) => setValues((current) => ({ ...current, ...parsed }))}
@@ -511,14 +528,21 @@ function DayPosTab() {
               const newImgs = imgs.filter((img) => !existing.has(img.dataUrl));
               return [...prev, ...newImgs];
             })}
+            onParseComplete={() => setExpanded('step2')}
           />
-        </SectionShell>
-      </Grid>
-      <Grid size={{ xs: 12, lg: 6 }}>
-        <SectionShell
-          title="Step 2: Day POS Upload"
-          tooltip="Review extracted data, attach receipts, then save the Z-report"
-        >
+        </AccordionDetails>
+      </Accordion>
+
+      <Accordion expanded={expanded === 'step2'} onChange={handleAccordion('step2')} sx={{ mb: 1 }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+            Step 2: Day POS Upload
+            <Tooltip title="Review extracted data, attach receipts, then save the Z-report" arrow>
+              <Box component="span" sx={{ cursor: 'help', color: 'text.secondary', fontSize: '0.8rem' }}>ⓘ</Box>
+            </Tooltip>
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
           <Stack spacing={2}>
             <TextField
               select
@@ -583,13 +607,19 @@ function DayPosTab() {
             </Button>
             {saveState.isSuccess ? <Typography role="status" color="success.main">Z-report saved.</Typography> : null}
           </Stack>
-        </SectionShell>
-      </Grid>
-      <Grid size={12}>
-        <SectionShell
-          title="Step 3: Recent Z-reports"
-          tooltip="Recently saved Z-reports appear here after submission"
-        >
+        </AccordionDetails>
+      </Accordion>
+
+      <Accordion expanded={expanded === 'step3'} onChange={handleAccordion('step3')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+            Step 3: Recent Z-reports
+            <Tooltip title="Recently saved Z-reports appear here after submission" arrow>
+              <Box component="span" sx={{ cursor: 'help', color: 'text.secondary', fontSize: '0.8rem' }}>ⓘ</Box>
+            </Tooltip>
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -604,7 +634,7 @@ function DayPosTab() {
               {recentRows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center">
-                    <Typography variant="body2" color="text.secondary">No recent reports. Save a Z-report to see it here.</Typography>
+                    <Typography variant="body2" color="text.secondary">No recent reports.</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -623,9 +653,9 @@ function DayPosTab() {
               )}
             </TableBody>
           </Table>
-        </SectionShell>
-      </Grid>
-    </Grid>
+        </AccordionDetails>
+      </Accordion>
+    </Box>
   );
 }
 
