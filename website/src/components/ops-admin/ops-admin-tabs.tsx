@@ -24,6 +24,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setActiveTab } from '@/store/ui-slice';
@@ -311,22 +312,47 @@ function dataFromEnvelope<T>(value: unknown): T {
   return asRecord(value).data as T;
 }
 
-function SectionShell({ title, children }: { title: string; children: ReactNode }) {
+function SectionShell({ title, tooltip, children }: { title: string; tooltip?: string; children: ReactNode }) {
   return (
     <Paper elevation={0} sx={{ p: 2.5, border: '1px solid', borderColor: 'divider', bgcolor: '#0f0f14' }}>
-      <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>{title}</Typography>
+      <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+        {title}
+        {tooltip ? (
+          <Tooltip title={tooltip} arrow>
+            <Box component="span" sx={{ cursor: 'help', color: 'text.secondary', fontSize: '0.8rem' }}>ⓘ</Box>
+          </Tooltip>
+        ) : null}
+      </Typography>
       {children}
     </Paper>
   );
 }
 
-function PosOcrPanel({ onParsed }: { onParsed: (values: Record<string, string>) => void }) {
+function PosOcrPanel({
+  onParsed,
+  onImagesReady,
+  resetKey,
+}: {
+  onParsed: (values: Record<string, string>) => void;
+  onImagesReady?: (images: ReceiptImagePayload[]) => void;
+  resetKey?: number;
+}) {
   const [images, setImages] = useState<ReceiptImagePayload[]>([]);
   const [text, setText] = useState('');
-  const [scan, scanState] = useScanPosReceiptMutation();
+  const [scan] = useScanPosReceiptMutation();
   const [parse, parseState] = useParsePosTextMutation();
   const abortRef = useRef<AbortController | null>(null);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number } | null>(null);
+
+  // Reset on resetKey change
+  const prevResetKey = useRef(resetKey);
+  if (resetKey !== prevResetKey.current) {
+    prevResetKey.current = resetKey;
+    if (resetKey !== undefined && resetKey !== 0) {
+      setImages([]);
+      setText('');
+    }
+  }
 
   const handleScan = async () => {
     setScanProgress({ current: 0, total: images.length, failed: 0 });
@@ -381,6 +407,10 @@ function PosOcrPanel({ onParsed }: { onParsed: (values: Record<string, string>) 
     const payload = await parse({ text, useAi: true }).unwrap();
     const parsed = asRecord(payload.data);
     onParsed(Object.fromEntries(Object.entries(parsed).map(([key, value]) => [key, String(value ?? '')])));
+    // Auto-attach scanned images to verification receipts
+    if (onImagesReady && images.length) {
+      onImagesReady(images);
+    }
   };
 
   return (
@@ -443,10 +473,13 @@ function DayPosTab() {
   const [values, setValues] = useState<Record<string, string>>({ report_date: today() });
   const [receiptImages, setReceiptImages] = useState<ReceiptImagePayload[]>([]);
   const [save, saveState] = useSaveZReportMutation();
+  const [resetKey, setResetKey] = useState(0);
   const { data, isFetching } = useGetSchemaQuery(department);
+  const { data: recentPayload } = useListMetricsQuery({ page: 1, limit: 5 });
   const schema = dataFromEnvelope<ZReportSchemaPayload>(data);
   const departments = schema?.departments ?? [];
   const sections = schema?.form_sections ?? [];
+  const recentRows = (asRecord(recentPayload).rows as MetricsRow[] | undefined) ?? [];
 
   const handleChange = (key: string, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -457,17 +490,35 @@ function DayPosTab() {
       department,
       receipt_images: receiptImages,
     })).unwrap();
+    // Clear form after successful save
+    setValues({ report_date: today() });
+    setReceiptImages([]);
+    setResetKey((k) => k + 1);
   };
 
   return (
     <Grid container spacing={2.5}>
-      <Grid size={{ xs: 12, lg: 7 }}>
-        <PosOcrPanel
-          onParsed={(parsed) => setValues((current) => ({ ...current, ...parsed }))}
-        />
+      <Grid size={{ xs: 12, lg: 6 }}>
+        <SectionShell
+          title="Step 1: POS OCR Prefill"
+          tooltip="Scan POS receipt images to extract Z-report data automatically"
+        >
+          <PosOcrPanel
+            resetKey={resetKey}
+            onParsed={(parsed) => setValues((current) => ({ ...current, ...parsed }))}
+            onImagesReady={(imgs) => setReceiptImages((prev) => {
+              const existing = new Set(prev.map((p) => p.dataUrl));
+              const newImgs = imgs.filter((img) => !existing.has(img.dataUrl));
+              return [...prev, ...newImgs];
+            })}
+          />
+        </SectionShell>
       </Grid>
-      <Grid size={{ xs: 12, lg: 5 }}>
-        <SectionShell title="Day POS Upload">
+      <Grid size={{ xs: 12, lg: 6 }}>
+        <SectionShell
+          title="Step 2: Day POS Upload"
+          tooltip="Review extracted data, attach receipts, then save the Z-report"
+        >
           <Stack spacing={2}>
             <TextField
               select
@@ -532,6 +583,46 @@ function DayPosTab() {
             </Button>
             {saveState.isSuccess ? <Typography role="status" color="success.main">Z-report saved.</Typography> : null}
           </Stack>
+        </SectionShell>
+      </Grid>
+      <Grid size={12}>
+        <SectionShell
+          title="Step 3: Recent Z-reports"
+          tooltip="Recently saved Z-reports appear here after submission"
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Date</TableCell>
+                <TableCell>Dept</TableCell>
+                <TableCell>Nett Sales</TableCell>
+                <TableCell>Covers</TableCell>
+                <TableCell>Receipts</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {recentRows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    <Typography variant="body2" color="text.secondary">No recent reports. Save a Z-report to see it here.</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                recentRows.map((row) => {
+                  const date = row.report_date ?? row.date ?? '';
+                  return (
+                    <TableRow key={`${date}-${row.department ?? 'all'}`} hover sx={{ cursor: 'pointer' }}>
+                      <TableCell>{date}</TableCell>
+                      <TableCell>{row.department ?? 'all_pos'}</TableCell>
+                      <TableCell>{formatIdr(row.nett_sales)}</TableCell>
+                      <TableCell>{row.total_covers ?? '-'}</TableCell>
+                      <TableCell>{row.receipt_image_count ?? 0}</TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
         </SectionShell>
       </Grid>
     </Grid>
