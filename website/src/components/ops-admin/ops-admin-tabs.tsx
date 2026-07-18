@@ -1332,7 +1332,15 @@ export function OpsAdminTabs({ initialTab = 'day-pos' }: { initialTab?: OpsTab }
           </Typography>
         </Box>
 
-        <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
+        <Paper elevation={0} sx={{ 
+          position: 'sticky', 
+          top: 67, 
+          zIndex: 99999, 
+          border: '1px solid', 
+          borderColor: 'divider', 
+          bgcolor: 'rgba(255,255,255,0.03)',
+          backgroundFilter: 'blur(10px)' }}>
+     
           <Tabs value={tab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
             <Tab value="day-pos" label="Day POS" />
             <Tab value="costs-payroll" label="Costs & Payroll" />
