@@ -28,14 +28,15 @@ function resolveSource(source: string): { type: 'snippet'; key: string } | { typ
   return { type: 'snippet', key: normalized.replace(/[.-]/g, '_') };
 }
 
-/** Lazy-load node:fs to avoid Turbopack tracing the whole project at build time */
+/** Read bundled legal HTML from legal/ subdirectory */
 function readBundledHtml(filename: string): string | null {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { readFileSync, existsSync } = require('node:fs');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { resolve } = require('node:path');
+  // Scoped to legal/ subdirectory — prevents Turbopack from tracing the whole project
   const safeName = filename.replace(/\.\./g, '').replace(/[/\\]/g, '');
-  const path = resolve(process.cwd(), safeName);
+  const path = resolve(process.cwd(), 'legal', safeName);
   if (!existsSync(path)) return null;
   return readFileSync(path, 'utf8');
 }

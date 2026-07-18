@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f14">
+<title>Privacy Policy — Rosalita Cantina</title>
+<meta name="description" content="Privacy Policy for Rosalita Cantina — how we collect, use, and protect your data.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand"><span class="ember">Rosalita</span> Cantina</a>
+    <button class="nav-toggle" aria-label="Toggle menu">&#x22EE;</button>
+  </div>
+</nav>
+
+<!-- Side Drawer -->
+<div id="sideDrawer" class="side-drawer">
+  <div class="drawer-user-badge" id="drawerUserBadge" style="display:none;">
+    <img id="drawerAvatar" src="" alt="" class="drawer-avatar">
+    <div class="drawer-user-info">
+      <div id="drawerUserName" class="drawer-user-name">Admin</div>
+      <div id="drawerUserEmail" class="drawer-user-email">Signed in</div>
+    </div>
+    <a href="/api/auth?action=logout" class="drawer-signout" title="Sign out">&#10140;</a>
+  </div>
+  <div class="drawer-links">
+    <a href="index.html">Dashboard</a>
+    <a href="summary.html" class="google-only">Summary</a>
+    <a href="review.html" class="google-only">Analysis</a>
+    <a href="ops-admin.html">Ops Admin</a>
+    <a href="ops-tracking.html" class="google-only">Ops Tracking</a>
+    <a href="ops-chat.html" class="google-only">AI Chat</a>
+  </div>
+  <div class="drawer-legal">
+    <a href="privacy-policy.html">Privacy</a>
+    <a href="terms-of-service.html">Terms</a>
+  </div>
+</div>
+<div id="drawerOverlay" class="drawer-overlay"></div>
+
+<main class="doc-container">
+  <article class="doc-content">
+    <h1>Privacy Policy</h1>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:32px;">Last updated: June 28, 2026</p>
+
+    <h2>1. Introduction</h2>
+    <p>Rosalita Cantina (&ldquo;Rosalita&rsquo;s,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) operates the website at <strong>rosalita-business-review.vercel.app</strong> (the &ldquo;Site&rdquo;). This Privacy Policy explains how we collect, use, disclose, and protect your information when you access or use our Site.</p>
+    <p>Our business is registered in Indonesia and operates under the laws of the Republic of Indonesia. By using the Site, you consent to the practices described in this Privacy Policy.</p>
+
+    <h2>2. Information We Collect</h2>
+
+    <h3>2.1 Information You Provide</h3>
+    <p>We collect information you voluntarily provide when using the Site, including:</p>
+    <ul>
+      <li><strong>Authentication data:</strong> When you sign in via Google OAuth, we receive your name, email address, and profile picture from Google. When you use PIN-based access, we verify an encrypted credential stored securely in our database.</li>
+      <li><strong>Operational metrics:</strong> Authorized administrators may enter daily restaurant operational data including revenue, guest counts, staff counts, staff costs, food costs, beverage costs, GoFood revenue, direct order revenue, average spend, and notes.</li>
+      <li><strong>Chat interactions:</strong> When you use the AI Chat feature, your messages and conversation history are stored locally in your browser (localStorage) and may be processed by our AI service provider (OpenAI) to generate responses.</li>
+    </ul>
+
+    <h3>2.2 Information Collected Automatically</h3>
+    <p>When you access the Site, we automatically collect:</p>
+    <ul>
+      <li><strong>Session data:</strong> We use HTTP cookies and JSON Web Tokens (JWT) to maintain your authenticated session. These are essential for the Site to function when accessing restricted areas such as Ops Admin.</li>
+      <li><strong>Technical data:</strong> Our hosting provider (Vercel Inc.) automatically collects standard server logs including IP address, browser type, device information, pages visited, and timestamps. This data is retained temporarily for operational security and performance monitoring.</li>
+    </ul>
+
+    <h3>2.3 Information from Third Parties</h3>
+    <p>If you authenticate via Google OAuth, we receive profile information from Google according to your Google account privacy settings. We do not receive any additional data from Google beyond what you authorize during the sign-in process.</p>
+
+    <h2>3. How We Use Your Information</h2>
+    <p>We use the collected information for the following purposes:</p>
+    <ul>
+      <li><strong>Authentication and access control:</strong> To verify your identity and grant access to authorized areas of the Site.</li>
+      <li><strong>Operational tracking:</strong> To record, store, and display daily restaurant metrics for business analysis and reporting.</li>
+      <li><strong>AI assistant functionality:</strong> To process chat queries and generate responses using our AI service provider.</li>
+      <li><strong>Site improvement:</strong> To analyze usage patterns, diagnose technical issues, and improve the user experience.</li>
+      <li><strong>Communication:</strong> We do not use your contact information for marketing or promotional purposes.</li>
+    </ul>
+
+    <h2>4. Legal Basis for Processing (GDPR)</h2>
+    <p>If you are a resident of the European Economic Area (EEA), our legal basis for collecting and processing your personal data depends on the specific context:</p>
+    <ul>
+      <li><strong>Contractual necessity:</strong> To provide you with access to the Site and its features.</li>
+      <li><strong>Legitimate interests:</strong> To maintain site security, analyze usage, and improve our services.</li>
+      <li><strong>Consent:</strong> Where we ask for your consent to process data (e.g., storing chat history), you may withdraw this consent at any time.</li>
+    </ul>
+
+    <h2>5. Data Storage and Security</h2>
+
+    <h3>5.1 Storage Location</h3>
+    <p>Data is stored in the following locations:</p>
+    <ul>
+      <li><strong>Database:</strong> Operational metrics, encrypted secrets (PIN, API keys), and monthly targets are stored in a PostgreSQL database hosted by Neon, Inc. on servers located in Singapore (ap-southeast-1).</li>
+      <li><strong>Encryption:</strong> Sensitive credentials (administrator PIN, API keys) are encrypted using AES-256-GCM before storage. The encryption key is held separately as an environment variable and is never stored in the database.</li>
+      <li><strong>Cookies:</strong> Session tokens are stored in your browser as HttpOnly cookies and are transmitted over HTTPS only.</li>
+      <li><strong>Local storage:</strong> AI chat history is stored locally in your browser using the localStorage API. This data is not transmitted to our servers except when you submit a chat message for processing.</li>
+    </ul>
+
+    <h3>5.2 Security Measures</h3>
+    <p>We implement appropriate technical and organizational measures to protect your data, including:</p>
+    <ul>
+      <li>Encryption of sensitive data at rest (AES-256-GCM) and in transit (TLS/HTTPS)</li>
+      <li>Session-based authentication with 30-day expiry and HttpOnly cookies</li>
+      <li>Environment-variable-based secrets management (no hardcoded credentials in source code)</li>
+      <li>Database connection pooling with Neon serverless driver</li>
+      <li>Request rate limiting and standard web application security practices</li>
+    </ul>
+
+    <h2>6. Data Retention</h2>
+    <p>We retain data as follows:</p>
+    <ul>
+      <li><strong>Authentication sessions:</strong> JWT cookies expire after 30 days. Sessions are terminated upon logout.</li>
+      <li><strong>Operational metrics:</strong> Retained indefinitely for business analysis and historical tracking. You may request deletion of specific records.</li>
+      <li><strong>Chat history:</strong> Stored locally in your browser. You may clear this data at any time by clearing your browser&rsquo;s localStorage.</li>
+      <li><strong>Server logs:</strong> Retained by Vercel for up to 30 days.</li>
+    </ul>
+
+    <h2>7. Data Sharing and Disclosure</h2>
+    <p>We do not sell, trade, or rent your personal information to third parties. We may share data only in the following circumstances:</p>
+    <ul>
+      <li><strong>Service providers:</strong> We use Vercel Inc. (hosting), Neon, Inc. (database), and OpenAI, LLC (AI processing). These providers process data only on our behalf and under contractual obligations that comply with applicable data protection laws.</li>
+      <li><strong>Legal compliance:</strong> We may disclose information if required to do so by Indonesian law or in response to valid legal process from Indonesian authorities.</li>
+      <li><strong>Business transfers:</strong> In the event of a merger, acquisition, or sale of assets, your data may be transferred as part of that transaction.</li>
+    </ul>
+
+    <h2>8. Your Rights</h2>
+    <p>Depending on your jurisdiction, you may have the following rights regarding your personal data:</p>
+    <ul>
+      <li><strong>Access:</strong> Request a copy of the personal data we hold about you.</li>
+      <li><strong>Correction:</strong> Request correction of inaccurate or incomplete data.</li>
+      <li><strong>Deletion:</strong> Request deletion of your personal data, subject to legal retention requirements.</li>
+      <li><strong>Objection:</strong> Object to processing of your personal data for legitimate interests.</li>
+      <li><strong>Data portability:</strong> Request transfer of your data to another service provider.</li>
+    </ul>
+    <p>To exercise any of these rights, please contact us using the information in Section 11.</p>
+
+    <h2>9. Third-Party Services</h2>
+    <p>The Site integrates with the following third-party services:</p>
+    <ul>
+      <li><strong>Google OAuth:</strong> Used for authentication. Google&rsquo;s privacy policy applies to data collected by Google during the sign-in process.</li>
+      <li><strong>OpenAI API:</strong> Used to power the AI Chat feature. Chat messages are sent to OpenAI for processing. OpenAI does not use data submitted via the API for training purposes.</li>
+      <li><strong>Vercel:</strong> Web hosting and serverless function platform.</li>
+      <li><strong>Neon:</strong> PostgreSQL database hosting.</li>
+    </ul>
+
+    <h2>10. Children&rsquo;s Privacy</h2>
+    <p>The Site is not intended for individuals under the age of 18. We do not knowingly collect personal information from children. If you believe a child has provided us with personal data, please contact us so we can delete it.</p>
+
+    <h2>11. Contact Information</h2>
+    <p>For questions about this Privacy Policy or to exercise your data rights, please contact:</p>
+    <p>
+      <strong>Rosalita Cantina</strong><br>
+      Seminyak Square, Bali, Indonesia<br>
+      Email: <a href="mailto:privacy@rosalitascantina.com">privacy@rosalitascantina.com</a>
+    </p>
+
+    <h2>12. Changes to This Privacy Policy</h2>
+    <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated &ldquo;Last updated&rdquo; date. We encourage you to review this Privacy Policy periodically.</p>
+
+    <p style="margin-top:48px;text-align:center;color:var(--muted);font-size:0.85rem;">
+      <a href="index.html">Back to Dashboard</a> &middot; <a href="terms-of-service.html">Terms of Service</a>
+    </p>
+  </article>
+</main>
+
+<footer class="doc-footer">
+  <div class="footer-links">
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <span class="footer-sep">&middot;</span>
+    <a href="terms-of-service.html">Terms of Service</a>
+  </div>
+  Rosalita Cantina &mdash; Privacy Policy
+  <div class="footer-small">Last updated June 28, 2026.</div>
+</footer>
+
+<script>
+// Filter drawer links for PIN users
+fetch('/api/auth?action=me').then(function(r){return r.json()}).then(function(data){
+  if (data.user && data.user.authMethod === 'pin') {
+    var gl = document.querySelectorAll('.drawer-links .google-only');
+    for (var i=0;i<gl.length;i++) gl[i].style.display='none';
+  }
+}).catch(function(){});
+
+document.querySelector('.nav-toggle')?.addEventListener('click', function() {
+  document.getElementById('sideDrawer')?.classList.toggle('open');
+  document.getElementById('drawerOverlay')?.classList.toggle('open');
+  document.body.style.overflow = document.getElementById('sideDrawer')?.classList.contains('open') ? 'hidden' : '';
+  updateDrawerBadge();
+});
+document.getElementById('drawerOverlay')?.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('sideDrawer')?.classList.contains('open')) closeDrawer();
+});
+function closeDrawer() {
+  document.getElementById('sideDrawer')?.classList.remove('open');
+  document.getElementById('drawerOverlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function updateDrawerBadge() {
+  var badge = document.getElementById('drawerUserBadge');
+  if (!badge) return;
+fetch('/api/auth?action=me', { credentials: 'include' }).then(function(r){return r.json()}).then(function(data){
+    if (data.user) {
+      document.getElementById('drawerAvatar').src = data.user.picture || 'images/default-avatar.svg';
+      document.getElementById('drawerAvatar').alt = data.user.name || 'User';
+      document.getElementById('drawerUserName').textContent = data.user.name || 'Admin';
+      document.getElementById('drawerUserEmail').textContent = data.user.email || (data.user.authMethod === 'pin' ? 'Signed in with PIN' : 'Signed in');
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }).catch(function(){ badge.style.display = 'none'; });
+};
+</script>
+
+</body>
+</html>
