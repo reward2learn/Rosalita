@@ -634,7 +634,7 @@ function ZReportChartView() {
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+      <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
         <TextField
           select
           size="small"
