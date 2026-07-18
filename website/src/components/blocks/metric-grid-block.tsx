@@ -54,7 +54,7 @@ export function MetricGridBlock({ config }: { config: Record<string, unknown> })
   parseBlockConfig('metric_grid', config);
 
   return (
-    <Box component="section" sx={{ maxWidth: 800, mx: 'auto', px: 3, py: 4 }}>
+    <Box component="section" sx={{   mx: 'auto', px: 3, py: 4 }}>
       <Typography variant="h5" component="h2" sx={{ fontWeight: 800, textAlign: 'center', mb: 1 }}>
         12-Month Target
       </Typography>

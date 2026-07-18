@@ -29,7 +29,7 @@ export function DocMarkdownBlock({ config, initialMarkdown }: DocMarkdownBlockPr
     initialMarkdown ?? data?.markdown ?? DOCUMENT_FALLBACKS[source] ?? '';
 
   return (
-    <Box component="section" sx={{ maxWidth: 800, mx: 'auto', px: 3, py: 5 }}>
+    <Box component="section" sx={{  mx: 'auto', px: 3, py: 5 }}>
       <Paper
         elevation={0}
         sx={{

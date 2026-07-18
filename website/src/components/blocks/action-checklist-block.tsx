@@ -62,7 +62,7 @@ export function ActionChecklistBlock({ config }: { config: Record<string, unknow
   const [expanded, setExpanded] = useState<string | false>('P1');
 
   return (
-    <Box component="section" sx={{ maxWidth: 800, mx: 'auto', px: 3, py: 4 }}>
+    <Box component="section" sx={{   mx: 'auto', px: 3, py: 4 }}>
       <Typography variant="h5" component="h2" sx={{ fontWeight: 800, textAlign: 'center', mb: 1 }}>
         Step-by-Step Action Plan
       </Typography>
