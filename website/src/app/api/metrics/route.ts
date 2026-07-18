@@ -294,12 +294,6 @@ export async function POST(request: Request) {
   const existingImages = existing?.receiptImages;
   const incoming = sanitizeReceiptImages(rowBody.receipt_images);
   const merged = [...(Array.isArray(existingImages) ? existingImages : []), ...incoming];
-  if (!merged.length) {
-    return legacyError(
-      'At least one POS receipt photo is required. Attach receipt image(s) to verify the data before saving.',
-      400,
-    );
-  }
 
   try {
     const saved = await service.upsert({

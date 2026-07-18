@@ -257,12 +257,6 @@ export class MonthlyActualsService {
     const incomingImages = sanitizeReceiptImages(payload.receipt_images || []);
     const mergedImages = mergeReceiptImages(existing?.receipt_images || [], incomingImages);
 
-    if (!mergedImages.length) {
-      throw new Error(
-        'At least one expense receipt photo is required. Attach invoice or payment proof before saving.',
-      );
-    }
-
     const cleanInputs = this.sanitizeDepartmentInputs(department, payload.inputs || {});
     const notes = payload.notes != null
       ? String(payload.notes).trim().slice(0, 10000)
