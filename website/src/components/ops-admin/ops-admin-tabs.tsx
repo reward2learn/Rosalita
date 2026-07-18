@@ -62,6 +62,69 @@ interface ReceiptImagePayload {
   captured_at: string;
 }
 
+/** Thumbnail grid of receipt images with per-image delete */
+function ReceiptThumbnails({
+  images,
+  onRemove,
+}: {
+  images: ReceiptImagePayload[];
+  onRemove: (index: number) => void;
+}) {
+  if (!images.length) return null;
+  return (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+      {images.map((img, i) => (
+        <Box
+          key={`${img.name}-${i}`}
+          sx={{
+            position: 'relative',
+            width: 100,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1,
+            overflow: 'hidden',
+            bgcolor: 'action.hover',
+          }}
+        >
+          <img
+            src={img.dataUrl}
+            alt={img.name}
+            style={{ width: '100%', height: 75, objectFit: 'cover', display: 'block' }}
+          />
+          <Button
+            size="small"
+            onClick={() => onRemove(i)}
+            sx={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              minWidth: 24,
+              width: 24,
+              height: 24,
+              p: 0,
+              borderRadius: '0 0 0 4px',
+              bgcolor: 'rgba(0,0,0,0.6)',
+              color: 'white',
+              fontSize: '0.75rem',
+              lineHeight: 1,
+              '&:hover': { bgcolor: 'error.main' },
+            }}
+          >
+            ✕
+          </Button>
+          <Typography
+            variant="caption"
+            noWrap
+            sx={{ display: 'block', px: 0.5, py: 0.25, fontSize: '0.65rem' }}
+          >
+            {img.name.length > 14 ? `${img.name.slice(0, 12)}…` : img.name}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
 interface ZReportField {
   key: string;
   label: string;
@@ -280,9 +343,12 @@ function PosOcrPanel({ onParsed }: { onParsed: (values: Record<string, string>) 
               void readReceiptFiles(event.target.files).then(setImages);
             }}
           />
-        </Button>
-        {images.length ? <Typography variant="caption">{images.length} image(s) ready for OCR.</Typography> : null}
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          </Button>
+          <ReceiptThumbnails
+            images={images}
+            onRemove={(i) => setImages((prev) => prev.filter((_, idx) => idx !== i))}
+          />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <Button onClick={handleScan} disabled={!images.length || scanState.isLoading} variant="contained">
             {scanState.isLoading ? 'Scanning...' : 'Scan'}
           </Button>
@@ -380,7 +446,10 @@ function DayPosTab() {
                 }}
               />
             </Button>
-            {receiptImages.length ? <Typography variant="caption">{receiptImages.length} receipt image(s) attached.</Typography> : null}
+            <ReceiptThumbnails
+              images={receiptImages}
+              onRemove={(i) => setReceiptImages((prev) => prev.filter((_, idx) => idx !== i))}
+            />
 
             <Button onClick={handleSave} disabled={saveState.isLoading} variant="contained">
               {saveState.isLoading ? 'Saving...' : 'Save Z-report'}
@@ -430,23 +499,26 @@ function ExpenseOcrPanel({
               void readReceiptFiles(event.target.files).then(setImages);
             }}
           />
-        </Button>
-        {images.length ? <Typography variant="caption">{images.length} receipt image(s) attached.</Typography> : null}
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button onClick={handleScan} disabled={!images.length || scanState.isLoading} variant="contained">
-            {scanState.isLoading ? 'Scanning...' : 'Scan'}
           </Button>
-          <Button onClick={handleParse} disabled={!text.trim() || parseState.isLoading} variant="outlined">
-            {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
-          </Button>
-        </Stack>
-        <TextField
-          label="Receipt text"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          multiline
-          minRows={6}
-          fullWidth
+          <ReceiptThumbnails
+            images={images}
+            onRemove={(i) => setImages((prev) => prev.filter((_, idx) => idx !== i))}
+          />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+            <Button onClick={handleScan} disabled={!images.length || scanState.isLoading} variant="contained">
+              {scanState.isLoading ? 'Scanning...' : 'Scan'}
+            </Button>
+            <Button onClick={handleParse} disabled={!text.trim() || parseState.isLoading} variant="outlined">
+              {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
+            </Button>
+          </Stack>
+          <TextField
+            label="Receipt text"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            multiline
+            minRows={6}
+            fullWidth
         />
       </Stack>
     </SectionShell>
@@ -665,6 +737,10 @@ function CostsPayrollTab() {
                     }}
                   />
                 </Button>
+                <ReceiptThumbnails
+                  images={receiptImages}
+                  onRemove={(i) => setReceiptImages((prev) => prev.filter((_, idx) => idx !== i))}
+                />
               </>
             ) : null}
 
