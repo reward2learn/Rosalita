@@ -1197,7 +1197,7 @@ function RecentEntries() {
                   .filter(([k]) => !['receipt_images', 'id'].includes(k))
                   .map(([key, value]) => (
                     <Box key={key} sx={{ p: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                         {key.replace(/_/g, ' ')}
                       </Typography>
                       <Typography variant="body2">
@@ -1259,7 +1259,7 @@ function RecentEntries() {
                   .filter(([, v]) => v != null && v !== '' && v !== 0)
                   .map(([key, value]) => (
                     <Box key={key} sx={{ p: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                         {key.replace(/_/g, ' ')}
                       </Typography>
                       <Typography variant="body2">{formatIdr(value)}</Typography>
