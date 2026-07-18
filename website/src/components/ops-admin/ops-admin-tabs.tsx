@@ -30,6 +30,17 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {
+  Chart as ChartJS,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip as ChartTooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTooltip, Legend);
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setActiveTab } from '@/store/ui-slice';
 import {
@@ -475,6 +486,165 @@ function PosOcrPanel({
   );
 }
 
+function ZReportListView({
+  recentRows,
+  setZrepDetail,
+}: {
+  recentRows: MetricsRow[];
+  setZrepDetail: (d: { date: string; dept: string }) => void;
+}) {
+  return (
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          <TableCell>Date</TableCell>
+          <TableCell>Dept</TableCell>
+          <TableCell>Nett Sales</TableCell>
+          <TableCell>Covers</TableCell>
+          <TableCell>Receipts</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {recentRows.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={5} align="center">
+              <Typography variant="body2" color="text.secondary">No recent reports.</Typography>
+            </TableCell>
+          </TableRow>
+        ) : (
+          recentRows.map((row) => {
+            const date = row.report_date ?? row.date ?? '';
+            return (
+              <TableRow
+                key={`${date}-${row.department ?? 'all'}`}
+                hover
+                sx={{ cursor: 'pointer' }}
+                onClick={() => setZrepDetail({ date: String(date), dept: String(row.department ?? 'all_pos') })}
+              >
+                <TableCell>{date}</TableCell>
+                <TableCell>{row.department ?? 'all_pos'}</TableCell>
+                <TableCell>{formatIdr(row.nett_sales)}</TableCell>
+                <TableCell>{row.total_covers ?? '-'}</TableCell>
+                <TableCell>{row.receipt_image_count ?? 0}</TableCell>
+              </TableRow>
+            );
+          })
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+function ZReportCalendarView() {
+  const now = new Date();
+  const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const { data: calPayload, isFetching } = useGetCalendarQuery(period);
+  const calData = dataFromEnvelope<{ days_in_month?: number; filled?: { date: string; entry_source?: string }[]; missing?: string[] }>(calPayload);
+
+  if (isFetching) return <CircularProgress size={24} />;
+  if (!calData) return <Typography color="text.secondary">No calendar data.</Typography>;
+
+  const filledSet = new Set((calData.filled ?? []).map((f) => f.date));
+  const days = calData.days_in_month ?? 30;
+  const monthLabel = new Date(Number(period.split('-')[0]), Number(period.split('-')[1]) - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  return (
+    <Box>
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>{monthLabel}</Typography>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5, textAlign: 'center' }}>
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+          <Typography key={d} variant="caption" sx={{ fontWeight: 700 }}>{d}</Typography>
+        ))}
+        {Array.from({ length: days }, (_, i) => {
+          const date = `${period}-${String(i + 1).padStart(2, '0')}`;
+          const hasData = filledSet.has(date);
+          return (
+            <Box
+              key={date}
+              sx={{
+                p: 0.5,
+                borderRadius: 0.5,
+                bgcolor: hasData ? 'primary.main' : 'action.hover',
+                color: hasData ? 'primary.contrastText' : 'text.secondary',
+                fontSize: '0.75rem',
+                minHeight: 28,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {i + 1}
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+}
+
+function ZReportChartView({ recentRows }: { recentRows: MetricsRow[] }) {
+  // Aggregate by month
+  const byMonth: Record<string, { sales: number; covers: number }> = {};
+  for (const row of recentRows) {
+    const date = row.report_date ?? row.date ?? '';
+    const month = date.slice(0, 7);
+    if (!month) continue;
+    if (!byMonth[month]) byMonth[month] = { sales: 0, covers: 0 };
+    byMonth[month].sales += Number(row.nett_sales ?? 0);
+    byMonth[month].covers += Number(row.total_covers ?? 0);
+  }
+  const months = Object.keys(byMonth).sort();
+  if (!months.length) return <Typography color="text.secondary">No data for chart.</Typography>;
+
+  const chartData = {
+    labels: months,
+    datasets: [
+      {
+        label: 'Nett Sales (IDR)',
+        data: months.map((m) => byMonth[m].sales),
+        backgroundColor: 'rgba(144, 202, 249, 0.6)',
+        borderColor: 'rgb(144, 202, 249)',
+        borderWidth: 1,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Covers',
+        data: months.map((m) => byMonth[m].covers),
+        backgroundColor: 'rgba(255, 167, 38, 0.6)',
+        borderColor: 'rgb(255, 167, 38)',
+        borderWidth: 1,
+        yAxisID: 'y1',
+      },
+    ],
+  };
+
+  return (
+    <Box sx={{ height: 250 }}>
+      <Bar
+        data={chartData}
+        options={{
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index' as const, intersect: false },
+          scales: {
+            y: {
+              type: 'linear' as const,
+              position: 'left' as const,
+              title: { display: true, text: 'Nett Sales (IDR)' },
+            },
+            y1: {
+              type: 'linear' as const,
+              position: 'right' as const,
+              grid: { drawOnChartArea: false },
+              title: { display: true, text: 'Covers' },
+            },
+          },
+        }}
+      />
+    </Box>
+  );
+}
+
 function DayPosTab() {
   const [department, setDepartment] = useState('all_pos');
   const [values, setValues] = useState<Record<string, string>>({ report_date: today() });
@@ -482,6 +652,7 @@ function DayPosTab() {
   const [save, saveState] = useSaveZReportMutation();
   const [resetKey, setResetKey] = useState(0);
   const [expanded, setExpanded] = useState<string>('step1');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'chart'>('list');
   const [zrepDetail, setZrepDetail] = useState<{ date: string; dept: string } | null>(null);
   const [fullscreenImage, setFullscreenImage] = useState<ReceiptImage | null>(null);
   const { data, isFetching } = useGetSchemaQuery(department);
@@ -621,52 +792,32 @@ function DayPosTab() {
 
       <Accordion expanded={expanded === 'step3'} onChange={handleAccordion('step3')}>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-            Step 3: Recent Z-reports
-            <Tooltip title="Recently saved Z-reports appear here after submission" arrow>
-              <Box component="span" sx={{ cursor: 'help', color: 'text.secondary', fontSize: '0.8rem' }}>ⓘ</Box>
-            </Tooltip>
-          </Typography>
+          <Stack direction="row" sx={{ width: '100%', alignItems: 'center', justifyContent: 'space-between', pr: 2 }}>
+            <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+              Step 3: Recent Z-reports
+              <Tooltip title="Recently saved Z-reports appear here after submission" arrow>
+                <Box component="span" sx={{ cursor: 'help', color: 'text.secondary', fontSize: '0.8rem' }}>ⓘ</Box>
+              </Tooltip>
+            </Typography>
+            <Stack direction="row" spacing={0.5} onClick={(e) => e.stopPropagation()}>
+              {(['list', 'calendar', 'chart'] as const).map((mode) => (
+                <Button
+                  key={mode}
+                  size="small"
+                  variant={viewMode === mode ? 'contained' : 'outlined'}
+                  onClick={() => setViewMode(mode)}
+                  sx={{ textTransform: 'capitalize', fontSize: '0.75rem', py: 0.25 }}
+                >
+                  {mode}
+                </Button>
+              ))}
+            </Stack>
+          </Stack>
         </AccordionSummary>
         <AccordionDetails>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Dept</TableCell>
-                <TableCell>Nett Sales</TableCell>
-                <TableCell>Covers</TableCell>
-                <TableCell>Receipts</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {recentRows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    <Typography variant="body2" color="text.secondary">No recent reports.</Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                recentRows.map((row) => {
-                  const date = row.report_date ?? row.date ?? '';
-                  return (
-                    <TableRow
-                      key={`${date}-${row.department ?? 'all'}`}
-                      hover
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => setZrepDetail({ date: String(date), dept: String(row.department ?? 'all_pos') })}
-                    >
-                      <TableCell>{date}</TableCell>
-                      <TableCell>{row.department ?? 'all_pos'}</TableCell>
-                      <TableCell>{formatIdr(row.nett_sales)}</TableCell>
-                      <TableCell>{row.total_covers ?? '-'}</TableCell>
-                      <TableCell>{row.receipt_image_count ?? 0}</TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+          {viewMode === 'list' ? <ZReportListView recentRows={recentRows} setZrepDetail={setZrepDetail} /> : null}
+          {viewMode === 'calendar' ? <ZReportCalendarView /> : null}
+          {viewMode === 'chart' ? <ZReportChartView recentRows={recentRows} /> : null}
         </AccordionDetails>
       </Accordion>
 
