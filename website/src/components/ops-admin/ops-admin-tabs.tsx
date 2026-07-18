@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { ReactNode, SyntheticEvent } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -312,7 +312,7 @@ function dataFromEnvelope<T>(value: unknown): T {
 
 function SectionShell({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Paper elevation={0} sx={{ p: 2.5, border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
+    <Paper elevation={0} sx={{ p: 2.5, border: '1px solid', borderColor: 'divider', bgcolor: '#0f0f14' }}>
       <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>{title}</Typography>
       {children}
     </Paper>
@@ -324,10 +324,23 @@ function PosOcrPanel({ onParsed }: { onParsed: (values: Record<string, string>) 
   const [text, setText] = useState('');
   const [scan, scanState] = useScanPosReceiptMutation();
   const [parse, parseState] = useParsePosTextMutation();
+  const scanRef = useRef<{ abort: () => void } | null>(null);
 
-  const handleScan = async () => {
-    const payload = await scan({ images: images.map((image) => image.dataUrl) }).unwrap();
-    setText(payload.data?.text ?? '');
+  const handleScan = () => {
+    const promise = scan({ images: images.map((image) => image.dataUrl) });
+    scanRef.current = promise;
+    promise.unwrap().then((payload) => {
+      setText(payload.data?.text ?? '');
+      scanRef.current = null;
+    }).catch(() => {
+      scanRef.current = null;
+    });
+  };
+
+  const handleStopScan = () => {
+    scanRef.current?.abort();
+    scanRef.current = null;
+    scanState.reset();
   };
 
   const handleParse = async () => {
@@ -359,6 +372,11 @@ function PosOcrPanel({ onParsed }: { onParsed: (values: Record<string, string>) 
           <Button onClick={handleScan} disabled={!images.length || scanState.isLoading} variant="contained">
             {scanState.isLoading ? 'Scanning...' : 'Scan'}
           </Button>
+          {scanState.isLoading ? (
+            <Button onClick={handleStopScan} variant="outlined" color="warning">
+              Stop
+            </Button>
+          ) : null}
           <Button onClick={handleParse} disabled={!text.trim() || parseState.isLoading} variant="outlined">
             {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
           </Button>
@@ -487,10 +505,23 @@ function ExpenseOcrPanel({
   const [text, setText] = useState('');
   const [scan, scanState] = useScanExpenseReceiptMutation();
   const [parse, parseState] = useParseExpenseTextMutation();
+  const scanRef = useRef<{ abort: () => void } | null>(null);
 
-  const handleScan = async () => {
-    const payload = await scan({ images: images.map((image) => image.dataUrl) }).unwrap();
-    setText(payload.data?.text ?? '');
+  const handleScan = () => {
+    const promise = scan({ images: images.map((image) => image.dataUrl) });
+    scanRef.current = promise;
+    promise.unwrap().then((payload) => {
+      setText(payload.data?.text ?? '');
+      scanRef.current = null;
+    }).catch(() => {
+      scanRef.current = null;
+    });
+  };
+
+  const handleStopScan = () => {
+    scanRef.current?.abort();
+    scanRef.current = null;
+    scanState.reset();
   };
 
   const handleParse = async () => {
@@ -522,6 +553,11 @@ function ExpenseOcrPanel({
             <Button onClick={handleScan} disabled={!images.length || scanState.isLoading} variant="contained">
               {scanState.isLoading ? 'Scanning...' : 'Scan'}
             </Button>
+            {scanState.isLoading ? (
+              <Button onClick={handleStopScan} variant="outlined" color="warning">
+                Stop
+              </Button>
+            ) : null}
             <Button onClick={handleParse} disabled={!text.trim() || parseState.isLoading} variant="outlined">
               {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
             </Button>
@@ -1334,12 +1370,13 @@ export function OpsAdminTabs({ initialTab = 'day-pos' }: { initialTab?: OpsTab }
 
         <Paper elevation={0} sx={{ 
           position: 'sticky', 
-          top: 67, 
-          zIndex: 99999, 
-          border: '1px solid', 
+          top: 64, 
+          zIndex: 89, 
+          borderRadius: 0,
+          border: '0px solid', 
           borderColor: 'divider', 
-          bgcolor: 'rgba(255,255,255,0.03)',
-          backgroundFilter: 'blur(10px)' }}>
+          bgcolor: '#121217',
+          backgroundFilter: 'blur(0px)' }}>
      
           <Tabs value={tab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
             <Tab value="day-pos" label="Day POS" />
