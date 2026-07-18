@@ -48,6 +48,12 @@ function normalizeRow(row: DailyZReport | Record<string, unknown>): Record<strin
     ['correctedAt', 'corrected_at'],
     ['entrySource', 'entry_source'],
     ['receiptImages', 'receipt_images'],
+    ['nettSales', 'nett_sales'],
+    ['totalSales', 'total_sales'],
+    ['totalCovers', 'total_covers'],
+    ['avgBills', 'avg_bills'],
+    ['avgCovers', 'avg_covers'],
+    ['totalBills', 'total_bills'],
   ] as const) {
     if (r[camel] !== undefined && r[snake] === undefined) r[snake] = r[camel];
   }

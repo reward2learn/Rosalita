@@ -1192,7 +1192,7 @@ function RecentEntries() {
           ) : zrepDetailData ? (
             <Stack spacing={2}>
               {/* Field data */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 1 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5 }}>
                 {Object.entries(zrepDetailData)
                   .filter(([k]) => !['receipt_images', 'id'].includes(k))
                   .map(([key, value]) => (
@@ -1254,7 +1254,7 @@ function RecentEntries() {
             <CircularProgress size={24} />
           ) : actualsDetailData ? (
             <Stack spacing={2}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 1 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5 }}>
                 {Object.entries((deptDetail?.inputs ?? {}) as Record<string, unknown>)
                   .filter(([, v]) => v != null && v !== '' && v !== 0)
                   .map(([key, value]) => (
