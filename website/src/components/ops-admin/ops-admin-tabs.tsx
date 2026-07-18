@@ -421,7 +421,14 @@ function DayPosTab() {
                     <Grid key={field.key} size={{ xs: 12, sm: 6 }}>
                       <TextField
                         label={field.label}
-                        type={field.type === 'date' ? 'date' : field.type === 'time' ? 'time' : field.type === 'text' ? 'text' : 'number'}
+                        type={
+                          field.type === 'date' ? 'date'
+                          : field.type === 'time' ? 'time'
+                          : field.type === 'datetime' ? 'text'
+                          : field.type === 'text' ? 'text'
+                          : 'number'
+                        }
+                        placeholder={field.type === 'datetime' ? 'DD/MM/YYYY HH:MM:SS' : undefined}
                         value={values[field.key] ?? ''}
                         onChange={(event) => handleChange(field.key, event.target.value)}
                         required={field.required}
