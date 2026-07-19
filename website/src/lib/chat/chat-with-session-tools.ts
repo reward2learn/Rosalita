@@ -4,6 +4,7 @@ import {
   executeSessionTool,
   type SessionToolContext,
 } from '@/lib/chat/session-tools';
+import { resolveOpenAiBaseUrl } from '@/lib/openai';
 
 export const CHAT_WEB_SEARCH_INSTRUCTIONS = `Web search is enabled on this chat model. When the user asks about current events, live market data, recent news, or information that may have changed after your training data, search the web before answering. Cite sources briefly when web results are used.`;
 
@@ -124,7 +125,7 @@ async function requestOpenAiCompletion(
     stream,
   };
 
-  return fetch('https://api.openai.com/v1/chat/completions', {
+  return fetch(`${resolveOpenAiBaseUrl()}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

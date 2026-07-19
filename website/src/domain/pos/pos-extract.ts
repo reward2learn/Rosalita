@@ -1,4 +1,5 @@
 // @ts-nocheck — ported from website/lib/pos-extract.js (P3)
+import { resolveOpenAiBaseUrl } from '@/lib/openai';
 import { Z_REPORT_FIELD_KEYS } from '@/domain/z-report/z-report-schema';
 import { toPeriodApiValue } from '@/domain/shared/date-utils';
 
@@ -279,7 +280,7 @@ export function mergeExtractions(primary, secondary) {
 }
 
 export async function extractPosWithAi(text, apiKey) {
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+  const resp = await fetch(`${resolveOpenAiBaseUrl()}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

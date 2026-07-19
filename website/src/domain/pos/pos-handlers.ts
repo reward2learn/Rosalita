@@ -1,7 +1,7 @@
 /**
  * POS OCR + parse handlers — ported from website/lib/handlers/pos.js
  */
-import { resolveOpenAiKey } from '@/lib/openai';
+import { resolveOpenAiKey, resolveOpenAiBaseUrl } from '@/lib/openai';
 import {
   extractPosWithAi,
   mergeExtractions,
@@ -45,7 +45,7 @@ export async function handlePosScan(body: { images?: unknown }): Promise<{ statu
   });
 
   try {
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetch(`${resolveOpenAiBaseUrl()}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

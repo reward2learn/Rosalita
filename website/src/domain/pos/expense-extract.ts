@@ -1,5 +1,5 @@
 // @ts-nocheck — ported from website/lib/expense-extract.js (P3)
-import { resolveOpenAiKey } from '@/lib/openai';
+import { resolveOpenAiKey, resolveOpenAiBaseUrl } from '@/lib/openai';
 import { getActualsDepartment } from '@/domain/actuals/monthly-actuals-schema';
 import { parseIdrAmount } from '@/domain/pos/pos-extract';
 
@@ -116,7 +116,7 @@ export function parseExpenseHeuristic(text, department) {
 
 export async function parseExpenseWithAi(text, department, apiKey) {
   const prompt = buildExpenseAiPrompt(department);
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+  const resp = await fetch(`${resolveOpenAiBaseUrl()}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

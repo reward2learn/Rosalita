@@ -1,7 +1,7 @@
 /**
  * Expense receipt OCR + parse — ported from website/lib/handlers/expense-receipt.js
  */
-import { resolveOpenAiKey } from '@/lib/openai';
+import { resolveOpenAiKey, resolveOpenAiBaseUrl } from '@/lib/openai';
 import { getActualsDepartment } from '@/domain/actuals/monthly-actuals-schema';
 import { parseExpenseText } from '@/domain/pos/expense-extract';
 
@@ -40,7 +40,7 @@ export async function handleExpenseScan(body: { images?: unknown }): Promise<{ s
   });
 
   try {
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetch(`${resolveOpenAiBaseUrl()}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

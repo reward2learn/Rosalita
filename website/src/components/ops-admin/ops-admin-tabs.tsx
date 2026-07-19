@@ -5,6 +5,7 @@ import type { ReactNode, SyntheticEvent } from 'react';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
+import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -595,7 +596,6 @@ function ZReportChartView() {
   const [chartYear, setChartYear] = useState(now.getFullYear());
   const [chartMonth, setChartMonth] = useState(now.getMonth() + 1);
   const [chartMetrics, setChartMetrics] = useState<string[]>(['nett_sales']);
-  const [chartMetricLabels, setChartMetricLabels] = useState<string[]>(['Nett Sales']);
 
   const from = `${chartYear}-${String(chartMonth).padStart(2, '0')}-01`;
   const lastDay = new Date(chartYear, chartMonth, 0).getDate();
@@ -612,7 +612,6 @@ function ZReportChartView() {
     { key: 'total_bills', label: 'Total Bills' },
     { key: 'avg_bills', label: 'Avg Bill' },
     { key: 'avg_covers', label: 'Avg Cover' },
-    { key: 'total_sales', label: 'Total Sales' },
     { key: 'estimated_sales', label: 'Estimated Sales' },
     { key: 'item_sales_amount', label: 'Item Sales Amount' },
     { key: 'item_discount_amount', label: 'Item Discount Amount' },
@@ -633,6 +632,7 @@ function ZReportChartView() {
     { key: 'bill_disc_20_amount', label: 'Bill Disc 20% Amount' },
     { key: 'total_item_discount_amount', label: 'Total Item Discount Amount' },
   ];
+  const selectedMetricOptions = availableMetrics.filter((m) => chartMetrics.includes(m.key));
 
   // Aggregate by day for each selected metric
   const byDay: Record<string, Record<string, number>> = {};
@@ -647,7 +647,6 @@ function ZReportChartView() {
   }
 
   const days = Object.keys(byDay).sort();
-  const monthLabel = new Date(chartYear, chartMonth - 1).toLocaleString('default', { month: 'long' });
 
   const datasets = chartMetrics.map((metric, idx) => {
     const colors = [
@@ -666,7 +665,6 @@ function ZReportChartView() {
       'rgb(171, 71, 188)',
       'rgb(255, 235, 59)',
     ];
-    const metric = chartMetrics[idx];
     const metricInfo = availableMetrics.find((m) => m.key === metric);
     return {
       label: `${metricInfo?.label || metric} — ${new Date(chartYear, chartMonth - 1).toLocaleString('default', { month: 'long' })}`,
@@ -710,35 +708,21 @@ function ZReportChartView() {
             <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>
           ))}
         </TextField>
-        <TextField
-          select
-          size="small"
-          label="Metrics"
-          value={chartMetrics}
-          onChange={(e) => {
-            const selected = e.target.value as string[];
-            setChartMetrics(selected);
-            const labels = selected.map((m) => availableMetrics.find((cm) => cm.key === m)?.label || m);
-            setChartMetricLabels(labels);
-          }}
+        <Autocomplete
           multiple
-          sx={{ minWidth: 180 }}
-          renderValue={(selected) => (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-              {selected.map((m) => {
-                const info = availableMetrics.find((cm) => cm.key === m);
-                return <Chip key={m} label={info?.label || m} size="small" />;
-              })}
-            </Box>
-          )}
+          size="small"
+          options={availableMetrics}
+          getOptionLabel={(option) => option.label}
+          isOptionEqualToValue={(a, b) => a.key === b.key}
+          value={selectedMetricOptions}
+          onChange={(_, selected) => {
+            setChartMetrics(selected.map((m) => m.key));
+          }}
           renderInput={(params) => (
-            <TextField {...params} variant="outlined" placeholder="Select metrics..." />
+            <TextField {...params} label="Metrics" placeholder="Select metrics..." />
           )}
-        >
-          {availableMetrics.map((cm) => (
-            <MenuItem key={cm.key} value={cm.key}>{cm.label}</MenuItem>
-          ))}
-        </TextField>
+          sx={{ minWidth: 220, flex: 1 }}
+        />
       </Stack>
 
       {isFetching ? (
@@ -988,7 +972,11 @@ function DayPosTab() {
         </AccordionSummary>
         <AccordionDetails>
           {viewMode === 'list' ? <ZReportListView recentRows={recentRows} setZrepDetail={setZrepDetail} /> : null}
-          {viewMode === 'calendar' ? <ZReportCalendarView onDayClick={setZrepDetail} /> : null}
+          {viewMode === 'calendar' ? (
+            <ZReportCalendarView
+              onDayClick={(date) => setZrepDetail({ date, dept: 'all_pos' })}
+            />
+          ) : null}
           {viewMode === 'chart' ? <ZReportChartView /> : null}
         </AccordionDetails>
       </Accordion>
