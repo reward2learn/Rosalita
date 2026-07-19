@@ -3,8 +3,8 @@ import { basename, resolve } from 'node:path';
 
 export const SOURCE_FILENAMES = {
   excel: 'Red Ruby Club & Terrace Bar Cashflow Budgets.xlsx',
-  businessReview: 'Red Ruby Business Review — June 2026.md',
-  executiveSummary: 'Red Ruby Executive Summary — June 2026.md',
+  businessReview: 'Red Ruby Business Review — MVP Exit Diagnostics — July 2026.md',
+  executiveSummary: 'Red Ruby Executive Summary — MVP Exit Viability — July 2026.md',
 } as const;
 
 export type SourceFileKey = keyof typeof SOURCE_FILENAMES;
@@ -21,18 +21,13 @@ export function getDefaultRepoRoot(): string {
 }
 
 /** Directory for persisted source files (repo root locally, /tmp on Vercel unless overridden). */
-export function getSourceDir(): string {
+export function getSourceDir(_required?: { excel: boolean }): string {
   if (process.env.REDRUBY_SOURCE_DIR) {
     return resolve(process.env.REDRUBY_SOURCE_DIR);
   }
-  const repoRoot = DEFAULT_REPO_ROOT;
-  if (sourceFileExists('excel', repoRoot)) {
-    return repoRoot;
-  }
-  if (process.env.VERCEL === '1' && process.env.VERCEL_REGION) {
-    return '/tmp/redruby-sources';
-  }
-  return repoRoot;
+  // Excel is optional — markdown-only uploads (Business Review / Executive Summary) are supported.
+  // Never throw here; resolveSources() validates that at least one source is present.
+  return DEFAULT_REPO_ROOT;
 }
 
 export function sourceFilePath(key: SourceFileKey, sourceDir = getSourceDir()): string {

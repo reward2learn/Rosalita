@@ -11,7 +11,7 @@ export const authApi = createApi({
       query: () => 'auth?action=me',
       providesTags: ['Session'],
     }),
-    verifyPin: builder.mutation<{ ok: boolean; success?: boolean }, { pin: string }>({
+    verifyPin: builder.mutation<{ ok: boolean; success?: boolean }, { role: string; pin: string }>({
       query: (body) => ({
         url: 'auth?action=verify-pin',
         method: 'POST',

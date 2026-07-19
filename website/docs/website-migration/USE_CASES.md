@@ -109,6 +109,56 @@
 
 ---
 
+## Per-role task tracking, PIN auth & Ask-AI (added post-P9)
+
+These use cases cover the role-scoped task system, platform-admin PIN management,
+the task detail modal, and the "Ask AI" hand-off to chat. They build on the existing
+auth tiers (`pin` for role holders, `google` for platform admins).
+
+### Role PIN sign-in (per-role)
+
+| ID | Use case | Auth | Route / API | Models | Source | Acceptance |
+|----|----------|------|-------------|--------|--------|------------|
+| UC-AUTH-10 | Per-role PIN sign-in | public→pin | `POST /api/auth?action=verify-pin` `{role, pin}` | `Secret` (`ROLE_PIN_<ROLE>` / `ADMIN_PIN`) | `src/app/api/auth/route.ts` `handleVerifyPin` | PIN read from secrets store; `roleCode` set in JWT; `admin`/`platform` → `platformAdmin` |
+| UC-AUTH-11 | Role selector on sign-in | public | `/ops-admin` sign-in panel | — | `src/components/auth/sign-in-panel.tsx` | Dropdown of `ama`/`made`/`lukas`/`james`/`admin`; submits `{role, pin}` |
+| UC-AUTH-12 | Incorrect / unconfigured PIN rejected | public | `verify-pin` | `Secret` | `handleVerifyPin` | `Incorrect PIN` / `PIN not configured for this role`; no cookie set |
+
+### Task tracking
+
+| ID | Use case | Auth | Route / API | Models | Source | Acceptance |
+|----|----------|------|-------------|--------|--------|------------|
+| UC-TASK-01 | View role-scoped tasks | session | `GET /api/tasks` | `Task`, `TaskAssignment`, `Role` | `src/app/api/tasks/route.ts` | Non-admin sees only tasks assigned to their `roleCode`; `viewerRole` + `isPlatformAdmin` in response |
+| UC-TASK-02 | Platform admin views any role | pin (platformAdmin) | `GET /api/tasks?role=<code>` | `Task`, `TaskAssignment` | `route.ts` `resolveViewerRole` | `?role=` forbidden for non-admins (403); admin sees filtered set |
+| UC-TASK-03 | Create task | write | `POST /api/tasks` | `Task` | `route.ts` POST | `title` required; `ownerCodes` → `TaskAssignment`; 201 |
+| UC-TASK-04 | Advance task status | write (owner/admin) | `PATCH /api/tasks` `{id, status}` | `Task` | `route.ts` PATCH | `pending\|in_progress\|completed`; non-owner role blocked (403); 404 if missing |
+| UC-TASK-05 | One-time bootstrap | session (first hit) | `GET /api/tasks` | `Role`, `Task`, `TaskAssignment` | `seed-runner.ts` `ensureTaskTables` + `seedTaskTracking` | Memoized per instance; non-blocking seed; backfills missing `description` on existing tasks |
+| UC-TASK-06 | Task detail modal | session | `/tasks` (client) | — | `src/components/tasks/tasks-view.tsx` `TaskDetailModal` | Click card → summary + step list from `TASK_PLAYBOOK`; "Ask AI" + "Advance" actions |
+| UC-TASK-07 | Task descriptions from playbook | — | seed | `Task.description` | `lib/knowledge-base.js` `TASK_PLAYBOOK` | `buildTasks()` attaches `description` = playbook text + numbered steps |
+
+### Platform-admin role / PIN management
+
+| ID | Use case | Auth | Route / API | Models | Source | Acceptance |
+|----|----------|------|-------------|--------|--------|------------|
+| UC-ADMIN-01 | List roles + PIN status | pin (platformAdmin) | `GET /api/admin/roles` | `Role`, `Secret` | `src/app/api/admin/roles/route.ts` | 403 if not platform admin; `pinConfigured` flag per role |
+| UC-ADMIN-02 | Set/replace a role PIN | pin (platformAdmin) | `POST /api/admin/roles` `{code, pin}` | `Secret` | `route.ts` POST | Maps `code`→secret key; PIN ≥ 3 chars; unknown code 400 |
+| UC-ADMIN-03 | Non-admin blocked | write | `POST /api/admin/roles` | — | `route.ts` | 403 unless `session.platformAdmin` |
+
+### Ask-AI hand-off to chat
+
+| ID | Use case | Auth | Route / API | Source | Acceptance |
+|----|----------|------|-------------|--------|------------|
+| UC-ASKAI-01 | "Ask AI" opens chat prefilled | session | `/ops-chat?prompt=<encoded>` | `tasks-view.tsx` `buildAskAiPrompt` → `chat-panel.tsx` `useSearchParams` | Chat input prefilled with task context prompt; user can send immediately |
+
+**Notes**
+- PINs are configured by the platform admin via `/admin` (UC-ADMIN-02) and stored as
+  encrypted `Secret` rows. `scripts/seed-role-pins.ts` holds only fallback defaults and
+  must NOT be run against a deployment where PINs are already set (it would overwrite them).
+- Task bootstrap (UC-TASK-05) runs server-side on the first authenticated `GET /api/tasks`
+  (e.g. when a platform admin signs in via Google and opens `/tasks`). No local `POSTGRES_URL`
+  or `SETUP_TOKEN` is required for this — it happens on the live deployment.
+
+---
+
 ## UC → phase mapping
 
 | Phase | Use cases delivered |

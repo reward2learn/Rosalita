@@ -58,7 +58,7 @@ describe('DynamicPage', () => {
       }),
     );
     renderPage('dashboard');
-    expect(screen.getByText(/June 2026/)).toBeInTheDocument();
+    expect(screen.getByText(/July 2026/)).toBeInTheDocument();
     expect(screen.getByText(/Business Review/)).toBeInTheDocument();
     expect(screen.getByText('Sign in to Access')).toBeInTheDocument();
   });

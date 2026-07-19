@@ -66,7 +66,7 @@ describe('/api/auth', () => {
       new Request('http://localhost/api/auth?action=verify-pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: 'secret-pin' }),
+        body: JSON.stringify({ role: 'admin', pin: 'secret-pin' }),
       }),
     );
     expect(response.status).toBe(200);
@@ -82,7 +82,7 @@ describe('/api/auth', () => {
       new Request('http://localhost/api/auth?action=verify-pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: 'wrong' }),
+        body: JSON.stringify({ role: 'admin', pin: 'wrong' }),
       }),
     );
     const json = await response.json() as { ok: boolean; error: string };

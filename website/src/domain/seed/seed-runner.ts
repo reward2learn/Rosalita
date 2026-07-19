@@ -6,6 +6,7 @@ import {
   type AuthTier,
   type BlockType,
   type Prisma,
+  type TaskStatus,
 } from '@/generated/prisma';
 import { PAGE_CATALOG, REVIEW_PART_CATALOG } from '@/lib/page-catalog';
 import { parseBusinessReviewParts } from '@/lib/parse-business-review';
@@ -35,6 +36,7 @@ import {
   SITUATION_SUMMARY,
   STRATEGIC_PARTNERSHIPS,
   TARGET_METRICS,
+  TASK_PLAYBOOK,
 } from '../../../lib/knowledge-base.js';
 
 export interface SeedCounts {
@@ -46,6 +48,9 @@ export interface SeedCounts {
   knowledgeSnippets: number;
   appPages: number;
   pageSections: number;
+  roles: number;
+  tasks: number;
+  taskAssignments: number;
 }
 
 export interface SeedSourceOverrides {
@@ -99,6 +104,7 @@ CREATE TABLE IF NOT EXISTS monthly_targets (
 const CONTENT_ENUM_STATEMENTS = [
   `DO $$ BEGIN CREATE TYPE "AuthTier" AS ENUM ('public', 'pin', 'google'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
   `DO $$ BEGIN CREATE TYPE "ActionPriority" AS ENUM ('P0', 'P1', 'P2'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+  `DO $$ BEGIN CREATE TYPE "TaskStatus" AS ENUM ('pending', 'in_progress', 'completed'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
   `DO $$ BEGIN CREATE TYPE "BlockType" AS ENUM ('hero', 'metric_grid', 'chart_financial', 'lever_accordion', 'action_checklist', 'doc_markdown', 'pnl_table', 'z_report_form', 'costs_form', 'calendar_import', 'chat_panel', 'kpi_cards', 'ops_admin_tabs', 'review_blocks', 'reports_rollup'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
 ];
 
@@ -165,6 +171,33 @@ const CONTENT_TABLE_STATEMENTS = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `CREATE TABLE IF NOT EXISTS roles (
+    id TEXT PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE,
+    is_platform_admin BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS tasks (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    priority "ActionPriority" NOT NULL DEFAULT 'P0',
+    status "TaskStatus" NOT NULL DEFAULT 'pending',
+    due_date TIMESTAMPTZ,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS task_assignments (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    role_id TEXT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    assigned BOOLEAN NOT NULL DEFAULT true,
+    UNIQUE (task_id, role_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS task_assignments_role_id_idx ON task_assignments(role_id)`,
 ];
 
 function loadEnvLocal(): void {
@@ -298,6 +331,83 @@ function buildActionItems(): { priority: ActionPriority; label: string; sortOrde
   return items;
 }
 
+/**
+ * Known roles for the exit-viability task tracking system.
+ * `code` matches the "Name:" prefix used in PRIORITY_ACTIONS labels.
+ */
+const KNOWN_ROLES: { code: string; name: string; isPlatformAdmin?: boolean; email?: string }[] = [
+  { code: 'Graham', name: 'Graham Bristow', isPlatformAdmin: true, email: 'graham@starworksglobal.com' },
+  { code: 'Admin', name: 'Platform Admin', isPlatformAdmin: true, email: 'reward2learn@gmail.com' },
+  { code: 'Ama', name: 'Ama (Finance / Books)' },
+  { code: 'Made', name: 'Made (Compliance / Permits)' },
+  { code: 'Lukas', name: 'Lukas (Operations / Data)' },
+  { code: 'James', name: 'James (Entertainment)' },
+];
+
+/** Resolve a known role by email (case-insensitive). Used by Google sign-in. */
+export function resolveRoleForEmail(email: string | undefined): {
+  code: string;
+  name: string;
+  isPlatformAdmin: boolean;
+} | null {
+  if (!email) return null;
+  const lower = email.toLowerCase();
+  const match = KNOWN_ROLES.find((r) => r.email && r.email.toLowerCase() === lower);
+  if (!match) return null;
+  return { code: match.code, name: match.name, isPlatformAdmin: match.isPlatformAdmin ?? false };
+}
+
+/** Parse "Ama: do the thing" → { ownerCodes: ['Ama'], title: 'do the thing' }. */
+function parseTaskLabel(label: string): { ownerCodes: string[]; title: string } {
+  const match = label.match(/^([A-Za-z][A-Za-z+& ]*?):\s*(.+)$/);
+  if (!match) {
+    return { ownerCodes: [], title: label.trim() };
+  }
+  const ownerPart = match[1].trim();
+  const title = match[2].trim();
+  // Split on + & , / to support "Lukas + Made", "Ama & Graham", etc.
+  const ownerCodes = ownerPart
+    .split(/[+&,/]/)
+    .map((s) => s.trim())
+    .filter((s) => KNOWN_ROLES.some((r) => r.code.toLowerCase() === s.toLowerCase()));
+  return { ownerCodes, title };
+}
+
+interface BuiltTask {
+  title: string;
+  priority: ActionPriority;
+  ownerCodes: string[];
+  dueOffsetDays: number;
+  description: string | null;
+}
+
+/** Normalize a task title to match a TASK_PLAYBOOK key. */
+function playbookKey(title: string): string {
+  return title.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Build the tracked-task list from PRIORITY_ACTIONS.
+ * P0 → due in 7 days, P1 → 14 days, P2 → 42 days (relative to seed run).
+ */
+function buildTasks(): BuiltTask[] {
+  const tasks: BuiltTask[] = [];
+  const push = (labels: string[], priority: ActionPriority, dueOffsetDays: number) => {
+    for (const label of labels) {
+      const { ownerCodes, title } = parseTaskLabel(label);
+      const play = TASK_PLAYBOOK[playbookKey(title)];
+      const description = play
+        ? `${play.description}\n\nSteps:\n${play.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`
+        : null;
+      tasks.push({ title, priority, ownerCodes, dueOffsetDays, description });
+    }
+  };
+  push(PRIORITY_ACTIONS.P0_THIS_WEEK, 'P0', 7);
+  push(PRIORITY_ACTIONS.P1_THIS_MONTH, 'P1', 14);
+  push(PRIORITY_ACTIONS.P2_THIS_QUARTER, 'P2', 42);
+  return tasks;
+}
+
 export async function ensureLegacyTables(prisma: PrismaClient): Promise<void> {
   await prisma.$executeRawUnsafe(DAILY_METRICS_DDL);
   await prisma.$executeRawUnsafe(MONTHLY_TARGETS_DDL);
@@ -312,6 +422,93 @@ export async function ensureContentTables(prisma: PrismaClient): Promise<void> {
   }
   for (const sql of CONTENT_TABLE_STATEMENTS) {
     await prisma.$executeRawUnsafe(sql);
+  }
+}
+
+/**
+ * Idempotent creation of the task-tracking tables (roles, tasks, task_assignments).
+ * Safe to call on every request — all statements use CREATE TABLE IF NOT EXISTS.
+ * Ensures the Tasks feature works even before a full reseed has run.
+ * Accepts either a plain or ZenStack-enhanced Prisma client.
+ */
+export async function ensureTaskTables(prisma: {
+  $executeRawUnsafe: (sql: string) => Promise<unknown>;
+}): Promise<void> {
+  for (const sql of CONTENT_ENUM_STATEMENTS) {
+    await prisma.$executeRawUnsafe(sql);
+  }
+  for (const sql of CONTENT_TABLE_STATEMENTS.slice(-4)) {
+    await prisma.$executeRawUnsafe(sql);
+  }
+}
+
+/**
+ * Bootstrap the task-tracking data (roles + tasks + assignments) if empty.
+ * Uses the ZenStack-enhanced client so policy checks apply. Idempotent.
+ */
+export async function seedTaskTracking(
+  prisma: Awaited<ReturnType<typeof import('@/lib/db').createClient>>,
+): Promise<void> {
+  // Always sync known roles (idempotent upsert) so emails/platform-admin flags stay current.
+  const roleIdByCode = new Map<string, string>();
+  for (const role of KNOWN_ROLES) {
+    const created = await prisma.role.upsert({
+      where: { code: role.code },
+      create: {
+        code: role.code,
+        name: role.name,
+        isPlatformAdmin: role.isPlatformAdmin ?? false,
+        email: role.email ?? null,
+      },
+      update: {
+        name: role.name,
+        isPlatformAdmin: role.isPlatformAdmin ?? false,
+        email: role.email ?? null,
+      },
+    });
+    roleIdByCode.set(created.code, created.id);
+  }
+
+  const existingTasks = await prisma.task.findMany({ take: 1 });
+  if (existingTasks.length > 0) {
+    // Tasks already exist — backfill any missing descriptions from the playbook
+    // without disturbing status/progress. Then ensure assignments are intact.
+    const builtAll = buildTasks();
+    for (const built of builtAll) {
+      const existing = await prisma.task.findFirst({ where: { title: built.title } });
+      if (existing && !existing.description && built.description) {
+        await prisma.task.update({
+          where: { id: existing.id },
+          data: { description: built.description },
+        });
+      }
+    }
+    return;
+  }
+
+  await prisma.taskAssignment.deleteMany();
+  await prisma.task.deleteMany();
+
+  let taskOrder = 0;
+  const now = Date.now();
+  for (const built of buildTasks()) {
+    const dueDate = new Date(now + built.dueOffsetDays * 24 * 60 * 60 * 1000);
+    const task = await prisma.task.create({
+      data: {
+        title: built.title,
+        description: built.description,
+        priority: built.priority,
+        status: 'pending',
+        dueDate,
+        sortOrder: taskOrder++,
+      },
+    });
+    const ownerCodes = built.ownerCodes.length > 0 ? built.ownerCodes : [];
+    for (const code of ownerCodes) {
+      const roleId = roleIdByCode.get(code);
+      if (!roleId) continue;
+      await prisma.taskAssignment.create({ data: { taskId: task.id, roleId, assigned: true } });
+    }
   }
 }
 
@@ -337,14 +534,14 @@ async function upsertFinancialProjectionRaw(
 }
 
 interface ResolvedSources {
-  excel: Buffer;
-  businessReview: string;
-  executiveSummary: string;
+  excel?: Buffer;
+  businessReview?: string;
+  executiveSummary?: string;
   filesUsed: Record<SourceFileKey, 'upload' | 'disk'>;
 }
 
 function resolveSources(options: SeedOptions): ResolvedSources {
-  const sourceDir = options.sourceDir ?? getSourceDir();
+  const sourceDir = options.sourceDir ?? getSourceDir({ excel: !!options.overrides?.excel });
   const overrides = options.overrides ?? {};
   const filesUsed: Record<SourceFileKey, 'upload' | 'disk'> = {
     excel: 'disk',
@@ -352,6 +549,7 @@ function resolveSources(options: SeedOptions): ResolvedSources {
     executiveSummary: 'disk',
   };
 
+  // Handle each override independently — never throw if only one source is being updated.
   if (overrides.excel) {
     filesUsed.excel = 'upload';
     if (options.persistOverrides) {
@@ -371,33 +569,32 @@ function resolveSources(options: SeedOptions): ResolvedSources {
     }
   }
 
+  // Resolve each source independently — return undefined if not provided and not on disk.
   const excel =
     overrides.excel ??
     (sourceFileExists('excel', sourceDir)
       ? readSourceFile('excel', sourceDir)
-      : (() => {
-          throw new Error('Cashflow workbook not found — upload the XLSX or place it in the source directory.');
-        })());
+      : undefined);
 
   const businessReview =
     overrides.businessReview ??
     (sourceFileExists('businessReview', sourceDir)
       ? readSourceText('businessReview', sourceDir)
-      : (() => {
-          throw new Error(
-            'Business Review markdown not found — upload the MD file or place it in the source directory.',
-          );
-        })());
+      : undefined);
 
   const executiveSummary =
     overrides.executiveSummary ??
     (sourceFileExists('executiveSummary', sourceDir)
       ? readSourceText('executiveSummary', sourceDir)
-      : (() => {
-          throw new Error(
-            'Executive Summary markdown not found — upload the MD file or place it in the source directory.',
-          );
-        })());
+      : undefined);
+
+  // Validate: at least one source must be provided/available.
+  if (excel === undefined && businessReview === undefined && executiveSummary === undefined) {
+    throw new Error(
+      'No sources found — upload at least the Business Review (.md) or Executive Summary (.md). ' +
+        ('To update both without changing the workbook, use just the two markdown uploads.')
+    );
+  }
 
   return { excel, businessReview, executiveSummary, filesUsed };
 }
@@ -408,17 +605,22 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
 
   const { excel, businessReview, executiveSummary, filesUsed } = resolveSources(options);
 
-  const projections = parseFinancialProjectionsFromBuffer(excel);
+  // Parse projections from Excel if it's available — otherwise skip.
+  let projections: FinancialProjectionRow[] | null = null;
+  if (excel) {
+    projections = parseFinancialProjectionsFromBuffer(excel);
+  }
 
-  const reviewParts = parseBusinessReviewParts(businessReview);
+  const reviewParts = businessReview !== undefined ? parseBusinessReviewParts(businessReview) : [];
   const termsMd = htmlToMarkdownish(readUtf8(TERMS_HTML_PATH));
   const privacyMd = htmlToMarkdownish(readUtf8(PRIVACY_HTML_PATH));
-  const knowledgeSnippets = buildKnowledgeSnippets(executiveSummary, termsMd, privacyMd);
+  const knowledgeSnippets = buildKnowledgeSnippets(executiveSummary ?? '', termsMd, privacyMd);
   const actionItems = buildActionItems();
+  const builtTasks = buildTasks();
   const pageEntries = Object.values(PAGE_CATALOG);
 
   const counts: SeedCounts = {
-    financialProjections: projections.length,
+    financialProjections: projections ? projections.length : 0,
     businessReviewParts: reviewParts.length,
     levers: FIVE_LEVERS.length,
     actionItems: actionItems.length,
@@ -426,10 +628,15 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
     knowledgeSnippets: knowledgeSnippets.length,
     appPages: pageEntries.length,
     pageSections: pageEntries.reduce((n, p) => n + p.sections.length, 0),
+    roles: KNOWN_ROLES.length,
+    tasks: builtTasks.length,
+    taskAssignments: builtTasks.reduce((n, t) => n + Math.max(t.ownerCodes.length, 1), 0),
   };
 
-  if (reviewParts.length !== 15) {
-    console.warn(`[seed] Expected 15 review parts, got ${reviewParts.length}`);
+  if (reviewParts.length === 0) {
+    console.warn('[seed] No review parts parsed — the Business Review MD may not contain "## Part <label>: <title>" sections');
+  } else {
+    console.log(`[seed] Parsed ${reviewParts.length} review part(s): ${reviewParts.map((p) => p.title).join(', ')}`);
   }
 
   const connStr = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
@@ -449,8 +656,10 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
     await ensureLegacyTables(prisma);
     await ensureContentTables(prisma);
 
-    for (const row of projections) {
-      await upsertFinancialProjectionRaw(prisma, row);
+    if (projections) {
+      for (const row of projections) {
+        await upsertFinancialProjectionRaw(prisma, row);
+      }
     }
 
     for (const part of reviewParts) {
@@ -508,6 +717,54 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
         completed: false,
       })),
     });
+
+    // ── Task tracking: roles, tasks, assignments ──
+    const roleIdByCode = new Map<string, string>();
+    for (const role of KNOWN_ROLES) {
+      const created = await prisma.role.upsert({
+        where: { code: role.code },
+        create: {
+          code: role.code,
+          name: role.name,
+          isPlatformAdmin: role.isPlatformAdmin ?? false,
+          email: role.email ?? null,
+        },
+        update: {
+          name: role.name,
+          isPlatformAdmin: role.isPlatformAdmin ?? false,
+          email: role.email ?? null,
+        },
+      });
+      roleIdByCode.set(role.code, created.id);
+    }
+
+    // Recreate tasks from the current priority actions (idempotent by title+sortOrder).
+    await prisma.taskAssignment.deleteMany();
+    await prisma.task.deleteMany();
+
+    let taskOrder = 0;
+    const now = Date.now();
+    for (const built of builtTasks) {
+      const dueDate = new Date(now + built.dueOffsetDays * 24 * 60 * 60 * 1000);
+      const task = await prisma.task.create({
+        data: {
+          title: built.title,
+          description: built.description,
+          priority: built.priority,
+          status: 'pending' as TaskStatus,
+          dueDate,
+          sortOrder: taskOrder++,
+        },
+      });
+      const ownerCodes = built.ownerCodes.length > 0 ? built.ownerCodes : [];
+      for (const code of ownerCodes) {
+        const roleId = roleIdByCode.get(code);
+        if (!roleId) continue;
+        await prisma.taskAssignment.create({
+          data: { taskId: task.id, roleId, assigned: true },
+        });
+      }
+    }
 
     for (const target of MONTHLY_TARGETS) {
       await prisma.monthlyTarget.upsert({

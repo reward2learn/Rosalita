@@ -12,6 +12,7 @@ import {
   getGoogleOAuthPublicConfig,
 } from '@/lib/auth/google-oauth';
 import { signSession } from '@/lib/auth/jwt';
+import { resolveRoleForEmail } from '@/domain/seed/seed-runner';
 import {
   clearSessionCookie,
   getOrigin,
@@ -26,7 +27,10 @@ import { legacyError, jsonError } from '@/lib/api/response';
 
 export const maxDuration = 60;
 
-const verifyPinSchema = z.object({ pin: z.string().min(1) });
+const verifyPinSchema = z.object({
+  role: z.string().min(1),
+  pin: z.string().min(1),
+});
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -162,12 +166,15 @@ async function handleGoogleCallback(request: Request, url: URL): Promise<NextRes
       picture?: string;
     };
 
+    const matchedRole = resolveRoleForEmail(user.email);
     const token = await signSession({
       sub: user.id,
       tier: 'google',
       email: user.email,
       name: user.name,
       picture: user.picture,
+      roleCode: matchedRole?.code,
+      platformAdmin: matchedRole?.isPlatformAdmin ?? false,
     });
 
     const response = NextResponse.redirect(new URL(`${redirectTo}?auth=success`, origin));
@@ -195,6 +202,8 @@ async function handleMe(request: Request): Promise<NextResponse> {
             }
           : null,
         tier: session?.tier ?? 'public',
+        roleCode: session?.roleCode ?? null,
+        platformAdmin: session?.platformAdmin ?? false,
       },
     });
   } catch {
@@ -219,19 +228,31 @@ async function handleVerifyPin(request: Request): Promise<NextResponse> {
 
   const parsed = verifyPinSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: 'PIN is required' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'role and pin are required' }, { status: 400 });
   }
 
+  const { role, pin } = parsed.data;
+
   try {
-    const stored = await getSecretPlaintext('ADMIN_PIN');
+    // Platform admin uses the shared ADMIN_PIN secret.
+    const secretKey = role === 'admin' || role === 'platform' ? 'ADMIN_PIN' : `ROLE_PIN_${role.toUpperCase()}`;
+    const stored = await getSecretPlaintext(secretKey);
     if (!stored) {
-      return NextResponse.json({ ok: false, error: 'PIN not configured' });
+      return NextResponse.json({ ok: false, error: 'PIN not configured for this role' });
     }
-    if (parsed.data.pin.trim() !== stored.trim()) {
+    if (pin.trim() !== stored.trim()) {
       return NextResponse.json({ ok: false, error: 'Incorrect PIN' });
     }
 
-    const token = await signSession({ sub: 'admin', name: 'Admin', tier: 'pin' });
+    const isPlatformAdmin = role === 'admin' || role === 'platform';
+    const roleName = isPlatformAdmin ? 'Platform Admin' : role;
+    const token = await signSession({
+      sub: isPlatformAdmin ? 'admin' : role.toLowerCase(),
+      name: roleName,
+      tier: 'pin',
+      roleCode: isPlatformAdmin ? undefined : role,
+      platformAdmin: isPlatformAdmin,
+    });
     const response = NextResponse.json({ ok: true, success: true });
     setSessionCookie(response, token);
     return response;

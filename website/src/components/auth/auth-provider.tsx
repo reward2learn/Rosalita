@@ -14,6 +14,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       dispatch(setSession({
         tier: data.data.tier,
         user: data.data.user,
+        roleCode: data.data.roleCode ?? null,
+        platformAdmin: data.data.platformAdmin ?? false,
       }));
       return;
     }

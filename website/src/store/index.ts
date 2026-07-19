@@ -11,6 +11,8 @@ import { chatApi } from '@/store/apis/chat-api';
 import { pdfApi } from '@/store/apis/pdf-api';
 import { posApi } from '@/store/apis/pos-api';
 import { configApi } from '@/store/apis/config-api';
+import { tasksApi } from '@/store/apis/tasks-api';
+import { adminApi } from '@/store/apis/admin-api';
 
 const apiMiddleware = [
   authApi.middleware,
@@ -22,6 +24,8 @@ const apiMiddleware = [
   pdfApi.middleware,
   posApi.middleware,
   configApi.middleware,
+  tasksApi.middleware,
+  adminApi.middleware,
 ] as const;
 
 export function makeStore() {
@@ -39,6 +43,8 @@ export function makeStore() {
       [pdfApi.reducerPath]: pdfApi.reducer,
       [posApi.reducerPath]: posApi.reducer,
       [configApi.reducerPath]: configApi.reducer,
+      [tasksApi.reducerPath]: tasksApi.reducer,
+      [adminApi.reducerPath]: adminApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(...apiMiddleware),

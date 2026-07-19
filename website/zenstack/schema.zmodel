@@ -49,6 +49,12 @@ enum ActionPriority {
   P2
 }
 
+enum TaskStatus {
+  pending
+  in_progress
+  completed
+}
+
 enum BlockType {
   hero
   metric_grid
@@ -131,6 +137,63 @@ model ActionItem {
   sortOrder Int            @default(0) @map("sort_order")
 
   @@map("action_items")
+}
+
+// ── Task tracking (role-based exit-viability action tracking) ──
+
+/// A role/owner of tasks — Ama, Made, Lukas, James, Graham (platform-admin managed).
+model Role {
+  id          String           @id @default(cuid())
+  /// Short code used to match task labels, e.g. "Ama", "Made", "Lukas", "James", "Graham".
+  code        String           @unique @map("code")
+  name        String
+  /// Google email used to auto-assign the signed-in user to this role.
+  email       String?          @unique @map("email")
+  isPlatformAdmin Boolean       @default(false) @map("is_platform_admin")
+  tasks       TaskAssignment[]
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
+  @@map("roles")
+}
+
+/// A tracked action item derived from the MVP Business Review priority actions.
+model Task {
+  id          String           @id @default(cuid())
+  title       String
+  /// Free-text detail / acceptance note.
+  description String?          @db.Text
+  priority    ActionPriority   @default(P0)
+  status      TaskStatus       @default(pending)
+  /// ISO date (YYYY-MM-DD) by which the task should be done.
+  dueDate     DateTime?        @map("due_date")
+  sortOrder   Int              @default(0) @map("sort_order")
+  assignments TaskAssignment[]
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
+  @@map("tasks")
+}
+
+/// Many-to-many link between a Task and the Roles responsible for it.
+model TaskAssignment {
+  id          String   @id @default(cuid())
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId      String   @map("task_id")
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId      String   @map("role_id")
+  /// When true the role's owner sees this on their personal daily checklist.
+  assigned    Boolean  @default(true)
+
+  @@unique([taskId, roleId])
+  @@index([roleId])
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
+  @@map("task_assignments")
 }
 
 model KnowledgeSnippet {

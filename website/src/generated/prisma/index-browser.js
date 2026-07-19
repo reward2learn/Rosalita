@@ -162,6 +162,34 @@ exports.Prisma.ActionItemScalarFieldEnum = {
   sortOrder: 'sortOrder'
 };
 
+exports.Prisma.RoleScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  email: 'email',
+  isPlatformAdmin: 'isPlatformAdmin',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.TaskScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  description: 'description',
+  priority: 'priority',
+  status: 'status',
+  dueDate: 'dueDate',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TaskAssignmentScalarFieldEnum = {
+  id: 'id',
+  taskId: 'taskId',
+  roleId: 'roleId',
+  assigned: 'assigned'
+};
+
 exports.Prisma.KnowledgeSnippetScalarFieldEnum = {
   id: 'id',
   key: 'key',
@@ -413,6 +441,12 @@ exports.ActionPriority = exports.$Enums.ActionPriority = {
   P2: 'P2'
 };
 
+exports.TaskStatus = exports.$Enums.TaskStatus = {
+  pending: 'pending',
+  in_progress: 'in_progress',
+  completed: 'completed'
+};
+
 exports.JobStatus = exports.$Enums.JobStatus = {
   PENDING: 'PENDING',
   PROCESSING: 'PROCESSING',
@@ -426,6 +460,9 @@ exports.Prisma.ModelName = {
   BusinessReviewPart: 'BusinessReviewPart',
   Lever: 'Lever',
   ActionItem: 'ActionItem',
+  Role: 'Role',
+  Task: 'Task',
+  TaskAssignment: 'TaskAssignment',
   KnowledgeSnippet: 'KnowledgeSnippet',
   Secret: 'Secret',
   AppSetting: 'AppSetting',

@@ -4,3 +4,4 @@
 # Google OAuth credential JSON downloads
 **/client_secret_*.json
 Google/
+.env*

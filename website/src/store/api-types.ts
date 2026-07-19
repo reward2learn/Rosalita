@@ -15,4 +15,6 @@ export interface SessionUser {
 export interface SessionPayload {
   user: SessionUser | null;
   tier: 'public' | 'pin' | 'google';
+  roleCode?: string | null;
+  platformAdmin?: boolean;
 }

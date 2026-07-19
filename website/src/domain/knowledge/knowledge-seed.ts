@@ -1,69 +1,82 @@
-/** Seed fallback snippets — sourced from Red Ruby Business Review & Executive Summary. */
-export const EXECUTIVE_SUMMARY_FALLBACK = `# Red Ruby Club & Terrace Bar — Executive Summary
-### Business Overview | June 2026
+/** Seed fallback snippets — sourced from Red Ruby Executive Summary & Business Review. */
 
-**The situation**: Red Ruby Club & Terrace Bar (PT Taman Bintang Bali) in Petitenget generated IDR 2.24B revenue in May 2026 with 61.1% gross margin and BEP coverage of 1.24x. The business operates across three revenue streams — Club (nightclub), Terrace 24h, and is planning Sky Lounge/Private Rooms (2029 launch). January 2026 was EBITDA-positive at +IDR 250M, but Feb-Apr saw EBITDA losses due to seasonal low season and high fixed costs. May rebounded to +IDR 166M EBITDA.
-
----
-
-## Business Model
-
-| Stream | Guests/Night | Spend/Guest | Monthly Revenue (Budget) | Description |
-|--------|-------------|-------------|------------------------|-------------|
-| **Club** | 146-200 | IDR 400K-438K | IDR 1.6B-2.2B | Nightclub with beverage, ticket, and VIP table revenue |
-| **Terrace 24h** | 50-80 | IDR 225K-270K | IDR 342M-503M | All-day terrace bar with food, beverage, shisha, cigarettes |
-| **Sky Lounge** | — (2029) | IDR 450K-510K | — (2029+) | Private rooms and premium lounge (planned expansion) |
+export const EXECUTIVE_SUMMARY_FALLBACK = `# Red Ruby Club & Terrace Bar — Executive Summary (MVP Exit Viability)
+### PT Taman Bintang Bali | Prepared for Graham Bristow & Co-Stakeholders
+### Date: July 2026
 
 ---
 
-## The Numbers
+## The Appointment Mandate
 
-### Revenue & Cost Structure (May 2026 Actuals)
-
-| Line Item | Amount (IDR) | % of Revenue |
-|-----------|-------------|-------------|
-| Revenue | **2,235,602,109** | 100% |
-| Cost of Sales | 868,619,170 | 38.8% |
-| **Gross Profit** | **1,366,982,939** | **61.1%** |
-| Payroll | 616,978,740 | 27.6% |
-| Other Fixed Costs | 487,469,676 | 21.8% |
-| **Total Fixed Costs** | **1,104,448,416** | **49.4%** |
-| **EBITDA** | **+IDR 166,480,378** | **7.5%** |
-
-### 10-Year Growth Projection (2026–2035)
-
-| Metric | 2026 | 2035 |
-|--------|------|------|
-| Total Revenue | IDR 30.7B | IDR 110.2B |
-| EBITDA | IDR 2.2B | IDR 26.9B |
-| EBITDA Margin | 8.6% | 29.5% |
-| Total Staff | 73 | 117 |
-| Annual Guests | 76,468 | 177,480 |
+Graham Bristow formally commissioned this review to understand why Red Ruby is under pressure financially and operationally — revenues dropping, gross margins compressing, supplier debt increasing, money leaking, and guests choosing other venues. This is an **exit viability assessment**, not a growth strategy.
 
 ---
 
-## Break-Even Analysis
+## Current State Summary
 
-| Metric | May 2026 | Target |
-|--------|----------|--------|
-| Gross Margin | 61.1% | 60%+ |
-| Fixed Costs/mo | IDR 1,104M | IDR 950M |
-| BEP Revenue/mo | IDR 1,806M | IDR 1,600M |
-| BEP Coverage | 1.24x | 1.5x+ |
+| Metric | Value | Assessment |
+|--------|-------|-----------|
+| Jun 2026 Revenue | IDR 1.975B | Declining from Jan peak (IDR 2.28B) |
+| Gross Margin Range | 51–62% | **Sector benchmark: 65–72%** — critically below standard |
+| Fixed Costs/mo | ~IDR 1,050M | Exceeds low-season revenue capacity |
+| Entertainment / Revenue | 14.5% | Industry norm: 6–10%; this is a primary margin destroyer |
+| Supplier Debt Trend | Increasing | Estimated IDR 1.2–1.5B outstanding (requires Ama's audit to confirm) |
+| EBITDA May 2026 | +IDR 166M | Only month with meaningful surplus; peaks not covering troughs |
 
 ---
 
-## Key Actions
+## Exit Viability — Assessment
 
-- **Stabilize BEP**: Target fixed costs below IDR 950M/month through seasonal staffing adjustments
-- **Grow Club revenue**: Increase Club guests from 146 to 200/night through promoter partnerships  
-- **Optimize beverage margin**: Beverage COS at 26% — explore bulk purchasing
-- **Launch Sky Lounge**: 2029 target — 80 guests/night at IDR 450K spend = IDR 12.96B annual revenue
-- **Scale StarWORLD**: Build membership base to 120,000 across all tiers
+**Revenue trajectory is negative**: Jan was the high point of the observed period. Peaks do not exceed prior-year levels. Low-season months are getting deeper, not shallower.
 
-> **Bottom line**: Red Ruby is a viable, growing nightlife-entertainment business. May 2026 proved the operational model works (BEP coverage 1.24x). The 10-year trajectory targets EBITDA of IDR 26.9B/year by 2035 at 29.5% margin.
+**Gross margin erosion confirms structural cost failure**: A 59% gross margin in nightclub operations means COS at 38.8%. Industry-standard COS for nightclubs is 28–35%. The difference — 3.8 to 10.8 percentage points above benchmark — represents IDR 70–190M per month in unnecessary spend.
 
-*Live at redrubybali.vercel.app*`;
+**Entertainment cost at 14.5% revenue is unsustainable**: Entertainment should cap at 10%. Red Ruby spends ~IDR 325M/month on talent when market rates for equivalent service are ~IDR 195–304M. This creates a margin death spiral when combined with declining attendance.
+
+**Estimated exit value pathways**:
+- **Pathway 1 — License + PT entity intact**: IDR 8–15B (licenses have standalone scarcity value in Bali)
+- **Pathway 2 — Related-party transfer to StarWORLD co.**: IDR 5–10B (constrained by arm's-length requirements)
+- **Pathway 3 — Management buyout with earn-out**: IDR 3–8B (lower base; requires management funding)
+- **Pathway 4 — Liquidation**: IDR 1–3B (only FF&E recovery after creditor settlements)
+
+**Exit window: 60–90 days from July 2026.** Beyond that, deteriorating financial signals reduce buyer interest and negotiating position significantly.
+
+---
+
+## Critical Actions by Stakeholder
+
+### Ama (Financial)
+- Produce full supplier aging report (Week 1–2)
+- Complete inter-company reconciliation: Red Ruby ↔ StarWORLD flow (Week 4)
+- Model liquidity stress test: worst-case cash runway (Week 2)
+- Build sell-side clean books snapshot (Week 8)
+
+### Made (Compliance & Legal)
+- Confirm PT share transferability and permit transfer rules (Week 1–2)
+- Audit inter-company transaction compliance (Week 4)
+- Survey supplier contract exit/novation terms (Week 2)
+- Calculate employment law severance exposure (Week 4)
+
+### Lukas (Operations & Promoters)
+- Stop ghost promoter spending via POS audit (Week 2)
+- Implement operational cost freeze targeting IDR 900M/month floor (Immediate)
+- Catalog FF&E with market resale estimates (Week 3)
+- Negotiate extended supplier terms for sell-side cooperation (Week 2)
+
+### James (Music & DJs)
+- Convert talent to residencies; cut entertainment to ≤IDR 180M/month (Week 2)
+- Identify which acts drive attendance lift vs. waste (Week 2)
+- Build in-house residency roster reducing dependency on expensive visiting talent (Week 4)
+
+### Graham Bristow (Shareholder)
+- Set floor price with Ama — calculate minimum acceptable offer (Week 4)
+- Identify 3–5 likely buyers (other operators, regional entrants, affiliate) (Week 4)
+- Decide: full exit vs. advisory role vs. minority hold post-transfer (Immediate)
+
+---
+
+> **Bottom Line**: Red Ruby's operational model cannot sustain itself under current ownership. Enterprise value exists in the PT entity, nightclub licenses (scarce in Bali), and physical assets. Graham has 60–90 days to prepare for sale before market signals of distress eliminate buyer interest.
+`;
 
 export const KNOWLEDGE_SEED_SNIPPETS = [
   {

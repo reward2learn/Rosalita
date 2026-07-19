@@ -55,7 +55,7 @@ const FILE_FIELDS: {
     apiName: CONFIG_UPLOAD_FIELD_NAMES.businessReview,
     label: 'Business Review (Markdown)',
     accept: '.md,.markdown,.txt,text/markdown,text/plain',
-    hint: 'Red Ruby Business Review — June 2026.md',
+    hint: 'Red Ruby Business Review — MVP Exit Diagnostics — July 2026.md',
   },
   {
     key: 'executiveSummary',
@@ -63,7 +63,7 @@ const FILE_FIELDS: {
     apiName: CONFIG_UPLOAD_FIELD_NAMES.executiveSummary,
     label: 'Executive Summary (Markdown)',
     accept: '.md,.markdown,.txt,text/markdown,text/plain',
-    hint: 'Red Ruby Executive Summary — June 2026.md',
+    hint: 'Red Ruby Executive Summary — MVP Exit Viability — July 2026.md',
   },
 ];
 

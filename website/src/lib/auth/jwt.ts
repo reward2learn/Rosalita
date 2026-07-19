@@ -12,6 +12,10 @@ export interface SessionClaims extends JWTPayload {
   name?: string;
   picture?: string;
   authMethod?: AuthTier;
+  /** Role code (e.g. "Ama", "Made") for role-scoped sessions; absent for generic admin. */
+  roleCode?: string;
+  /** True when the session belongs to a platform administrator (Graham / reward2learn). */
+  platformAdmin?: boolean;
 }
 
 function getJwtSecret(): Uint8Array {

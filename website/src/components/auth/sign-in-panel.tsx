@@ -6,6 +6,10 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -16,10 +20,19 @@ export interface SignInPanelProps {
   requiredTier: AuthTier;
 }
 
+const ROLE_OPTIONS = [
+  { value: 'admin', label: 'Platform Admin' },
+  { value: 'ama', label: 'Ama' },
+  { value: 'made', label: 'Made' },
+  { value: 'lukas', label: 'Lukas' },
+  { value: 'james', label: 'James' },
+];
+
 export function SignInPanel({ requiredTier }: SignInPanelProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [pin, setPin] = useState('');
+  const [role, setRole] = useState('admin');
   const [verifyPin, { isLoading, isError, error }] = useVerifyPinMutation();
 
   const oauthError = searchParams.get('auth') === 'error';
@@ -29,7 +42,7 @@ export function SignInPanel({ requiredTier }: SignInPanelProps) {
   const handlePinSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!pin.trim()) return;
-    await verifyPin({ pin: pin.trim() });
+    await verifyPin({ role, pin: pin.trim() });
   };
 
   return (
@@ -88,31 +101,49 @@ export function SignInPanel({ requiredTier }: SignInPanelProps) {
             </Divider>
             <Stack
               component="form"
-              direction="row"
-              spacing={1}
+              direction="column"
+              spacing={1.5}
               onSubmit={handlePinSubmit}
             >
-              <TextField
-                type="password"
-                placeholder="Ops PIN"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                size="small"
-                fullWidth
-                autoComplete="off"
-                slotProps={{
-                  htmlInput: { 'data-testid': 'pin-input', maxLength: 10 },
-                }}
-              />
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                disabled={!pin.trim() || isLoading}
-                data-testid="pin-submit"
-              >
-                {isLoading ? '…' : 'Unlock'}
-              </Button>
+              <FormControl size="small" fullWidth>
+                <InputLabel id="pin-role-label">Role</InputLabel>
+                <Select
+                  labelId="pin-role-label"
+                  label="Role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  data-testid="pin-role-select"
+                >
+                  {ROLE_OPTIONS.map((opt) => (
+                    <MenuItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Stack direction="row" spacing={1}>
+                <TextField
+                  type="password"
+                  placeholder="PIN"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  size="small"
+                  fullWidth
+                  autoComplete="off"
+                  slotProps={{
+                    htmlInput: { 'data-testid': 'pin-input', maxLength: 12 },
+                  }}
+                />
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  disabled={!pin.trim() || isLoading}
+                  data-testid="pin-submit"
+                >
+                  {isLoading ? '…' : 'Unlock'}
+                </Button>
+              </Stack>
             </Stack>
           </>
         ) : null}

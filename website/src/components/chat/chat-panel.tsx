@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -78,6 +79,7 @@ function formatTranscript(messages: ChatStreamMessage[]): string {
 
 export function ChatPanel() {
   const dispatch = useAppDispatch();
+  const searchParams = useSearchParams();
   const { messages, isStreaming, error, pendingSessionActions } = useAppSelector((s) => s.chatStream);
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -88,6 +90,14 @@ export function ChatPanel() {
   const [ttsVoice, setTtsVoice] = useTtsVoicePreference();
 
   const lastAssistant = [...messages].reverse().find((msg) => msg.role === 'assistant' && msg.content.trim());
+
+  // Prefill from ?prompt= (e.g. when arriving from a task's "Ask AI" button).
+  useEffect(() => {
+    const prefill = searchParams.get('prompt');
+    if (prefill && !input) {
+      setInput(prefill);
+    }
+  }, [searchParams]);
 
   const sendMessage = useCallback(async (message: string) => {
     const trimmed = message.trim();

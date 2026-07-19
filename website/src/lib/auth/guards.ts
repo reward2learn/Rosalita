@@ -35,3 +35,17 @@ export async function requireGoogle(request: Request): Promise<GuardResult> {
   }
   return { ok: true, session };
 }
+
+/**
+ * Require a session scoped to a specific role code, OR a platform administrator.
+ * Used to gate dedicated per-role routes (e.g. /tasks/ama).
+ */
+export async function requireRole(roleCode: string, request: Request): Promise<GuardResult> {
+  const session = await getSessionFromRequest(request);
+  if (!session) return unauthorized('Sign in required');
+  if (session.platformAdmin) return { ok: true, session };
+  if (session.roleCode && session.roleCode.toLowerCase() === roleCode.toLowerCase()) {
+    return { ok: true, session };
+  }
+  return unauthorized('Not authorized for this role');
+}

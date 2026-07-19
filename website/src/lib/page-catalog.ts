@@ -43,8 +43,10 @@ export interface ReviewPartDefinition {
   authTier: AuthTier;
 }
 
-/** Parts A–G from Red Ruby Business Review. */
-export const REVIEW_PART_CATALOG: Record<string, ReviewPartDefinition> = {
+/** Parts from the uploaded Business Review — populated dynamically at render time. */
+
+/** Static parts A–G exist for backward compatibility with legacy seeded docs. Dynamic parts override these. */
+const STATIC_PARTS: Record<string, ReviewPartDefinition> = {
   'part-a': {
     partSlug: 'part-a',
     partKey: 'A',
@@ -89,6 +91,20 @@ export const REVIEW_PART_CATALOG: Record<string, ReviewPartDefinition> = {
   },
 };
 
+/** Dynamic parts populated from parsed Business Review MD uploaded via /config. */
+let DYNAMIC_PARTS: Record<string, ReviewPartDefinition> = {};
+
+export function setDynamicReviewParts(parts: ReviewPartDefinition[]): void {
+  DYNAMIC_PARTS = Object.fromEntries(
+    parts.map((p) => [p.partSlug, p]),
+  );
+}
+
+export const REVIEW_PART_CATALOG: Record<string, ReviewPartDefinition> = {
+  ...STATIC_PARTS,
+  ...DYNAMIC_PARTS,
+};
+
 export const PAGE_CATALOG: Record<string, PageDefinition> = {
   dashboard: {
     slug: 'dashboard',
@@ -100,10 +116,10 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
       {
         blockType: 'hero',
         config: {
-          badge: 'June 2026 · 12-Month Plan',
+          badge: 'July 2026 · Exit Viability Review',
           headline: 'Business Review',
           subtitle:
-            'From +IDR 166M/month EBITDA toward IDR 7.5B+/year EBITDA by 2027.',
+            'Exit-viability assessment for PT Taman Bintang Bali — revenue under pressure, margin erosion detected, shareholder seeking pathway out.',
           minTier: 'public',
         },
       },
@@ -171,6 +187,22 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
     showInNav: true,
     authTier: 'google',
     sections: [{ blockType: 'chat_panel', config: {} }],
+  },
+  tasks: {
+    slug: 'tasks',
+    title: 'Exit-Viability Tasks',
+    navLabel: 'Tasks',
+    showInNav: true,
+    authTier: 'google',
+    sections: [],
+  },
+  admin: {
+    slug: 'admin',
+    title: 'Platform Admin',
+    navLabel: 'Admin',
+    showInNav: true,
+    authTier: 'pin',
+    sections: [],
   },
   'terms-of-service': {
     slug: 'terms-of-service',

@@ -28,3 +28,14 @@ export const MONTHLY_TARGETS: {
   spend: number;
   staffPct: number;
 }[];
+export const EXIT_LEVERS: {
+  num: number;
+  name: string;
+  impact: string;
+  target: string;
+  actions: string[];
+}[];
+export const TASK_PLAYBOOK: Record<
+  string,
+  { description: string; steps: string[] }
+>;

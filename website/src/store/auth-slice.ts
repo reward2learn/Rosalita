@@ -6,12 +6,16 @@ export interface AuthState {
   tier: AuthTier;
   user: SessionUser | null;
   bootstrapped: boolean;
+  roleCode?: string | null;
+  platformAdmin?: boolean;
 }
 
 const initialState: AuthState = {
   tier: 'public',
   user: null,
   bootstrapped: false,
+  roleCode: null,
+  platformAdmin: false,
 };
 
 export const authSlice = createSlice({
@@ -20,10 +24,19 @@ export const authSlice = createSlice({
   reducers: {
     setSession(
       state,
-      action: { payload: { tier: AuthTier; user: SessionUser | null } },
+      action: {
+        payload: {
+          tier: AuthTier;
+          user: SessionUser | null;
+          roleCode?: string | null;
+          platformAdmin?: boolean;
+        };
+      },
     ) {
       state.tier = action.payload.tier;
       state.user = action.payload.user;
+      state.roleCode = action.payload.roleCode ?? null;
+      state.platformAdmin = action.payload.platformAdmin ?? false;
       state.bootstrapped = true;
     },
     setTier(state, action: { payload: AuthTier }) {
