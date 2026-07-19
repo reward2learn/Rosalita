@@ -221,11 +221,6 @@ function sumKeys(vals: Record<string, unknown>, keys: string[]): number {
   return any ? sum : 0;
 }
 
-function daysInMonth(period: string): number {
-  const [y, m] = String(period).split('-').map(Number);
-  return new Date(y, m, 0).getDate();
-}
-
 export function num(v: unknown): number | null {
   if (v == null || v === '') return null;
   const n = Number(v);

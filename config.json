@@ -1,61 +1,59 @@
 {
   "provider": {
     "ollama": {
-      "name": "Ollama (local)",
+      "name": "Ollama (Mac Studio)",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
-        "baseURL": "http://localhost:11434/v1"
+        "baseURL": "http://192.168.1.168:11434/v1"
       },
       "models": {
-        "gemma3:1b": {
-          "id": "gemma3:1b",
-          "name": "gemma3:1b",
+        "qwen3:8b": {
+          "id": "qwen3:8b",
+          "name": "Qwen3 8B (Studio)",
           "tool_call": true
         },
-        "gemma4:e2b": {
-          "id": "gemma4:e2b",
-          "name": "gemma4:e2b",
+        "qwen3.6:latest": {
+          "id": "qwen3.6:latest",
+          "name": "Qwen3.6 36B (Studio)",
           "tool_call": true
         },
-        "gemma4:e4b": {
-          "id": "gemma4:e4b",
-          "name": "gemma4:e4b",
+        "qwen2.5:14b": {
+          "id": "qwen2.5:14b",
+          "name": "Qwen2.5 14B (Studio)",
           "tool_call": true
         },
-        "gpt-oss:120b": {
-          "id": "gpt-oss:120b",
-          "name": "gpt-oss:120b",
+        "qwen2.5:7b": {
+          "id": "qwen2.5:7b",
+          "name": "Qwen2.5 7B (Studio)",
           "tool_call": true
         },
-        "gpt-oss:20b": {
-          "id": "gpt-oss:20b",
-          "name": "gpt-oss:20b",
+        "llama3.1:8b": {
+          "id": "llama3.1:8b",
+          "name": "Llama 3.1 8B (Studio)",
           "tool_call": true
         },
-        "minicpm-v4.6:latest": {
-          "id": "minicpm-v4.6:latest",
-          "name": "minicpm-v4.6:latest",
+        "llama3.2:latest": {
+          "id": "llama3.2:latest",
+          "name": "Llama 3.2 3B (Studio)",
           "tool_call": true
         },
-        "qwen2.5:3b": {
-          "id": "qwen2.5:3b",
-          "name": "qwen2.5:3b",
+        "hermes3:latest": {
+          "id": "hermes3:latest",
+          "name": "Hermes 3 8B (Studio)",
           "tool_call": true
+        },
+        "nemotron3:33b": {
+          "id": "nemotron3:33b",
+          "name": "Nemotron3 33B (Studio)",
+          "tool_call": true
+        },
+        "minicpm-v4.6:1b": {
+          "id": "minicpm-v4.6:1b",
+          "name": "MiniCPM-V 4.6 1B (Studio, vision)"
         },
         "qwen3-embedding:0.6b": {
           "id": "qwen3-embedding:0.6b",
-          "name": "qwen3-embedding:0.6b",
-          "tool_call": true
-        },
-        "translategemma:12b": {
-          "id": "translategemma:12b",
-          "name": "translategemma:12b",
-          "tool_call": true
-        },
-        "liyishanthu/minicpm4.1-custom:latest": {
-          "id": "liyishanthu/minicpm4.1-custom:latest",
-          "name": "liyishanthu/minicpm4.1-custom:latest",
-          "tool_call": true
+          "name": "Qwen3 Embedding 0.6B (Studio)"
         }
       }
     }

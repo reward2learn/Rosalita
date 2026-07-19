@@ -90,7 +90,7 @@ export async function handleExpenseScan(body: { images?: unknown }): Promise<{ s
           const inner = JSON.parse(mdMatch[1].trim()) as { text?: string };
           parsed = { text: cleanText(inner.text || mdMatch[1]) };
         } catch {
-          const textMatch = raw.match(/"text"\s*:\s*"([\s\S]*?)"\s*[,\}]/);
+          const textMatch = raw.match(/"text"\s*:\s*"([\s\S]*?)"\s*[,}]/);
           if (textMatch) {
             parsed = { text: cleanText(textMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')) };
           } else {

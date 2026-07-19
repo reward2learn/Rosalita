@@ -361,7 +361,7 @@ function PosOcrPanel({
 }) {
   const [images, setImages] = useState<ReceiptImagePayload[]>([]);
   const [text, setText] = useState('');
-  const [scan] = useScanPosReceiptMutation();
+  useScanPosReceiptMutation();
   const [parse, parseState] = useParsePosTextMutation();
   const abortRef = useRef<AbortController | null>(null);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number; status?: string } | null>(null);
@@ -1055,7 +1055,7 @@ function ExpenseOcrPanel({
 }) {
   const [images, setImages] = useState<ReceiptImagePayload[]>([]);
   const [text, setText] = useState('');
-  const [scan] = useScanExpenseReceiptMutation();
+  useScanExpenseReceiptMutation();
   const [parse, parseState] = useParseExpenseTextMutation();
   const abortRef = useRef<AbortController | null>(null);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number; status?: string } | null>(null);

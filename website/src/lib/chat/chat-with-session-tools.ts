@@ -95,18 +95,6 @@ function encodeSseLine(payload: unknown): string {
   return `data: ${JSON.stringify(payload)}\n\n`;
 }
 
-function errorStream(message: string): Response {
-  const encoder = new TextEncoder();
-  const body = new ReadableStream({
-    start(controller) {
-      controller.enqueue(encoder.encode(encodeSseLine({ error: message })));
-      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-      controller.close();
-    },
-  });
-  return new Response(body, { headers: SSE_HEADERS });
-}
-
 async function requestOpenAiCompletion(
   apiKey: string,
   model: string,
