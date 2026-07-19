@@ -376,20 +376,17 @@ function PosOcrPanel({
   }
 
   const handleScan = async () => {
-    setScanProgress({ current: 0, total: images.length, failed: 0 });
+    setScanProgress({ current: 0, total: images.length, failed: 0, status: 'scanning' });
     const results: string[] = [];
     let failed = 0;
 
     for (let i = 0; i < images.length; i++) {
-      // Check if aborted
       if (abortRef.current?.signal.aborted) break;
-
-      setScanProgress({ current: i + 1, total: images.length, failed });
+      setScanProgress({ current: i + 1, total: images.length, failed, status: 'scanning' });
 
       try {
         const controller = new AbortController();
         abortRef.current = controller;
-        // Use fetch directly with AbortController for per-image control
         const resp = await fetch('/api/pos?action=scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -399,20 +396,24 @@ function PosOcrPanel({
         });
         if (resp.ok) {
           const payload = await resp.json();
-          if (payload.data?.text) results.push(payload.data.text);
+          if (payload.data?.text) results.push(payload.data.text.trim());
         } else {
           failed++;
-          setScanProgress({ current: i + 1, total: images.length, failed });
+          setScanProgress({ current: i + 1, total: images.length, failed, status: 'scanning' });
         }
       } catch (err) {
         if ((err as Error).name === 'AbortError') break;
         failed++;
-        setScanProgress({ current: i + 1, total: images.length, failed });
+        setScanProgress({ current: i + 1, total: images.length, failed, status: 'scanning' });
       }
     }
 
     if (!abortRef.current?.signal.aborted) {
-      setText(results.map((r) => r.trim()).join('\n---\n').replace(/\n{4,}/g, '\n\n').trim());
+      setScanProgress({ current: images.length, total: images.length, failed, status: 'processing' });
+      await new Promise((r) => setTimeout(r, 80));
+      const joined = results.map((r) => r.trim()).join('\n---\n');
+      const cleaned = joined.replace(/\n{3,}/g, '\n\n').trim();
+      setText(cleaned);
     }
     abortRef.current = null;
     setScanProgress(null);
@@ -460,7 +461,7 @@ function PosOcrPanel({
             disabled={!images.length || !!scanProgress}
             variant="contained"
           >
-            {scanProgress ? `Scanning ${scanProgress.current}/${scanProgress.total}${scanProgress.failed ? ` (${scanProgress.failed} failed)` : ''}...` : 'Scan'}
+            {scanProgress ? `Scanning ${scanProgress.current}/${scanProgress.total}${scanProgress.failed ? ` (${scanProgress.failed} failed)` : ''}${scanProgress.status === 'processing' ? ' — Processing...' : ''}...` : 'Scan'}
           </Button>
           {scanProgress ? (
             <Button onClick={handleStopScan} variant="outlined" color="warning">
@@ -959,13 +960,13 @@ function ExpenseOcrPanel({
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number } | null>(null);
 
   const handleScan = async () => {
-    setScanProgress({ current: 0, total: images.length, failed: 0 });
+    setScanProgress({ current: 0, total: images.length, failed: 0, status: 'scanning' });
     const results: string[] = [];
     let failed = 0;
 
     for (let i = 0; i < images.length; i++) {
       if (abortRef.current?.signal.aborted) break;
-      setScanProgress({ current: i + 1, total: images.length, failed });
+      setScanProgress({ current: i + 1, total: images.length, failed, status: 'scanning' });
 
       try {
         const controller = new AbortController();
@@ -979,20 +980,24 @@ function ExpenseOcrPanel({
         });
         if (resp.ok) {
           const payload = await resp.json();
-          if (payload.data?.text) results.push(payload.data.text);
+          if (payload.data?.text) results.push(payload.data.text.trim());
         } else {
           failed++;
-          setScanProgress({ current: i + 1, total: images.length, failed });
+          setScanProgress({ current: i + 1, total: images.length, failed, status: 'scanning' });
         }
       } catch (err) {
         if ((err as Error).name === 'AbortError') break;
         failed++;
-        setScanProgress({ current: i + 1, total: images.length, failed });
+        setScanProgress({ current: i + 1, total: images.length, failed, status: 'scanning' });
       }
     }
 
     if (!abortRef.current?.signal.aborted) {
-      setText(results.map((r) => r.trim()).join('\n---\n').replace(/\n{4,}/g, '\n\n').trim());
+      setScanProgress({ current: images.length, total: images.length, failed, status: 'processing' });
+      await new Promise((r) => setTimeout(r, 80));
+      const joined = results.map((r) => r.trim()).join('\n---\n');
+      const cleaned = joined.replace(/\n{3,}/g, '\n\n').trim();
+      setText(cleaned);
     }
     abortRef.current = null;
     setScanProgress(null);
@@ -1035,7 +1040,7 @@ function ExpenseOcrPanel({
               disabled={!images.length || !!scanProgress}
               variant="contained"
             >
-              {scanProgress ? `Scanning ${scanProgress.current}/${scanProgress.total}${scanProgress.failed ? ` (${scanProgress.failed} failed)` : ''}...` : 'Scan'}
+              {scanProgress ? `Scanning ${scanProgress.current}/${scanProgress.total}${scanProgress.failed ? ` (${scanProgress.failed} failed)` : ''}${scanProgress.status === 'processing' ? ' — Processing...' : ''}...` : 'Scan'}
             </Button>
             {scanProgress ? (
               <Button onClick={handleStopScan} variant="outlined" color="warning">

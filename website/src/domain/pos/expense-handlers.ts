@@ -79,7 +79,7 @@ export async function handleExpenseScan(body: { images?: unknown }): Promise<{ s
     if (!raw) return { status: 502, body: { success: false, error: 'No transcription from vision model' } };
 
     let parsed: { text?: string };
-    const cleanText = (s: string) => s.trim().replace(/\n{4,}/g, '\n\n');
+    const cleanText = (s: string) => s.trim().replace(/\n{3,}/g, '\n\n');
     try {
       parsed = JSON.parse(raw) as { text?: string };
       if (parsed.text) parsed.text = cleanText(parsed.text);
