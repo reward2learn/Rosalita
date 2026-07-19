@@ -540,7 +540,7 @@ function ZReportListView({
   );
 }
 
-function ZReportCalendarView() {
+function ZReportCalendarView({ onDayClick }: { onDayClick?: (date: string) => void }) {
   const now = new Date();
   const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const { data: calPayload, isFetching } = useGetCalendarQuery(period);
@@ -576,7 +576,10 @@ function ZReportCalendarView() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                cursor: hasData && onDayClick ? 'pointer' : 'default',
+                '&:hover': hasData && onDayClick ? { opacity: 0.8 } : undefined,
               }}
+              onClick={() => hasData && onDayClick?.(date)}
             >
               {i + 1}
             </Box>
@@ -591,8 +594,8 @@ function ZReportChartView() {
   const now = new Date();
   const [chartYear, setChartYear] = useState(now.getFullYear());
   const [chartMonth, setChartMonth] = useState(now.getMonth() + 1);
-  const [chartMetric, setChartMetric] = useState('nett_sales');
-  const [chartMetricLabel, setChartMetricLabel] = useState('Nett Sales');
+  const [chartMetrics, setChartMetrics] = useState<string[]>(['nett_sales']);
+  const [chartMetricLabels, setChartMetricLabels] = useState<string[]>(['Nett Sales']);
 
   const from = `${chartYear}-${String(chartMonth).padStart(2, '0')}-01`;
   const lastDay = new Date(chartYear, chartMonth, 0).getDate();
@@ -601,36 +604,83 @@ function ZReportChartView() {
   const { data: chartPayload, isFetching } = useListMetricsQuery({ from, to, limit: 31 });
   const chartRows = (asRecord(chartPayload).rows as MetricsRow[] | undefined) ?? [];
 
-  const chartMetrics: { key: string; label: string; numeric: boolean }[] = [
-    { key: 'nett_sales', label: 'Nett Sales', numeric: true },
-    { key: 'total_sales', label: 'Total Sales', numeric: true },
-    { key: 'total_covers', label: 'Total Covers', numeric: true },
-    { key: 'total_bills', label: 'Total Bills', numeric: true },
-    { key: 'avg_bills', label: 'Avg Bill', numeric: true },
-    { key: 'avg_covers', label: 'Avg Cover', numeric: true },
+  // All available numeric metrics from the data
+  const availableMetrics: { key: string; label: string }[] = [
+    { key: 'nett_sales', label: 'Nett Sales' },
+    { key: 'total_sales', label: 'Total Sales' },
+    { key: 'total_covers', label: 'Total Covers' },
+    { key: 'total_bills', label: 'Total Bills' },
+    { key: 'avg_bills', label: 'Avg Bill' },
+    { key: 'avg_covers', label: 'Avg Cover' },
+    { key: 'total_sales', label: 'Total Sales' },
+    { key: 'estimated_sales', label: 'Estimated Sales' },
+    { key: 'item_sales_amount', label: 'Item Sales Amount' },
+    { key: 'item_discount_amount', label: 'Item Discount Amount' },
+    { key: 'bill_discount_amount', label: 'Bill Discount Amount' },
+    { key: 'tax_10_amount', label: 'Tax 10%' },
+    { key: 'service_7_amount', label: 'Service 7%' },
+    { key: 'tot_collection_amount', label: 'Total Collection' },
+    { key: 'cash_amount', label: 'Cash Amount' },
+    { key: 'bca_amount', label: 'BCA Amount' },
+    { key: 'gojek_pay_amount', label: 'Gojek Pay Amount' },
+    { key: 'mandiri_amount', label: 'Mandiri Amount' },
+    { key: 'group_beverage_amount', label: 'Group Beverage Amount' },
+    { key: 'group_food_amount', label: 'Group Food Amount' },
+    { key: 'group_total_amount', label: 'Group Total Amount' },
+    { key: 'dine_in_amount', label: 'Dine In Amount' },
+    { key: 'gofood_amount', label: 'GoFood Amount' },
+    { key: 'total_ctgry_amount', label: 'Total Category Amount' },
+    { key: 'bill_disc_20_amount', label: 'Bill Disc 20% Amount' },
+    { key: 'total_item_discount_amount', label: 'Total Item Discount Amount' },
   ];
 
-  // Aggregate by day
-  const byDay: Record<string, number> = {};
+  // Aggregate by day for each selected metric
+  const byDay: Record<string, Record<string, number>> = {};
   for (const row of chartRows) {
     const date = row.report_date ?? row.date ?? '';
     if (!date) continue;
-    const val = Number((row as Record<string, unknown>)[chartMetric] ?? 0);
-    byDay[date] = (byDay[date] ?? 0) + val;
+    if (!byDay[date]) byDay[date] = {};
+    for (const metric of chartMetrics) {
+      const val = Number((row as Record<string, unknown>)[metric] ?? 0);
+      byDay[date][metric] = (byDay[date][metric] ?? 0) + val;
+    }
   }
 
   const days = Object.keys(byDay).sort();
   const monthLabel = new Date(chartYear, chartMonth - 1).toLocaleString('default', { month: 'long' });
 
+  const datasets = chartMetrics.map((metric, idx) => {
+    const colors = [
+      'rgba(144, 202, 249, 0.6)',
+      'rgba(255, 167, 38, 0.6)',
+      'rgba(102, 187, 106, 0.6)',
+      'rgba(239, 83, 80, 0.6)',
+      'rgba(171, 71, 188, 0.6)',
+      'rgba(255, 235, 59, 0.6)',
+    ];
+    const borderColors = [
+      'rgb(144, 202, 249)',
+      'rgb(255, 167, 38)',
+      'rgb(102, 187, 106)',
+      'rgb(239, 83, 80)',
+      'rgb(171, 71, 188)',
+      'rgb(255, 235, 59)',
+    ];
+    const metric = chartMetrics[idx];
+    const metricInfo = availableMetrics.find((m) => m.key === metric);
+    return {
+      label: `${metricInfo?.label || metric} — ${new Date(chartYear, chartMonth - 1).toLocaleString('default', { month: 'long' })}`,
+      data: days.map((d) => byDay[d]?.[metric] ?? 0),
+      backgroundColor: colors[idx % colors.length],
+      borderColor: borderColors[idx % borderColors.length],
+      borderWidth: 1,
+      yAxisID: idx === 0 ? 'y' : 'y1',
+    };
+  });
+
   const chartData = {
     labels: days.map((d) => d.slice(8)),
-    datasets: [{
-      label: `${chartMetricLabel} — ${monthLabel}`,
-      data: days.map((d) => byDay[d]),
-      backgroundColor: 'rgba(144, 202, 249, 0.6)',
-      borderColor: 'rgb(144, 202, 249)',
-      borderWidth: 1,
-    }],
+    datasets,
   };
 
   return (
@@ -663,16 +713,29 @@ function ZReportChartView() {
         <TextField
           select
           size="small"
-          label="Metric"
-          value={chartMetric}
+          label="Metrics"
+          value={chartMetrics}
           onChange={(e) => {
-            setChartMetric(e.target.value);
-            const found = chartMetrics.find((cm) => cm.key === e.target.value);
-            if (found) setChartMetricLabel(found.label);
+            const selected = e.target.value as string[];
+            setChartMetrics(selected);
+            const labels = selected.map((m) => availableMetrics.find((cm) => cm.key === m)?.label || m);
+            setChartMetricLabels(labels);
           }}
-          sx={{ minWidth: 140 }}
+          multiple
+          sx={{ minWidth: 180 }}
+          renderValue={(selected) => (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {selected.map((m) => {
+                const info = availableMetrics.find((cm) => cm.key === m);
+                return <Chip key={m} label={info?.label || m} size="small" />;
+              })}
+            </Box>
+          )}
+          renderInput={(params) => (
+            <TextField {...params} variant="outlined" placeholder="Select metrics..." />
+          )}
         >
-          {chartMetrics.map((cm) => (
+          {availableMetrics.map((cm) => (
             <MenuItem key={cm.key} value={cm.key}>{cm.label}</MenuItem>
           ))}
         </TextField>
@@ -681,19 +744,35 @@ function ZReportChartView() {
       {isFetching ? (
         <CircularProgress size={24} />
       ) : days.length === 0 ? (
-        <Typography color="text.secondary">No data for {monthLabel} {chartYear}.</Typography>
+        <Typography color="text.secondary">No data for {new Date(chartYear, chartMonth - 1).toLocaleString('default', { month: 'long' })} {chartYear}.</Typography>
       ) : (
-        <Box sx={{ height: 250 }}>
+        <Box sx={{ height: 280 }}>
           <Bar
             data={chartData}
             options={{
               responsive: true,
               maintainAspectRatio: false,
-              plugins: { legend: { display: true } },
+              interaction: { mode: 'index' as const, intersect: false },
+              plugins: {
+                legend: { display: true, position: 'top' as const },
+                tooltip: {
+                  callbacks: {
+                    label: (ctx) => `${ctx.dataset.label}: ${formatIdr(ctx.raw)}`,
+                  },
+                },
+              },
               scales: {
                 y: {
+                  type: 'linear' as const,
+                  position: 'left' as const,
                   beginAtZero: true,
-                  title: { display: true, text: chartMetricLabel },
+                  title: { display: true, text: 'Amount (IDR)' },
+                },
+                y1: {
+                  type: 'linear' as const,
+                  position: 'right' as const,
+                  grid: { drawOnChartArea: false },
+                  title: { display: true, text: 'Count' },
                 },
               },
             }}
@@ -909,7 +988,7 @@ function DayPosTab() {
         </AccordionSummary>
         <AccordionDetails>
           {viewMode === 'list' ? <ZReportListView recentRows={recentRows} setZrepDetail={setZrepDetail} /> : null}
-          {viewMode === 'calendar' ? <ZReportCalendarView /> : null}
+          {viewMode === 'calendar' ? <ZReportCalendarView onDayClick={setZrepDetail} /> : null}
           {viewMode === 'chart' ? <ZReportChartView /> : null}
         </AccordionDetails>
       </Accordion>
