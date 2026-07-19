@@ -79,28 +79,30 @@ export async function handleExpenseScan(body: { images?: unknown }): Promise<{ s
     if (!raw) return { status: 502, body: { success: false, error: 'No transcription from vision model' } };
 
     let parsed: { text?: string };
+    const cleanText = (s: string) => s.trim().replace(/\n{4,}/g, '\n\n');
     try {
       parsed = JSON.parse(raw) as { text?: string };
+      if (parsed.text) parsed.text = cleanText(parsed.text);
     } catch {
-      // Fallback: try to extract text from markdown code block or raw content
       const mdMatch = raw.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
       if (mdMatch) {
         try {
-          parsed = JSON.parse(mdMatch[1].trim()) as { text?: string };
+          const inner = JSON.parse(mdMatch[1].trim()) as { text?: string };
+          parsed = { text: cleanText(inner.text || mdMatch[1]) };
         } catch {
           const textMatch = raw.match(/"text"\s*:\s*"([\s\S]*?)"\s*[,\}]/);
           if (textMatch) {
-            parsed = { text: textMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') };
+            parsed = { text: cleanText(textMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')) };
           } else {
-            parsed = { text: raw };
+            parsed = { text: cleanText(raw) };
           }
         }
       } else {
         const textMatch = raw.match(/"text"\s*:\s*"([\s\S]*?)"\s*\}/);
         if (textMatch) {
-          parsed = { text: textMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') };
+          parsed = { text: cleanText(textMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')) };
         } else {
-          parsed = { text: raw };
+          parsed = { text: cleanText(raw) };
         }
       }
     }

@@ -412,7 +412,7 @@ function PosOcrPanel({
     }
 
     if (!abortRef.current?.signal.aborted) {
-      setText(results.join('\n---\n'));
+      setText(results.map((r) => r.trim()).join('\n---\n').replace(/\n{4,}/g, '\n\n').trim());
     }
     abortRef.current = null;
     setScanProgress(null);
@@ -992,7 +992,7 @@ function ExpenseOcrPanel({
     }
 
     if (!abortRef.current?.signal.aborted) {
-      setText(results.join('\n---\n'));
+      setText(results.map((r) => r.trim()).join('\n---\n').replace(/\n{4,}/g, '\n\n').trim());
     }
     abortRef.current = null;
     setScanProgress(null);
