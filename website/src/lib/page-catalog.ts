@@ -123,10 +123,10 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
           minTier: 'public',
         },
       },
-      {
-        blockType: 'chart_financial',
-        config: { variant: 'dashboard', scenario: 'conservative', minTier: 'public' },
-      },
+      // {
+      //   blockType: 'chart_financial',
+      //   config: { variant: 'dashboard', scenario: 'conservative', minTier: 'google' },
+      // },
       {
         blockType: 'action_checklist',
         config: { minTier: 'pin' },

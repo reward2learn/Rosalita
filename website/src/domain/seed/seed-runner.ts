@@ -9,6 +9,7 @@ import {
   type TaskStatus,
 } from '@/generated/prisma';
 import { PAGE_CATALOG, REVIEW_PART_CATALOG } from '@/lib/page-catalog';
+import type { DbClient } from '@/lib/db';
 import { parseBusinessReviewParts } from '@/lib/parse-business-review';
 import {
   parseFinancialProjectionsFromBuffer,
@@ -446,9 +447,7 @@ export async function ensureTaskTables(prisma: {
  * Bootstrap the task-tracking data (roles + tasks + assignments) if empty.
  * Uses the ZenStack-enhanced client so policy checks apply. Idempotent.
  */
-export async function seedTaskTracking(
-  prisma: Awaited<ReturnType<typeof import('@/lib/db').createClient>>,
-): Promise<void> {
+export async function seedTaskTracking(prisma: DbClient): Promise<void> {
   // Always sync known roles (idempotent upsert) so emails/platform-admin flags stay current.
   const roleIdByCode = new Map<string, string>();
   for (const role of KNOWN_ROLES) {
