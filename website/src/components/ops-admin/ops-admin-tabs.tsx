@@ -363,7 +363,7 @@ function PosOcrPanel({
   const [scan] = useScanPosReceiptMutation();
   const [parse, parseState] = useParsePosTextMutation();
   const abortRef = useRef<AbortController | null>(null);
-  const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number } | null>(null);
+  const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number; status?: string } | null>(null);
 
   // Reset on resetKey change
   const prevResetKey = useRef(resetKey);
@@ -957,7 +957,7 @@ function ExpenseOcrPanel({
   const [scan] = useScanExpenseReceiptMutation();
   const [parse, parseState] = useParseExpenseTextMutation();
   const abortRef = useRef<AbortController | null>(null);
-  const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number } | null>(null);
+  const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number; status?: string } | null>(null);
 
   const handleScan = async () => {
     setScanProgress({ current: 0, total: images.length, failed: 0, status: 'scanning' });
