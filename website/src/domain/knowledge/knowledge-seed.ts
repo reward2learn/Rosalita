@@ -87,12 +87,12 @@ export const KNOWLEDGE_SEED_SNIPPETS = [
   {
     key: 'business_overview',
     category: 'overview',
-    content: `Red Ruby Club & Terrace Bar (PT Taman Bintang Bali) is a nightclub and bar in Petitenget, Bali. The venue operates across three revenue streams: Club (nightclub with beverage, ticket, and VIP table service), Terrace 24h (all-day bar with food and beverage), and a planned Sky Lounge (2029 launch). May 2026 revenue was IDR 2.24B with 61.1% gross margin and BEP coverage of 1.24x. The business has a seasonal pattern — strong Jan and May, weak Feb-Mar during Bali's low season.`,
+    content: `Red Ruby Club & Terrace Bar (PT Taman Bintang Bali) is a nightclub and bar in Petitenget, Bali. The venue operates across two revenue streams: Club (nightclub with beverage, ticket, and VIP table service) and Terrace 24h (all-day bar with food and beverage). May 2026 revenue was IDR 2.24B with 61.1% gross margin and BEP coverage of 1.24x. The business has a seasonal pattern — strong Jan and May, weak Feb-Mar during Bali's low season.`,
   },
   {
     key: 'revenue_streams',
     category: 'strategy',
-    content: `Three revenue streams: (1) Club — 146-200 guests/night at IDR 400K-438K spend, ~70% of revenue from beverage, tickets, shisha, cigarettes. (2) Terrace 24h — 50-80 guests/night at IDR 225K-270K spend, ~20% of revenue. (3) Sky Lounge (2029+) — planned 80-110 guests/night at IDR 450K-510K spend. StarWORLD membership program with 5 tiers (Blue, Green, Gold, Platinum, Black/VVIP).`,
+    content: `Two revenue streams: (1) Club — 146-200 guests/night at IDR 400K-438K spend, ~70% of revenue from beverage, tickets, shisha, cigarettes. (2) Terrace 24h — 50-80 guests/night at IDR 225K-270K spend, ~20% of revenue. StarWORLD membership program with 5 tiers (Blue, Green, Gold, Platinum, Black/VVIP).`,
   },
   {
     key: 'may_2026_metrics',
@@ -105,19 +105,14 @@ export const KNOWLEDGE_SEED_SNIPPETS = [
     content: `June 2026 vs May 2026: Revenue IDR 1,975M (-11.6%), COS IDR 757M (-12.8%), Gross Margin 61.7% (+0.5pp), Payroll IDR 620M (+0.5%), BEP Coverage 1.11x (-0.13x). June shows seasonal decline but improved cost efficiency.`,
   },
   {
-    key: 'ten_year_targets',
-    category: 'metrics',
-    content: `2026-2035 growth targets: Revenue IDR 30.7B → IDR 110.2B, EBITDA IDR 2.2B → IDR 26.9B (8.6% → 29.5% margin), Staff 73 → 117, Annual guests 76,468 → 177,480, Avg spend IDR 402K → IDR 621K. Sky Lounge launches 2029 adding IDR 13B revenue.`,
-  },
-  {
     key: 'priority_actions',
     category: 'actions',
-    content: `P0: Build cash reserve to IDR 500M for seasonal coverage, finalize staff restructuring to 73 FTE. P1: Negotiate DJ/performer residencies (saves 15-20% entertainment cost), implement beverage inventory tracking, launch StarWORLD membership drive. P2: Sky Lounge business case, seasonal staffing model.`,
+    content: `P0: Build cash reserve to IDR 500M for seasonal coverage, finalize staff restructuring to 73 FTE. P1: Negotiate DJ/performer residencies (saves 15-20% entertainment cost), implement beverage inventory tracking, launch StarWORLD membership drive. P2: Seasonal staffing model.`,
   },
   {
     key: 'key_risks',
     category: 'risks',
-    content: `Key risks: seasonal revenue collapse Jan-Mar (high fixed costs IDR 1B/month vs low revenue), new venue competition in Petitenget/Seminyak, regulatory/permitting risk for nightclub hours, entertainment talent cost escalation, Sky Lounge launch delays. Mitigation: cash reserves, StarWORLD loyalty, flex staffing, legal budget.`,
+    content: `Key risks: seasonal revenue collapse Jan-Mar (high fixed costs IDR 1B/month vs low revenue), new venue competition in Petitenget/Seminyak, regulatory/permitting risk for nightclub hours, entertainment talent cost escalation. Mitigation: cash reserves, StarWORLD loyalty, flex staffing, legal budget.`,
   },
   {
     key: 'staff_structure',
@@ -168,7 +163,7 @@ export function buildStructuredPromptFromSnippets(
     'You are Red Ruby AI — a business intelligence assistant for Red Ruby Club & Terrace Bar, a nightclub and bar in Petitenget, Bali, operated by PT Taman Bintang Bali.',
     '',
     '## Your Role',
-    'Help management track KPIs, analyze operational data, monitor break-even performance, and provide actionable insights for the club, terrace bar, and planned Sky Lounge.',
+    'Help management track KPIs, analyze operational data, monitor break-even performance, and provide actionable insights for the club and terrace bar.',
   ];
 
   const categoryTitles: Record<string, string> = {

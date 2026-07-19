@@ -15,13 +15,12 @@ export const REVIEW_PART_FALLBACKS: Record<string, ReviewPartFallback> = {
 
 ### A.1 Revenue Streams (Jan–Jun 2026)
 
-Red Ruby operates two main revenue streams plus a planned third:
+Red Ruby operates two main revenue streams:
 
 | Revenue Stream | Location | Hours | Revenue Model |
 |---------------|----------|-------|---------------|
 | **Club** | Main nightclub | Night operations | Beverage (65%), Tickets (25%), Shisha/Cigarettes (10%) |
 | **Terrace 24h** | Outdoor terrace bar | 24/7 | Beverage (57%), Food (13%), Merchandise/Other (30%) |
-| **Sky Lounge** | Private rooms (2029+) | Evening | Premium beverages, private events |
 
 ### A.2 Monthly Revenue (Jan–Jun 2026)
 
@@ -66,39 +65,7 @@ Red Ruby operates two main revenue streams plus a planned third:
 
 **The seasonal swing is IDR 636M between peak and trough revenue** (Jan vs Feb). Fixed costs remain stubbornly at IDR 950M–1.1B/month regardless of season.`,
   },
-  'part-b': {
-    slug: 'part-b',
-    title: 'Part B: The 10-Year Growth Model',
-    markdown: `## Part B: The 10-Year Growth Model
 
-### B.1 Revenue Growth Trajectory
-
-| Year | Club Guests/yr | Terrace Guests/yr | Sky Lounge | Total Revenue | Annual Growth |
-|------|---------------|-------------------|------------|---------------|---------------|
-| 2026 | 54,989 | 21,479 | — | IDR 30.7B | — |
-| 2027 | 75,600 | 30,600 | — | IDR 42.2B | +37.5% |
-| 2028 | 79,200 | 30,960 | — | IDR 45.0B | +6.6% |
-| 2029 | 90,000 | 31,320 | 28,800 | IDR 65.4B | +45.4% |
-| 2030 | 108,000 | 31,680 | 30,600 | IDR 76.7B | +17.2% |
-| 2031 | 115,200 | 32,040 | 32,400 | IDR 83.0B | +8.2% |
-| 2032 | 122,400 | 32,400 | 34,200 | IDR 89.5B | +7.8% |
-| 2033 | 129,600 | 32,760 | 36,000 | IDR 96.2B | +7.5% |
-| 2034 | 136,800 | 33,120 | 37,800 | IDR 103.1B | +7.2% |
-| 2035 | 144,000 | 33,480 | 39,600 | IDR 110.2B | +6.9% |
-
-### B.2 Profitability Progression
-
-| Year | EBITDA (IDR) | Margin | Net Income Pre-Tax |
-|------|-------------|--------|-------------------|
-| 2026 | 2.19B | 8.6% | 25.4B |
-| 2027 | 7.50B | 21.5% | 34.9B |
-| 2028 | 8.37B | 22.5% | 37.2B |
-| 2029 | 15.47B | 28.6% | 54.1B |
-| 2030 | 18.44B | 29.1% | 63.4B |
-| 2035 | 26.91B | 29.5% | 91.1B |
-
-**Key projection**: EBITDA margin improves from 8.6% (2026) to 21.5% (2027) as the business scales past BEP. The Sky Lounge launch (2029) adds IDR 13B revenue and pushes EBITDA to IDR 15.5B (28.6% margin). By 2035, the business targets IDR 110.2B revenue with 29.5% EBITDA margin.`,
-  },
   'part-c': {
     slug: 'part-c',
     title: 'Part C: Revenue Optimization Strategy',
@@ -123,13 +90,7 @@ Growth levers:
 Growth levers:
 - **Food menu optimization**: Current food purchases at IDR 64M/month (2.9% of revenue). Expand food offering as a traffic driver for daytime hours.
 - **Shisha**: IDR 11.5M/month — explore premium shisha offerings at higher price points.
-- **24-hour advantage**: The Terrace is the only 24h venue in the area. Market this aggressively.
-
-### C.3 Sky Lounge (2029 Launch)
-
-**Target**: 80 guests/night, IDR 450K spend/guest = IDR 12.96B/year
-**Investment required**: Build-out costs, premium fit-out, additional staffing (est. 15-20 FTE)
-**Payback period**: Estimated 18-24 months based on projected margins`,
+- **24-hour advantage**: The Terrace is the only 24h venue in the area. Market this aggressively.`,
   },
   'part-d': {
     slug: 'part-d',
@@ -186,7 +147,7 @@ Growth levers:
 | 4 | Key staff turnover during scaling | Low-Med | Medium | Competitive above-market salaries; management bonus tied to EBITDA targets |
 | 5 | Entertainment talent costs escalating | Medium | Medium | Develop in-house talent pipeline; 3-6 month residency contracts |
 | 6 | Currency/exchange rate risk (USD-IDR) | Low | Low | Most revenue in IDR; StarWORLD USD revenue provides natural partial hedge |
-| 7 | Sky Lounge launch delays or cost overruns | Low-Med | High | Phased launch (soft opening first); contingency budget of 20% above projected cost |`,
+`,
   },
   'part-f': {
     slug: 'part-f',
@@ -220,7 +181,7 @@ The program targets 120,000 total members across all tiers, with a projected ann
 | P1 | Negotiate 3-6 month DJ/performer residencies | Reduces entertainment cost by 15-20% |
 | P1 | Implement beverage inventory tracking system | Reduces wastage by 10% |
 | P1 | Launch StarWORLD membership drive | Recurring revenue growth |
-| P2 | Prepare Sky Lounge business case and investment proposal | 2029 launch planning |
+
 | P2 | Develop seasonal staffing model (high/low season templates) | Operational flexibility |`,
   },
 };

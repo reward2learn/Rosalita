@@ -40,21 +40,7 @@ const PHASES = [
       'Negotiate bulk spirits purchasing for top 5 moving brands (reduces beverage COS from 26% to 24%)',
     ],
   },
-  {
-    id: 'P3',
-    title: 'Phase 3: Profitability — Scale & Structure',
-    period: 'July 2027 – December 2029',
-    impact: 'Target: IDR 42.2B → 65.4B/yr Revenue · EBITDA IDR 7.5B → 15.5B · Margin 21.5% → 28.6%',
-    actions: [
-      'Launch Sky Lounge (2029): 80 guests/night at IDR 450K spend = IDR 12.96B annual revenue, 15-20 new FTE',
-      'Scale StarWORLD to 120,000 members across all tiers (IDR 183.6B total program value)',
-      'Expand Club capacity: 200 → 300 guests/night by 2030 through layout optimization and event programming',
-      'Develop in-house DJ/performer roster to reduce external entertainment costs from 14.5% → 8% of revenue',
-      'Staff scaling plan: 73 → 117 FTE by 2035, maintaining staff cost below 16% of revenue (from 26% in 2026)',
-      'Build second venue pipeline: assess Petitenget/Seminyak expansion opportunities for 2031+',
-      'Target 29.5% EBITDA margin by 2035 on IDR 110.2B annual revenue',
-    ],
-  },
+
 ];
 
 export function ActionChecklistBlock({ config }: { config: Record<string, unknown> }) {

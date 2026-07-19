@@ -26,12 +26,11 @@ const LEVERS = [
   {
     num: 2,
     title: 'Revenue Growth',
-    summary: 'Club + Terrace + Sky Lounge · IDR 30.7B → 110.2B (2035)',
+    summary: 'Club + Terrace revenue growth · ticket tiering, VIP tables, promoter ROI',
     details: [
       'Club ticket tiered pricing to increase yield 15-20%',
       'VIP table service — target 5-10 tables/night at IDR 3M-10M',
       'Terrace 24h marketing as only all-night venue in area',
-      'Sky Lounge launch 2029 (IDR 13B annual revenue)',
       'Optimize promoter/influencer ROI by tracking cost-per-guest',
     ],
   },
