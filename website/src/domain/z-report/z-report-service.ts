@@ -241,6 +241,13 @@ export class ZReportService {
     const reportDate = new Date(`${String(data.reportDate)}T00:00:00.000Z`);
     const department = String(data.department ?? 'all_pos');
 
+    // Build correct reportTime from reportDate string + time string
+    if (data.reportTime && typeof data.reportTime === 'string') {
+      const dateStr = String(data.reportDate).slice(0, 10);
+      const timeStr = String(data.reportTime).slice(0, 8);
+      data.reportTime = new Date(`${dateStr}T${timeStr}`);
+    }
+
     const existing = await this.getByDate(String(data.reportDate), department);
     if (existing?.receiptImages && row.receipt_images !== undefined) {
       data.receiptImages = mergeReceiptImages(

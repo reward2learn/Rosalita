@@ -711,6 +711,7 @@ function DayPosTab() {
   const [save, saveState] = useSaveZReportMutation();
   const [resetKey, setResetKey] = useState(0);
   const [expanded, setExpanded] = useState<string>('step1');
+  const [errors, setErrors] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'chart'>('list');
   const [zrepDetail, setZrepDetail] = useState<{ date: string; dept: string } | null>(null);
   const [fullscreenImage, setFullscreenImage] = useState<ReceiptImage | null>(null);
@@ -730,15 +731,40 @@ function DayPosTab() {
 
   const handleChange = (key: string, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
+    if (errors.has(key) && value.trim()) {
+      setErrors((prev) => { const next = new Set(prev); next.delete(key); return next; });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const missing = new Set<string>();
+    for (const section of sections) {
+      for (const field of section.fields) {
+        if (field.required && !values[field.key]?.trim()) {
+          missing.add(field.key);
+        }
+      }
+    }
+    // Also check net_sales and total_covers specifically
+    if (!values['nett_sales']?.trim() && !values['total_sales']?.trim()) {
+      missing.add('nett_sales');
+    }
+    if (!values['total_covers']?.trim()) {
+      missing.add('total_covers');
+    }
+    setErrors(missing);
+    return missing.size === 0;
   };
 
   const handleSave = async () => {
+    if (!validateForm()) return;
     await save(buildPayload(values, {
       department,
       receipt_images: receiptImages,
     })).unwrap();
     setValues({ report_date: today() });
     setReceiptImages([]);
+    setErrors(new Set());
     setResetKey((k) => k + 1);
     setExpanded('step3');
   };
@@ -815,6 +841,8 @@ function DayPosTab() {
                         value={values[field.key] ?? ''}
                         onChange={(event) => handleChange(field.key, event.target.value)}
                         required={field.required}
+                        error={errors.has(field.key)}
+                        helperText={errors.has(field.key) ? 'Required' : undefined}
                         slotProps={{ inputLabel: { shrink: true } }}
                         fullWidth
                       />
@@ -840,6 +868,12 @@ function DayPosTab() {
               images={receiptImages}
               onRemove={(i) => setReceiptImages((prev) => prev.filter((_, idx) => idx !== i))}
             />
+
+            {errors.size > 0 ? (
+              <Typography color="error" variant="body2">
+                Please fill in all required fields highlighted below.
+              </Typography>
+            ) : null}
 
             <Button onClick={handleSave} disabled={saveState.isLoading} variant="contained">
               {saveState.isLoading ? 'Saving...' : 'Save Z-report'}
