@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useImperativeHandle, useMemo, useRef, useState } from 'react';
 import type { ReactNode, SyntheticEvent } from 'react';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -66,6 +66,9 @@ import {
 } from '@/store/apis/pos-api';
 import { imageToDataUrl } from '@/domain/z-report/receipt-images';
 import type { ReceiptImage } from '@/domain/z-report/receipt-images';
+import { Z_REPORT_FIELD_KEYS } from '@/domain/z-report/z-report-schema';
+import { PRORATE_KEYS } from '@/domain/z-report/z-report-service';
+import { camelToSnake } from '@/domain/shared/number-utils';
 
 type OpsTab = 'day-pos' | 'costs-payroll' | 'fill-missing' | 'recent';
 type ActualsSubtab = 'submit' | 'prefill';
@@ -247,6 +250,15 @@ function buildImportPreview(
   period: string,
   rows: Record<string, unknown>[],
 ): ImportPreviewPayload | null {
+  // Normalize camelCase keys → snake_case so the preview accepts either convention
+  for (const row of rows) {
+    for (const key of Object.keys(row)) {
+      const snakeKey = camelToSnake(key);
+      if (snakeKey !== key && row[snakeKey] === undefined) {
+        row[snakeKey] = row[key];
+      }
+    }
+  }
   const monthlyRow = rows.find((row) => row.period && !row.report_date && !row.date);
   if (monthlyRow) {
     const monthlyPeriod = String(monthlyRow.period).slice(0, 7) || period;
@@ -348,17 +360,21 @@ function SectionShell({ title, tooltip, children }: { title: string; tooltip?: s
   );
 }
 
-function PosOcrPanel({
-  onParsed,
-  onImagesReady,
-  onParseComplete,
-  resetKey,
-}: {
+export interface PosOcrHandle {
+  triggerParse: () => Promise<boolean>;
+}
+
+const PosOcrPanel = forwardRef<PosOcrHandle, {
   onParsed: (values: Record<string, string>) => void;
   onImagesReady?: (images: ReceiptImagePayload[]) => void;
   onParseComplete?: () => void;
   resetKey?: number;
-}) {
+}>(({
+  onParsed,
+  onImagesReady,
+  onParseComplete,
+  resetKey,
+}, ref) => {
   const [images, setImages] = useState<ReceiptImagePayload[]>([]);
   const [text, setText] = useState('');
   useScanPosReceiptMutation();
@@ -427,15 +443,25 @@ function PosOcrPanel({
   };
 
   const handleParse = async () => {
-    const payload = await parse({ text, useAi: true }).unwrap();
-    const parsed = asRecord(payload.data);
-    onParsed(Object.fromEntries(Object.entries(parsed).map(([key, value]) => [key, String(value ?? '')])));
-    // Auto-attach scanned images to verification receipts
-    if (onImagesReady && images.length) {
-      onImagesReady(images);
+    if (!text.trim()) return false;
+    try {
+      const payload = await parse({ text, useAi: true }).unwrap();
+      const parsed = asRecord(payload.data);
+      onParsed(Object.fromEntries(Object.entries(parsed).map(([key, value]) => [key, String(value ?? '')])));
+      // Auto-attach scanned images to verification receipts
+      if (onImagesReady && images.length) {
+        onImagesReady(images);
+      }
+      if (onParseComplete) onParseComplete();
+      return true;
+    } catch {
+      return false;
     }
-    if (onParseComplete) onParseComplete();
   };
+
+  useImperativeHandle(ref, () => ({
+    triggerParse: handleParse,
+  }));
 
   return (
     <SectionShell title="POS OCR Prefill">
@@ -469,9 +495,6 @@ function PosOcrPanel({
               Stop
             </Button>
           ) : null}
-          <Button onClick={handleParse} disabled={!text.trim() || parseState.isLoading} variant="outlined">
-            {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
-          </Button>
         </Stack>
         {scanProgress ? (
           <LinearProgress
@@ -490,7 +513,7 @@ function PosOcrPanel({
       </Stack>
     </SectionShell>
   );
-}
+});
 
 function ZReportListView({
   recentRows,
@@ -773,6 +796,7 @@ function DayPosTab() {
   const [receiptImages, setReceiptImages] = useState<ReceiptImagePayload[]>([]);
   const [save, saveState] = useSaveZReportMutation();
   const [resetKey, setResetKey] = useState(0);
+  const posOcrRef = useRef<PosOcrHandle>(null);
   const [expanded, setExpanded] = useState<string>('step1');
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'chart'>('list');
@@ -849,6 +873,7 @@ function DayPosTab() {
         </AccordionSummary>
         <AccordionDetails>
           <PosOcrPanel
+            ref={posOcrRef}
             resetKey={resetKey}
             onParsed={(parsed) => setValues((current) => ({ ...current, ...parsed }))}
             onImagesReady={(imgs) => setReceiptImages((prev) => {
@@ -907,6 +932,11 @@ function DayPosTab() {
                         error={errors.has(field.key)}
                         helperText={errors.has(field.key) ? 'Required' : undefined}
                         slotProps={{ inputLabel: { shrink: true } }}
+                        sx={{
+                          '& input[type="date"]::-webkit-calendar-picker-indicator': {
+                            filter: 'invert(1)',
+                          },
+                        }}
                         fullWidth
                       />
                     </Grid>
@@ -937,11 +967,6 @@ function DayPosTab() {
                 Please fill in all required fields highlighted below.
               </Typography>
             ) : null}
-
-            <Button onClick={handleSave} disabled={saveState.isLoading} variant="contained">
-              {saveState.isLoading ? 'Saving...' : 'Save Z-report'}
-            </Button>
-            {saveState.isSuccess ? <Typography role="status" color="success.main">Z-report saved.</Typography> : null}
           </Stack>
         </AccordionDetails>
       </Accordion>
@@ -1497,14 +1522,13 @@ function FillMissingTab() {
 
   const handleExportTemplate = async () => {
     const XLSX = await import('xlsx');
-    const rows = calendar?.missing?.map((date) => ({
+    const TEMPLATE_KEYS = [...Z_REPORT_FIELD_KEYS, 'department', 'raw_text'];
+    const emptyRow = Object.fromEntries(TEMPLATE_KEYS.map((k) => [k, '']));
+    const rows = (calendar?.missing ?? []).map((date) => ({
+      ...emptyRow,
       report_date: date,
-      nett_sales: '',
-      total_covers: '',
-      total_bills: '',
-      gofood_amount: '',
-      dine_in_amount: '',
-    })) ?? [];
+      department: 'all_pos',
+    }));
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'missing-days');
@@ -1627,7 +1651,11 @@ function FillMissingTab() {
         ) : null}
 
         <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Monthly prorate fallback</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Enter monthly totals for any numeric fields below. Values are split evenly across missing days.
+        </Typography>
         <Grid container spacing={1.5}>
+          {/* Always-visible core fields */}
           {['nett_sales', 'total_covers', 'total_bills', 'gofood_amount', 'dine_in_amount'].map((key) => (
             <Grid key={key} size={{ xs: 12, sm: 6, md: 4 }}>
               <TextField
@@ -1640,6 +1668,26 @@ function FillMissingTab() {
             </Grid>
           ))}
         </Grid>
+        <Accordion sx={{ mt: 1 }}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="body2">All prorate fields ({PRORATE_KEYS.length})</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Grid container spacing={1.5}>
+              {PRORATE_KEYS.filter((k) => !['nett_sales', 'total_covers', 'total_bills', 'gofood_amount', 'dine_in_amount'].includes(k)).map((key) => (
+                <Grid key={key} size={{ xs: 12, sm: 6, md: 4 }}>
+                  <TextField
+                    label={key.replaceAll('_', ' ')}
+                    type="number"
+                    value={monthlyTotals[key] ?? ''}
+                    onChange={(event) => setMonthlyTotals((current) => ({ ...current, [key]: event.target.value }))}
+                    fullWidth
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
         <Button
           onClick={() => importMetrics({
             mode: 'monthly_prorate',

@@ -7,7 +7,7 @@ import {
   toPrismaDateTime,
   toPrismaTime,
 } from '@/domain/shared/date-utils';
-import { num, snakeToCamel } from '@/domain/shared/number-utils';
+import { camelToSnake, num, snakeToCamel } from '@/domain/shared/number-utils';
 import { SyncMonthlyActuals } from '@/domain/actuals/sync-monthly-actuals';
 import {
   getDepartment,
@@ -37,13 +37,15 @@ const AMOUNT_KEYS = new Set(
   ),
 );
 
-const PRORATE_KEYS = Z_REPORT_FIELD_KEYS.filter(
+export const PRORATE_KEYS = Z_REPORT_FIELD_KEYS.filter(
   (k) =>
     k.endsWith('_qty')
     || k.endsWith('_amount')
     || k === 'total_sales'
     || k === 'estimated_sales'
     || k === 'nett_sales'
+    || k === 'total_bills'
+    || k === 'total_covers'
     || k === 'avg_bills'
     || k === 'avg_covers'
     || k === 'report_no',
@@ -95,6 +97,13 @@ function rowToPrismaData(
   row: ZReportInput,
   entrySource: string,
 ): Record<string, unknown> {
+  // Normalize camelCase keys to snake_case for field lookup
+  for (const key of Object.keys(row)) {
+    const snakeKey = camelToSnake(key);
+    if (snakeKey !== key && (row as Record<string, unknown>)[snakeKey] === undefined) {
+      (row as Record<string, unknown>)[snakeKey] = (row as Record<string, unknown>)[key];
+    }
+  }
   const built: Record<string, unknown> = {};
   for (const key of Z_REPORT_FIELD_KEYS) {
     if (row[key] !== undefined) {
@@ -320,6 +329,13 @@ export class ZReportService {
     const periods = new Set<string>();
 
     for (const raw of rows) {
+      // Normalize camelCase keys to snake_case so the import accepts either convention
+      for (const key of Object.keys(raw)) {
+        const snakeKey = camelToSnake(key);
+        if (snakeKey !== key && raw[snakeKey] === undefined) {
+          (raw as Record<string, unknown>)[snakeKey] = raw[key];
+        }
+      }
       const date = coerceValue('report_date', raw.report_date ?? raw.date) as string | null;
       if (!date) {
         errors.push({ row: raw, error: 'Missing report_date' });

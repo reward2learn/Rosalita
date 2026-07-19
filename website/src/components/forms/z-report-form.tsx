@@ -37,6 +37,7 @@ export function ZReportForm() {
         id="report_date"
         type="date"
         {...register('report_date', { required: 'Report date is required' })}
+        style={{ colorScheme: 'dark' }}
       />
       {errors.report_date && <p role="alert">{errors.report_date.message}</p>}
 

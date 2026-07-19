@@ -19,3 +19,11 @@ export function toIdrInt(v: unknown): number {
 export function snakeToCamel(key: string): string {
   return key.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
 }
+
+/** Convert camelCase or PascalCase to snake_case. */
+export function camelToSnake(key: string): string {
+  return key
+    .replace(/([A-Z]+|[0-9]+)/g, '_$1')
+    .toLowerCase()
+    .replace(/^_/, '');
+}
