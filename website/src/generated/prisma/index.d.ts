@@ -157,6 +157,7 @@ export type ActionPriority = (typeof ActionPriority)[keyof typeof ActionPriority
 export const TaskStatus: {
   pending: 'pending',
   in_progress: 'in_progress',
+  submitted: 'submitted',
   completed: 'completed'
 };
 

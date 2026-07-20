@@ -244,6 +244,37 @@ export class MonthlyActualsService {
     };
   }
 
+  async saveAllDepartmentInputs(
+    period: string,
+    inputs: Record<string, unknown>,
+  ): Promise<{ departments: string[] }> {
+    const savedDepts: string[] = [];
+    for (const dept of ACTUALS_COST_DEPARTMENTS) {
+      const cleanInputs = this.sanitizeDepartmentInputs(dept.id, inputs || {});
+      if (!Object.keys(cleanInputs).length) continue;
+      const existing = await this.getDepartmentRecord(period, dept.id);
+      await this.db.monthlyActualDepartment.upsert({
+        where: { period_department: { period, department: dept.id } },
+        create: {
+          period,
+          department: dept.id,
+          inputs: cleanInputs,
+          receiptImages: (existing?.receipt_images || []) as unknown as object,
+          notes: existing?.notes || '',
+        },
+        update: {
+          inputs: { ...existing?.inputs, ...cleanInputs },
+          receiptImages: (existing?.receipt_images || []) as unknown as object,
+          notes: existing?.notes || '',
+        },
+      });
+      savedDepts.push(dept.id);
+    }
+    await this.consolidateDepartmentInputs(period);
+    await this.sync.resyncActualsCascadeFrom(period);
+    return { departments: savedDepts };
+  }
+
   async saveDepartmentRecord(
     period: string,
     department: string,

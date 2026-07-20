@@ -49,7 +49,7 @@ export interface TaskView {
   title: string;
   description: string | null;
   priority: 'P0' | 'P1' | 'P2';
-  status: 'pending' | 'in_progress' | 'completed';
+  status: 'pending' | 'in_progress' | 'submitted' | 'completed';
   dueDate: string | null;
   sortOrder: number;
   assignments: TaskAssignmentView[];
@@ -67,7 +67,7 @@ function toTaskView(task: {
   title: string;
   description: string | null;
   priority: 'P0' | 'P1' | 'P2';
-  status: 'pending' | 'in_progress' | 'completed';
+  status: 'pending' | 'in_progress' | 'submitted' | 'completed';
   dueDate: Date | null;
   sortOrder: number;
   assignments: {
@@ -242,7 +242,7 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   if (!id || typeof id !== 'string') {
     return jsonError('id is required', 400);
   }
-  if (status !== undefined && !['pending', 'in_progress', 'completed'].includes(status)) {
+  if (status !== undefined && !['pending', 'in_progress', 'submitted', 'completed'].includes(status)) {
     return jsonError('status must be pending | in_progress | completed', 400);
   }
   if (dueDate !== undefined && dueDate !== null && Number.isNaN(Date.parse(dueDate))) {
@@ -284,11 +284,11 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   }
 
   const updateData: {
-    status?: 'pending' | 'in_progress' | 'completed';
+    status?: 'pending' | 'in_progress' | 'submitted' | 'completed';
     dueDate?: Date | null;
   } = {};
   if (status !== undefined) {
-    updateData.status = status as 'pending' | 'in_progress' | 'completed';
+    updateData.status = status as 'pending' | 'in_progress' | 'submitted' | 'completed';
   }
   if (dueDate !== undefined) {
     updateData.dueDate = dueDate ? new Date(dueDate) : null;

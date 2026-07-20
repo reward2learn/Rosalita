@@ -3,7 +3,7 @@ import { baseQuery } from '@/store/base-query';
 import type { ApiEnvelope } from '@/store/api-types';
 import type { TasksResponse, TaskView } from '@/app/api/tasks/route';
 
-export type TaskStatusValue = 'pending' | 'in_progress' | 'completed';
+export type TaskStatusValue = 'pending' | 'in_progress' | 'submitted' | 'completed';
 
 export interface CreateTaskInput {
   title: string;

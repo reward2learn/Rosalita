@@ -444,6 +444,7 @@ exports.ActionPriority = exports.$Enums.ActionPriority = {
 exports.TaskStatus = exports.$Enums.TaskStatus = {
   pending: 'pending',
   in_progress: 'in_progress',
+  submitted: 'submitted',
   completed: 'completed'
 };
 

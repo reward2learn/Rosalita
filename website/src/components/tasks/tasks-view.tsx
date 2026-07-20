@@ -13,10 +13,12 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
+import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
+import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Select from '@mui/material/Select';
@@ -29,6 +31,7 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {
   useListTasksQuery,
   useUpdateTaskStatusMutation,
@@ -40,14 +43,19 @@ import type { TaskView } from '@/app/api/tasks/route';
 const STATUS_LABEL: Record<TaskStatusValue, string> = {
   pending: 'Pending',
   in_progress: 'In progress',
+  submitted: 'Submitted',
   completed: 'Completed',
 };
 
-const STATUS_COLOR: Record<TaskStatusValue, 'default' | 'warning' | 'success'> = {
+const STATUS_COLOR: Record<TaskStatusValue, 'default' | 'warning' | 'info' | 'success'> = {
   pending: 'default',
   in_progress: 'warning',
+  submitted: 'info',
   completed: 'success',
 };
+
+/** All statuses in the order they appear in the admin status menu. */
+const ALL_STATUSES: TaskStatusValue[] = ['pending', 'in_progress', 'submitted', 'completed'];
 
 const PRIORITY_COLOR: Record<string, 'error' | 'warning' | 'info'> = {
   P0: 'error',
@@ -82,6 +90,7 @@ export function TasksView({ forcedRole }: { forcedRole?: string | null } = {}) {
   const { tier } = useAppSelector((s) => s.auth);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskView | null>(null);
+  const [statusMenu, setStatusMenu] = useState<{ id: string; el: HTMLElement } | null>(null);
 
   // When a dedicated role route is used, lock the view to that role.
   const lockedRole = forcedRole ?? null;
@@ -232,17 +241,53 @@ export function TasksView({ forcedRole }: { forcedRole?: string | null } = {}) {
                     ))}
                   </Stack>
                 </Box>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  disabled={isUpdating}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleToggle(task);
-                  }}
-                >
-                  {task.status === 'completed' ? 'Reopen' : 'Advance'}
-                </Button>
+                {isPlatformAdmin ? (
+                  <>
+                    <IconButton
+                      size="small"
+                      aria-label="Set status"
+                      disabled={isUpdating}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStatusMenu({ id: task.id, el: e.currentTarget });
+                      }}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                    <Menu
+                      anchorEl={statusMenu?.el}
+                      open={statusMenu?.id === task.id}
+                      onClose={() => setStatusMenu(null)}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {ALL_STATUSES.map((s) => (
+                        <MenuItem
+                          key={s}
+                          selected={task.status === s}
+                          disabled={isUpdating}
+                          onClick={() => {
+                            setStatusMenu(null);
+                            void updateStatus({ id: task.id, status: s });
+                          }}
+                        >
+                          {STATUS_LABEL[s]}
+                        </MenuItem>
+                      ))}
+                    </Menu>
+                  </>
+                ) : (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={isUpdating}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleToggle(task);
+                    }}
+                  >
+                    {task.status === 'completed' ? 'Reopen' : 'Continue'}
+                  </Button>
+                )}
               </Stack>
             </Paper>
           ))}
@@ -250,7 +295,12 @@ export function TasksView({ forcedRole }: { forcedRole?: string | null } = {}) {
       )}
 
       {isPlatformAdmin ? (
-        <AdminDashboard tasks={tasks} onRefresh={refetch} />
+        <AdminDashboard
+          tasks={tasks}
+          onRefresh={refetch}
+          onSetStatus={(id, status) => void updateStatus({ id, status })}
+          isUpdating={isUpdating}
+        />
       ) : null}
 
       <TaskDetailModal
@@ -384,7 +434,12 @@ function TaskDetailModal({
                   setDueDateDirty(true);
                 }}
                 slotProps={{ inputLabel: { shrink: true } }}
-                sx={{ flex: 1 }}
+                sx={{
+                  flex: 1,
+                  '& input[type="date"]::-webkit-calendar-picker-indicator': {
+                    filter: 'invert(1)',
+                  },
+                }}
               />
               <Button
                 variant="outlined"
@@ -412,7 +467,7 @@ function TaskDetailModal({
             disabled={isUpdating}
             onClick={() => onAdvance(task)}
           >
-            {task.status === 'completed' ? 'Reopen' : 'Advance'}
+            {task.status === 'completed' ? 'Reopen' : 'Continue'}
           </Button>
         ) : null}
         <Button
@@ -431,11 +486,16 @@ function TaskDetailModal({
 function AdminDashboard({
   tasks,
   onRefresh,
+  onSetStatus,
+  isUpdating,
 }: {
   tasks: TaskView[];
   onRefresh: () => void;
+  onSetStatus: (id: string, status: TaskStatusValue) => void;
+  isUpdating: boolean;
 }) {
   const roles = ['Graham', 'Ama', 'Made', 'Lukas', 'James'];
+  const [rowMenu, setRowMenu] = useState<{ id: string; el: HTMLElement } | null>(null);
 
   const matrix = useMemo(() => {
     return roles.map((role) => {
@@ -449,6 +509,11 @@ function AdminDashboard({
       return { role, total: roleTasks.length, completed, inProgress, pending, overdue };
     });
   }, [tasks]);
+
+  const sortedTasks = useMemo(
+    () => [...tasks].sort((a, b) => a.sortOrder - b.sortOrder),
+    [tasks],
+  );
 
   return (
     <Paper variant="outlined" sx={{ p: 2, mt: 4 }}>
@@ -487,6 +552,90 @@ function AdminDashboard({
                 ) : (
                   row.overdue
                 )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <Divider sx={{ my: 3 }} />
+
+      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+        All tasks — set status
+      </Typography>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Task</TableCell>
+            <TableCell>Priority</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell>Due</TableCell>
+            <TableCell>Owners</TableCell>
+            <TableCell align="right">Set status</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {sortedTasks.map((task) => (
+            <TableRow key={task.id}>
+              <TableCell sx={{ maxWidth: 320 }}>{task.title}</TableCell>
+              <TableCell>
+                <Chip label={task.priority} size="small" color={PRIORITY_COLOR[task.priority]} />
+              </TableCell>
+              <TableCell>
+                <Chip
+                  label={STATUS_LABEL[task.status]}
+                  size="small"
+                  color={STATUS_COLOR[task.status]}
+                  variant="outlined"
+                />
+              </TableCell>
+              <TableCell>
+                {task.dueDate ? (
+                  <Chip
+                    label={`Due ${formatDueDate(task.dueDate)}`}
+                    size="small"
+                    color={isOverdue(task) ? 'error' : 'default'}
+                    variant="outlined"
+                  />
+                ) : (
+                  '—'
+                )}
+              </TableCell>
+              <TableCell>
+                <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }} useFlexGap>
+                  {task.assignments.map((a) => (
+                    <Chip key={a.roleCode} label={a.roleCode} size="small" variant="outlined" />
+                  ))}
+                </Stack>
+              </TableCell>
+              <TableCell align="right">
+                <IconButton
+                  size="small"
+                  aria-label={`Set status for ${task.title}`}
+                  disabled={isUpdating}
+                  onClick={(e) => setRowMenu({ id: task.id, el: e.currentTarget })}
+                >
+                  <MoreVertIcon />
+                </IconButton>
+                <Menu
+                  anchorEl={rowMenu?.el}
+                  open={rowMenu?.id === task.id}
+                  onClose={() => setRowMenu(null)}
+                >
+                  {ALL_STATUSES.map((s) => (
+                    <MenuItem
+                      key={s}
+                      selected={task.status === s}
+                      disabled={isUpdating}
+                      onClick={() => {
+                        setRowMenu(null);
+                        onSetStatus(task.id, s);
+                      }}
+                    >
+                      {STATUS_LABEL[s]}
+                    </MenuItem>
+                  ))}
+                </Menu>
               </TableCell>
             </TableRow>
           ))}

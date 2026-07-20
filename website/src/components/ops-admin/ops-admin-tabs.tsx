@@ -899,7 +899,7 @@ function DayPosTab() {
             })}
             onParseComplete={() => setExpanded('step2')}
           />
-          <Box sx={{ position: 'sticky', bottom: 0, pt: 1, zIndex: 1 }}>
+          <Box sx={{ position: 'sticky', bottom: 20, pt: 1, zIndex: 1 }}>
             <Button
               variant="contained"
               fullWidth
@@ -1004,7 +1004,7 @@ function DayPosTab() {
               </Typography>
             ) : null}
 
-            <Box sx={{ position: 'sticky', bottom: 0, pt: 1, zIndex: 1 }}>
+            <Box sx={{ position: 'sticky', bottom: 20, pt: 1, zIndex: 1 }}>
               <Button
                 variant="contained"
                 fullWidth
@@ -1364,6 +1364,7 @@ function CostsPayrollTab() {
                   }}
                   fullWidth
                 >
+                  <MenuItem value="all">All Accounts</MenuItem>
                   {departments.map((dept) => (
                     <MenuItem key={dept.id} value={dept.id}>{dept.label}</MenuItem>
                   ))}
@@ -1393,24 +1394,27 @@ function CostsPayrollTab() {
                   sx={{ maxWidth: 320 }}
                 />
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                  <Button
-                    variant="contained"
-                    onClick={() => void handlePrefill('month')}
-                    disabled={prefillState.isFetching || payload?.excel_locked}
-                    startIcon={<ContentCopyIcon />}
-                    sx={TOUCH_TARGET_SX}
-                  >
-                    {prefillState.isFetching ? 'Prefilling…' : 'Prefill All Accounts'}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => void handlePrefill('dept')}
-                    disabled={prefillState.isFetching || payload?.excel_locked || department === 'all'}
-                    startIcon={<ContentCopyIcon />}
-                    sx={TOUCH_TARGET_SX}
-                  >
-                    Prefill by Account
-                  </Button>
+                  {department === 'all' ? (
+                    <Button
+                      variant="contained"
+                      onClick={() => void handlePrefill('month')}
+                      disabled={prefillState.isFetching || payload?.excel_locked}
+                      startIcon={<ContentCopyIcon />}
+                      sx={TOUCH_TARGET_SX}
+                    >
+                      {prefillState.isFetching ? 'Prefilling…' : 'PREFILL ALL ACCOUNTS'}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outlined"
+                      onClick={() => void handlePrefill('dept')}
+                      disabled={prefillState.isFetching || payload?.excel_locked}
+                      startIcon={<ContentCopyIcon />}
+                      sx={TOUCH_TARGET_SX}
+                    >
+                      PREFILL BY ACCOUNT
+                    </Button>
+                  )}
                 </Stack>
               </Stack>
             ) : null}

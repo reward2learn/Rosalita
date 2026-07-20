@@ -63,7 +63,20 @@ async function buildMonthlyActualsPayload(
   const activeDept = departmentId && getActualsDepartment(departmentId) ? departmentId : 'direct';
 
   let deptPayload = null;
-  if (!excelLocked && getActualsDepartment(activeDept)) {
+  if (!excelLocked && departmentId === 'all') {
+    deptPayload = {
+      department: 'all',
+      section: {
+        id: 'all',
+        title: 'All Accounts',
+        fields: ACTUALS_COST_DEPARTMENTS.flatMap((d) => d.fields),
+      },
+      inputs: manualInputs,
+      receipt_images: [],
+      notes: '',
+      saved: false,
+    };
+  } else if (!excelLocked && getActualsDepartment(activeDept)) {
     const record = await service.getDepartmentRecord(period, activeDept);
     deptPayload = {
       department: activeDept,
@@ -221,6 +234,21 @@ async function handleMonthlyActuals(request: Request, url: URL): Promise<NextRes
     }
 
     try {
+      if (department === 'all') {
+        const saved = await writeService.saveAllDepartmentInputs(period, inputs ?? {});
+        const payload = await buildMonthlyActualsPayload(
+          writeService,
+          new SyncMonthlyActuals(writeDb),
+          new MonthlyActualsPrefill(writeDb),
+          period,
+          'all',
+        );
+        return NextResponse.json({
+          success: true,
+          data: { ...payload, synced: true, saved_department: 'all', department_saved: saved },
+        });
+      }
+
       if (department) {
         const inputsOnly = inputs_only === true || save_mode === 'costs';
         const saved = inputsOnly

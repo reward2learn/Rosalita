@@ -41,6 +41,7 @@ enum ActionPriority {
 enum TaskStatus {
   pending
   in_progress
+  submitted
   completed
 }
 
