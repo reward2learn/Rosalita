@@ -1,6 +1,6 @@
 'use client';
 
-import { useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import type { ReactNode, SyntheticEvent } from 'react';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -31,6 +31,21 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import StopIcon from '@mui/icons-material/Stop';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import SaveIcon from '@mui/icons-material/Save';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DownloadIcon from '@mui/icons-material/Download';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import FileDownloadDoneIcon from '@mui/icons-material/FileDownloadDone';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CallSplitIcon from '@mui/icons-material/CallSplit';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import {
   Chart as ChartJS,
   BarElement,
@@ -466,7 +481,7 @@ const PosOcrPanel = forwardRef<PosOcrHandle, {
   return (
     <SectionShell title="POS OCR Prefill">
       <Stack spacing={2}>
-        <Button component="label" variant="outlined">
+        <Button component="label" variant="outlined" startIcon={<AttachFileIcon />}>
           Attach POS Receipt Photos
           <input
             hidden
@@ -487,11 +502,12 @@ const PosOcrPanel = forwardRef<PosOcrHandle, {
             onClick={handleScan}
             disabled={!images.length || !!scanProgress}
             variant="contained"
+            startIcon={<PhotoCameraIcon />}
           >
             {scanProgress ? `Scanning ${scanProgress.current}/${scanProgress.total}${scanProgress.failed ? ` (${scanProgress.failed} failed)` : ''}${scanProgress.status === 'processing' ? ' — Processing...' : ''}...` : 'Scan'}
           </Button>
           {scanProgress ? (
-            <Button onClick={handleStopScan} variant="outlined" color="warning">
+            <Button onClick={handleStopScan} variant="outlined" color="warning" startIcon={<StopIcon />}>
               Stop
             </Button>
           ) : null}
@@ -861,7 +877,7 @@ function DayPosTab() {
   };
 
   return (
-    <Box>
+    <Box sx={{ pb: 9 }}>
       <Accordion expanded={expanded === 'step1'} onChange={handleAccordion('step1')} sx={{ mb: 1 }}>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -883,6 +899,16 @@ function DayPosTab() {
             })}
             onParseComplete={() => setExpanded('step2')}
           />
+          <Box sx={{ position: 'sticky', bottom: 0, pt: 1, zIndex: 1 }}>
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={() => void posOcrRef.current?.triggerParse()}
+              startIcon={<AutoFixHighIcon />}
+            >
+              Parse &amp; Prefill
+            </Button>
+          </Box>
         </AccordionDetails>
       </Accordion>
 
@@ -945,7 +971,17 @@ function DayPosTab() {
               </Box>
             ))}
 
-            <Button component="label" variant="outlined">
+            <Button
+              component="label"
+              variant="outlined"
+              startIcon={<AttachFileIcon />}
+              sx={{
+                position: 'sticky',
+                bottom: 66,
+                background: 'var(--bg)',
+                zIndex: 99,
+              }}
+            >
               Attach Verification Receipts
               <input
                 hidden
@@ -967,6 +1003,23 @@ function DayPosTab() {
                 Please fill in all required fields highlighted below.
               </Typography>
             ) : null}
+
+            <Box sx={{ position: 'sticky', bottom: 0, pt: 1, zIndex: 1 }}>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={handleSave}
+                disabled={saveState.isLoading}
+                startIcon={<SaveIcon />}
+                sx={{
+                  position: 'sticky',
+                  bottom: 18,
+                  zIndex: 99,
+                }}
+              >
+                {saveState.isLoading ? 'Saving...' : 'Save Z-report'}
+              </Button>
+            </Box>
           </Stack>
         </AccordionDetails>
       </Accordion>
@@ -987,6 +1040,7 @@ function DayPosTab() {
                   size="small"
                   variant={viewMode === mode ? 'contained' : 'outlined'}
                   onClick={() => setViewMode(mode)}
+                  startIcon={mode === 'list' ? <ViewListIcon /> : mode === 'calendar' ? <CalendarMonthIcon /> : <BarChartIcon />}
                   sx={{ textTransform: 'capitalize', fontSize: '0.75rem', py: 0.25 }}
                 >
                   {mode}
@@ -1144,7 +1198,7 @@ function ExpenseOcrPanel({
   return (
     <SectionShell title="Expense Receipt OCR">
       <Stack spacing={2}>
-        <Button component="label" variant="outlined">
+        <Button component="label" variant="outlined" startIcon={<AttachFileIcon />}>
           Attach Expense Receipts
           <input
             hidden
@@ -1165,15 +1219,16 @@ function ExpenseOcrPanel({
               onClick={handleScan}
               disabled={!images.length || !!scanProgress}
               variant="contained"
+              startIcon={<PhotoCameraIcon />}
             >
               {scanProgress ? `Scanning ${scanProgress.current}/${scanProgress.total}${scanProgress.failed ? ` (${scanProgress.failed} failed)` : ''}${scanProgress.status === 'processing' ? ' — Processing...' : ''}...` : 'Scan'}
             </Button>
             {scanProgress ? (
-              <Button onClick={handleStopScan} variant="outlined" color="warning">
+              <Button onClick={handleStopScan} variant="outlined" color="warning" startIcon={<StopIcon />}>
                 Stop
               </Button>
             ) : null}
-            <Button onClick={handleParse} disabled={!text.trim() || parseState.isLoading} variant="outlined">
+            <Button onClick={handleParse} disabled={!text.trim() || parseState.isLoading} variant="outlined" startIcon={<AutoFixHighIcon />}>
               {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
             </Button>
           </Stack>
@@ -1342,6 +1397,7 @@ function CostsPayrollTab() {
                     variant="contained"
                     onClick={() => void handlePrefill('month')}
                     disabled={prefillState.isFetching || payload?.excel_locked}
+                    startIcon={<ContentCopyIcon />}
                     sx={TOUCH_TARGET_SX}
                   >
                     {prefillState.isFetching ? 'Prefilling…' : 'Prefill All Accounts'}
@@ -1350,6 +1406,7 @@ function CostsPayrollTab() {
                     variant="outlined"
                     onClick={() => void handlePrefill('dept')}
                     disabled={prefillState.isFetching || payload?.excel_locked || department === 'all'}
+                    startIcon={<ContentCopyIcon />}
                     sx={TOUCH_TARGET_SX}
                   >
                     Prefill by Account
@@ -1396,7 +1453,7 @@ function CostsPayrollTab() {
                   fullWidth
                 />
 
-                <Button component="label" variant="outlined" sx={TOUCH_TARGET_SX}>
+                <Button component="label" variant="outlined" startIcon={<AttachFileIcon />} sx={TOUCH_TARGET_SX}>
                   Attach Cost Receipts
                   <input
                     hidden
@@ -1419,6 +1476,7 @@ function CostsPayrollTab() {
               onClick={handleSave}
               disabled={saveState.isLoading || payload?.excel_locked}
               variant="contained"
+              startIcon={<SaveIcon />}
               sx={TOUCH_TARGET_SX}
             >
               {saveState.isLoading ? 'Saving...' : actualsSubtab === 'prefill' ? 'Save & Sync' : 'Save Monthly Actuals'}
@@ -1566,7 +1624,7 @@ function FillMissingTab() {
         </Typography>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button component="label" variant="outlined" sx={TOUCH_TARGET_SX}>
+          <Button component="label" variant="outlined" startIcon={<UploadFileIcon />} sx={TOUCH_TARGET_SX}>
             Load XLSX Daily Rows
             <input
               hidden
@@ -1578,13 +1636,14 @@ function FillMissingTab() {
               }}
             />
           </Button>
-          <Button onClick={handleExportTemplate} variant="outlined" disabled={!calendar?.missing?.length} sx={TOUCH_TARGET_SX}>
+          <Button onClick={handleExportTemplate} variant="outlined" disabled={!calendar?.missing?.length} startIcon={<DownloadIcon />} sx={TOUCH_TARGET_SX}>
             Export Missing Template
           </Button>
           <Button
             onClick={handlePreview}
             disabled={!parsedRows.length}
             variant="outlined"
+            startIcon={<VisibilityIcon />}
             sx={TOUCH_TARGET_SX}
           >
             Preview
@@ -1593,6 +1652,7 @@ function FillMissingTab() {
             onClick={() => void handleRunImport()}
             disabled={!importPreview || importState.isLoading}
             variant="contained"
+            startIcon={<FileDownloadDoneIcon />}
             sx={TOUCH_TARGET_SX}
           >
             {importState.isLoading ? 'Importing…' : 'Run Import'}
@@ -1697,6 +1757,7 @@ function FillMissingTab() {
           })}
           disabled={importState.isLoading}
           variant="outlined"
+          startIcon={<CallSplitIcon />}
           sx={TOUCH_TARGET_SX}
         >
           Prorate Monthly Totals Across Missing Days
@@ -1711,6 +1772,7 @@ function FillMissingTab() {
           color="warning"
           variant="outlined"
           disabled={deleteState.isLoading}
+          startIcon={<DeleteIcon />}
           sx={TOUCH_TARGET_SX}
           onClick={() => {
             if (globalThis.window.confirm(`Delete imported rows for ${period}? Manual entries are preserved.`)) {
@@ -1812,6 +1874,7 @@ function RecentEntries() {
                         <Button
                           size="small"
                           color="error"
+                          startIcon={<DeleteIcon />}
                           onClick={(e) => {
                             e.stopPropagation();
                             if (globalThis.window.confirm(`Delete Z-report for ${date}?`)) {

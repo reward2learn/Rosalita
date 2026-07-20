@@ -15,7 +15,9 @@ export interface CreateTaskInput {
 
 export interface UpdateTaskStatusInput {
   id: string;
-  status: TaskStatusValue;
+  status?: TaskStatusValue;
+  /** Platform-admin only: ISO date string (YYYY-MM-DD) or null to clear. */
+  dueDate?: string | null;
 }
 
 export const tasksApi = createApi({

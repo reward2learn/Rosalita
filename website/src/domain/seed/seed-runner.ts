@@ -391,6 +391,19 @@ function playbookKey(title: string): string {
  * Build the tracked-task list from PRIORITY_ACTIONS.
  * P0 → due in 7 days, P1 → 14 days, P2 → 42 days (relative to seed run).
  */
+/** Individual (non-admin) role codes that tasks can be assigned to. */
+const INDIVIDUAL_ROLE_CODES = KNOWN_ROLES.filter((r) => !r.isPlatformAdmin).map((r) => r.code);
+
+/**
+ * Resolve effective owner codes for a task. A task owned by "All" (or with no
+ * recognized owner) is assigned to every individual role so it appears in the
+ * per-role dashboard and for each role's users.
+ */
+function resolveOwnerCodes(ownerCodes: string[]): string[] {
+  if (ownerCodes.length === 0) return [...INDIVIDUAL_ROLE_CODES];
+  return ownerCodes;
+}
+
 function buildTasks(): BuiltTask[] {
   const tasks: BuiltTask[] = [];
   const push = (labels: string[], priority: ActionPriority, dueOffsetDays: number) => {
@@ -400,7 +413,13 @@ function buildTasks(): BuiltTask[] {
       const description = play
         ? `${play.description}\n\nSteps:\n${play.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`
         : null;
-      tasks.push({ title, priority, ownerCodes, dueOffsetDays, description });
+      tasks.push({
+        title,
+        priority,
+        ownerCodes: resolveOwnerCodes(ownerCodes),
+        dueOffsetDays,
+        description,
+      });
     }
   };
   push(PRIORITY_ACTIONS.P0_THIS_WEEK, 'P0', 7);
@@ -475,7 +494,7 @@ export async function seedTaskTracking(prisma: DbClient): Promise<void> {
     const builtAll = buildTasks();
     for (const built of builtAll) {
       const existing = await prisma.task.findFirst({ where: { title: built.title } });
-      if (existing && !existing.description && built.description) {
+      if (existing && !existing.description?.trim() && built.description) {
         await prisma.task.update({
           where: { id: existing.id },
           data: { description: built.description },

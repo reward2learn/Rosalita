@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -26,6 +26,7 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import {
@@ -57,6 +58,17 @@ const PRIORITY_COLOR: Record<string, 'error' | 'warning' | 'info'> = {
 function isOverdue(task: TaskView): boolean {
   if (!task.dueDate || task.status === 'completed') return false;
   return new Date(task.dueDate).getTime() < Date.now();
+}
+
+/** Format an ISO date as DD/MM/YYYY (business standard for this project). */
+function formatDueDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
 }
 
 function nextStatus(status: TaskStatusValue): TaskStatusValue {
@@ -209,7 +221,7 @@ export function TasksView({ forcedRole }: { forcedRole?: string | null } = {}) {
                     />
                     {task.dueDate ? (
                       <Chip
-                        label={`Due ${new Date(task.dueDate).toLocaleDateString()}`}
+                        label={`Due ${formatDueDate(task.dueDate)}`}
                         size="small"
                         color={isOverdue(task) ? 'error' : 'default'}
                         variant="outlined"
@@ -249,7 +261,9 @@ export function TasksView({ forcedRole }: { forcedRole?: string | null } = {}) {
           router.push(`/ops-chat?prompt=${encodeURIComponent(prompt)}`);
         }}
         onAdvance={(task) => void handleToggle(task)}
+        onUpdateDueDate={(task, dueDate) => void updateStatus({ id: task.id, dueDate })}
         isUpdating={isUpdating}
+        isPlatformAdmin={isPlatformAdmin}
       />
     </Box>
   );
@@ -265,14 +279,32 @@ function TaskDetailModal({
   onClose,
   onAskAi,
   onAdvance,
+  onUpdateDueDate,
   isUpdating,
+  isPlatformAdmin,
 }: {
   task: TaskView | null;
   onClose: () => void;
   onAskAi: (task: TaskView) => void;
   onAdvance: (task: TaskView) => void;
+  onUpdateDueDate: (task: TaskView, dueDate: string | null) => void;
   isUpdating: boolean;
+  isPlatformAdmin: boolean;
 }) {
+  const [dueDateInput, setDueDateInput] = useState<string>('');
+  const [dueDateDirty, setDueDateDirty] = useState(false);
+
+  // Sync the editable date field whenever the selected task changes.
+  useEffect(() => {
+    if (task?.dueDate) {
+      const d = new Date(task.dueDate);
+      setDueDateInput(d.toISOString().slice(0, 10));
+    } else {
+      setDueDateInput('');
+    }
+    setDueDateDirty(false);
+  }, [task]);
+
   const steps = useMemo(() => {
     if (!task?.description) return [];
     const match = task.description.match(/Steps:\n([\s\S]+)$/);
@@ -295,7 +327,7 @@ function TaskDetailModal({
               <Chip label={task.priority} size="small" color={PRIORITY_COLOR[task.priority]} />
               <Chip label={STATUS_LABEL[task.status]} size="small" color={STATUS_COLOR[task.status]} variant="outlined" />
               {task.dueDate ? (
-                <Chip label={`Due ${new Date(task.dueDate).toLocaleDateString()}`} size="small" variant="outlined" />
+                <Chip label={`Due ${formatDueDate(task.dueDate)}`} size="small" variant="outlined" />
               ) : null}
               {task.assignments.map((a) => (
                 <Chip key={a.roleCode} label={a.roleCode} size="small" variant="outlined" />
@@ -333,6 +365,42 @@ function TaskDetailModal({
                 </ListItem>
               ))}
             </List>
+          </>
+        ) : null}
+
+        {isPlatformAdmin && task ? (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+              Due date (platform admin)
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <TextField
+                type="date"
+                size="small"
+                value={dueDateInput}
+                onChange={(e) => {
+                  setDueDateInput(e.target.value);
+                  setDueDateDirty(true);
+                }}
+                slotProps={{ inputLabel: { shrink: true } }}
+                sx={{ flex: 1 }}
+              />
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={!dueDateDirty || isUpdating}
+                onClick={() => {
+                  void onUpdateDueDate(task, dueDateInput || null);
+                  setDueDateDirty(false);
+                }}
+              >
+                Save
+              </Button>
+            </Stack>
+            <Typography variant="caption" color="text.secondary">
+              Format DD/MM/YYYY. The whole exit process should complete by 03/08/2026.
+            </Typography>
           </>
         ) : null}
       </DialogContent>

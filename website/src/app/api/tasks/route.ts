@@ -13,7 +13,7 @@ export const maxDuration = 30;
  * 504 timeouts on cold Neon connections.
  */
 let tablesReady: Promise<void> | null = null;
-let seedStarted = false;
+let seedReady: Promise<void> | null = null;
 
 async function ensureBootstrapped(db: Awaited<ReturnType<typeof createClient>>): Promise<void> {
   // Table creation must complete before we query — but only once per instance.
@@ -25,15 +25,17 @@ async function ensureBootstrapped(db: Awaited<ReturnType<typeof createClient>>):
   }
   await tablesReady;
 
-  // Task/role data seeding is best-effort and non-blocking: kick it off once so
-  // the GET response isn't held up by 15 inserts on a cold connection.
-  if (!seedStarted) {
-    seedStarted = true;
-    seedTaskTracking(db).catch((err) => {
-      console.error('[tasks] background seed failed:', err);
-      seedStarted = false;
+  // Seed roles + tasks (and backfill any missing descriptions) exactly once per
+  // instance. Awaited so the first GET returns fully-populated tasks instead of
+  // leaving descriptions null when the previous fire-and-forget job failed.
+  if (!seedReady) {
+    seedReady = seedTaskTracking(db).catch((err) => {
+      seedReady = null;
+      console.error('[tasks] seed failed:', err);
+      throw err;
     });
   }
+  await seedReady;
 }
 
 export interface TaskAssignmentView {
@@ -232,12 +234,19 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     return jsonError('Invalid JSON body', 400);
   }
 
-  const { id, status } = (body ?? {}) as { id?: string; status?: string };
+  const { id, status, dueDate } = (body ?? {}) as {
+    id?: string;
+    status?: string;
+    dueDate?: string | null;
+  };
   if (!id || typeof id !== 'string') {
     return jsonError('id is required', 400);
   }
-  if (!['pending', 'in_progress', 'completed'].includes(status ?? '')) {
+  if (status !== undefined && !['pending', 'in_progress', 'completed'].includes(status)) {
     return jsonError('status must be pending | in_progress | completed', 400);
+  }
+  if (dueDate !== undefined && dueDate !== null && Number.isNaN(Date.parse(dueDate))) {
+    return jsonError('dueDate must be a valid ISO date or null', 400);
   }
 
   let db;
@@ -269,9 +278,25 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     }
   }
 
+  // Only platform admins may amend due dates; everyone else may only advance status.
+  if (dueDate !== undefined && !isPlatformAdmin) {
+    return jsonError('Only platform admins can change due dates', 403);
+  }
+
+  const updateData: {
+    status?: 'pending' | 'in_progress' | 'completed';
+    dueDate?: Date | null;
+  } = {};
+  if (status !== undefined) {
+    updateData.status = status as 'pending' | 'in_progress' | 'completed';
+  }
+  if (dueDate !== undefined) {
+    updateData.dueDate = dueDate ? new Date(dueDate) : null;
+  }
+
   const updated = await db.task.update({
     where: { id },
-    data: { status: status as 'pending' | 'in_progress' | 'completed' },
+    data: updateData,
     include: {
       assignments: { include: { role: { select: { code: true, name: true } } } },
     },
