@@ -39,6 +39,24 @@ CREATE TABLE IF NOT EXISTS monthly_targets (
   target_staff_cost_pct NUMERIC(5,2) NOT NULL
 );`;
 
+const JOB_QUEUE_DDL = `
+DO $$ BEGIN
+  CREATE TYPE "JobStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS job_queue (
+  job_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  requested_by_session TEXT,
+  payload JSONB NOT NULL,
+  status "JobStatus" NOT NULL DEFAULT 'PENDING',
+  created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  completed_data JSONB
+);
+
+CREATE INDEX IF NOT EXISTS idx_job_queue_by_status ON job_queue (status);
+`;
+
 function isNeonRetryable(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
   return msg.includes('neon:retryable') || msg.includes('Control plane request failed');
@@ -64,7 +82,19 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3, baseMs = 500): P
   throw lastErr;
 }
 
-export async function ensureLegacyTables(db: DbClient): Promise<{ daily_metrics: boolean; monthly_targets: boolean }> {
+export async function ensureJobQueueTable(db: DbClient): Promise<boolean> {
+  if (!process.env.POSTGRES_URL) {
+    throw new Error('POSTGRES_URL is not set — refusing to run ensureJobQueueTable');
+  }
+
+  await withRetry(async () => {
+    await db.$executeRawUnsafe(JOB_QUEUE_DDL);
+  });
+
+  return true;
+}
+
+export async function ensureLegacyTables(db: DbClient): Promise<{ daily_metrics: boolean; monthly_targets: boolean; job_queue: boolean }> {
   if (!process.env.POSTGRES_URL) {
     throw new Error('POSTGRES_URL is not set — refusing to run ensureLegacyTables');
   }
@@ -72,9 +102,10 @@ export async function ensureLegacyTables(db: DbClient): Promise<{ daily_metrics:
   await withRetry(async () => {
     await db.$executeRawUnsafe(DAILY_METRICS_DDL);
     await db.$executeRawUnsafe(MONTHLY_TARGETS_DDL);
+    await db.$executeRawUnsafe(JOB_QUEUE_DDL);
   });
 
-  return { daily_metrics: true, monthly_targets: true };
+  return { daily_metrics: true, monthly_targets: true, job_queue: true };
 }
 
 export const MIGRATION_NOTES = `

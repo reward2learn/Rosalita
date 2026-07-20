@@ -685,7 +685,10 @@ function ZReportChartView() {
     }
   }
 
-  const days = Object.keys(byDay).sort();
+  const days = Array.from({ length: lastDay }, (_, i) => {
+    const day = String(i + 1).padStart(2, '0');
+    return `${chartYear}-${String(chartMonth).padStart(2, '0')}-${day}`;
+  });
 
   const datasets = chartMetrics.map((metric, idx) => {
     const colors = [
@@ -716,7 +719,7 @@ function ZReportChartView() {
   });
 
   const chartData = {
-    labels: days.map((d) => d.slice(8)),
+    labels: days.map((d) => d),
     datasets,
   };
 
@@ -785,6 +788,15 @@ function ZReportChartView() {
                 },
               },
               scales: {
+                x: {
+                  title: { display: true, text: 'Date (YYYY-MM-DD)' },
+                  ticks: {
+                    autoSkip: false,
+                    maxRotation: 90,
+                    minRotation: 45,
+                    font: { size: 10 },
+                  },
+                },
                 y: {
                   type: 'linear' as const,
                   position: 'left' as const,
@@ -1228,8 +1240,13 @@ function ExpenseOcrPanel({
                 Stop
               </Button>
             ) : null}
-            <Button onClick={handleParse} disabled={!text.trim() || parseState.isLoading} variant="outlined" startIcon={<AutoFixHighIcon />}>
-              {parseState.isLoading ? 'Parsing...' : 'Parse & Prefill'}
+            <Button
+              onClick={handleParse}
+              disabled={!text.trim() || parseState.isLoading}
+              variant="outlined"
+              startIcon={parseState.isLoading ? <CircularProgress size={18} /> : <AutoFixHighIcon />}
+            >
+              PARSE &amp; PREFILL
             </Button>
           </Stack>
           {scanProgress ? (

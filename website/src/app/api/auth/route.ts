@@ -23,9 +23,21 @@ import { requireGoogle } from '@/lib/auth/guards';
 import { getSecretPlaintext } from '@/lib/secrets';
 import { createClient } from '@/lib/db';
 import { PdfExportService } from '@/domain/pdf/pdf-export-service';
+import { ensureJobQueueTable } from '@/lib/db-migrate';
 import { legacyError, jsonError } from '@/lib/api/response';
 
 export const maxDuration = 60;
+
+let jobQueueEnsured: Promise<boolean> | null = null;
+function ensureJobQueueOnce(): Promise<boolean> {
+  if (!jobQueueEnsured) {
+    jobQueueEnsured = ensureJobQueueTable(createClient()).catch((err) => {
+      jobQueueEnsured = null;
+      throw err;
+    });
+  }
+  return jobQueueEnsured;
+}
 
 const verifyPinSchema = z.object({
   role: z.string().min(1),
@@ -273,6 +285,7 @@ async function handlePdf(request: Request, url: URL): Promise<NextResponse> {
 
     const db = createClient({ tier: guard.session.tier, sub: guard.session.sub });
     const pdfService = new PdfExportService(db);
+    await ensureJobQueueOnce();
     const jobId = await pdfService.queueJob(guard.session.sub, {
       origin,
       sessionCookie,
