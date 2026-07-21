@@ -227,6 +227,14 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
     authTier: 'pin',
     sections: [],
   },
+  config: {
+    slug: 'config',
+    title: 'Source Config',
+    navLabel: 'Config',
+    showInNav: true,
+    authTier: 'pin',
+    sections: [],
+  },
   'terms-of-service': {
     slug: 'terms-of-service',
     title: 'Terms of Service',

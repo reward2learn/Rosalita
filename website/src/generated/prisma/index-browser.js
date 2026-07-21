@@ -227,6 +227,21 @@ exports.Prisma.KnowledgeSnippetScalarFieldEnum = {
   category: 'category'
 };
 
+exports.Prisma.NavigationItemScalarFieldEnum = {
+  id: 'id',
+  parentId: 'parentId',
+  sortOrder: 'sortOrder',
+  title: 'title',
+  path: 'path',
+  icon: 'icon',
+  authTier: 'authTier',
+  requiredGroups: 'requiredGroups',
+  isVisible: 'isVisible',
+  isDynamic: 'isDynamic',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SecretScalarFieldEnum = {
   keyName: 'keyName',
   encryptedValue: 'encryptedValue',
@@ -505,6 +520,7 @@ exports.Prisma.ModelName = {
   Task: 'Task',
   TaskAssignment: 'TaskAssignment',
   KnowledgeSnippet: 'KnowledgeSnippet',
+  NavigationItem: 'NavigationItem',
   Secret: 'Secret',
   AppSetting: 'AppSetting',
   GoogleOAuthConfig: 'GoogleOAuthConfig',

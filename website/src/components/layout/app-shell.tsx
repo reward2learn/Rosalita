@@ -1,32 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import type { Route } from 'next';
 import AppBar from '@mui/material/AppBar';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
+import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import MenuIcon from '@mui/icons-material/Menu';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import FolderIcon from '@mui/icons-material/Folder';
 import type { ReactNode } from 'react';
 import { SavedConversationsMenu } from '@/components/chat/saved-conversations-menu';
-import { listNavPages, listReviewParts, tierAllowsAccess } from '@/lib/page-catalog';
+import { listNavPages } from '@/lib/page-catalog';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDrawerOpen } from '@/store/ui-slice';
 import { useListPagesQuery } from '@/store/apis/content-api';
+import { NavIcon } from '@/components/shared/nav-icon';
 
 const DRAWER_WIDTH = 280;
 
-const linkSx = { textDecoration: 'none', color: 'inherit', display: 'block' };
+const linkSx = { textDecoration: 'none', color: 'inherit', display: 'inline-flex', width: '100%' };
+
+/** DB-driven nav item shape from GET /api/navigation */
+interface DbNavItem {
+  id: string;
+  parentId: string | null;
+  sortOrder: number;
+  title: string;
+  path: string;
+  icon: string;
+  authTier: string;
+  requiredGroups: string;
+  isVisible: boolean;
+  isDynamic: boolean;
+  isDefault: boolean;
+  children: DbNavItem[];
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -50,15 +72,138 @@ export function AppShell({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  const navPages = listNavPages(tier, groups ?? []);
-  const reviewParts = tierAllowsAccess(tier, 'google') ? listReviewParts() : [];
-  const showConfigLink = tierAllowsAccess(tier, 'pin');
+  // DB-driven navigation (fallback: static catalog via listNavPages)
+  const [dbNavItems, setDbNavItems] = useState<DbNavItem[] | null>(null);
+  useEffect(() => {
+    const groupsParam = encodeURIComponent((groups ?? []).join(','));
+    fetch(`/api/navigation?tier=${tier}&groups=${groupsParam}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.items) setDbNavItems(d.items); })
+      .catch(() => { /* fallback to static catalog */ });
+  }, [tier, groups]);
+
+  // Use DB nav if loaded, otherwise fall back to static catalog
+  const navItems = dbNavItems ?? listNavPages(tier, groups ?? []).map((p) => ({
+    id: `static-${p.slug}`,
+    parentId: null,
+    sortOrder: 0,
+    title: p.navLabel ?? p.title,
+    path: `/${p.slug}`,
+    icon: '',
+    authTier: p.authTier,
+    requiredGroups: '',
+    isVisible: true,
+    isDynamic: false,
+    isDefault: false,
+    children: [] as DbNavItem[],
+  })) as (DbNavItem | (DbNavItem & { _isCatalog?: boolean }))[];
+
+
 
   const closeDrawer = () => dispatch(setDrawerOpen(false));
   const toggleDrawer = () => dispatch(setDrawerOpen(!drawerOpen));
 
   const isActive = (href: string) =>
     pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+
+  /** Track which nav items have their children expanded (keyed by item id). */
+  const [expandedNav, setExpandedNav] = useState<Record<string, boolean>>({});
+
+  const toggleExpanded = useCallback((id: string) => {
+    setExpandedNav((prev) => ({ ...prev, [id]: !prev[id] }));
+  }, []);
+
+  /** Recursively render nav items with expand/collapse and hierarchy. */
+  const renderNavItems = (
+    items: (DbNavItem | (DbNavItem & { _isCatalog?: boolean }))[],
+    currentPath: string,
+    onClose: () => void,
+    activeCheck: (href: string) => boolean,
+    linkStyle: Record<string, unknown>,
+    depth: number,
+  ): ReactNode[] => {
+    return items.map((item) => {
+      const href = item.path || '';
+      const children = 'children' in item ? (item as DbNavItem).children ?? [] : [];
+      const hasChildren = children.length > 0;
+      const isExpanded = expandedNav[item.id] ?? false;
+      const isFolder = !href && hasChildren;
+      const isActiveItem = href ? activeCheck(href) : false;
+
+      const handleNavClick = () => {
+        if (!isFolder) onClose();
+      };
+
+      return (
+        <Box key={item.id} sx={{ display: 'inline-flex', flexDirection: 'column', width: '100%' }}>
+          <ListItemButton
+            selected={isActiveItem}
+            onClick={handleNavClick}
+            component={!isFolder && href ? Link : 'div'}
+            href={!isFolder && href ? (href as Route) : undefined}
+            style={!isFolder && href ? linkStyle : undefined}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              width: '100%',
+              pl: 2 + depth * 2,
+              borderLeft: '3px solid transparent',
+              '&.Mui-selected': {
+                borderLeftColor: 'primary.main',
+                bgcolor: 'rgba(235, 61, 40, 0.06)',
+              },
+            }}
+          >
+            {/* Icon — custom nav icon OR expand/collapse chevron */}
+            <ListItemIcon
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: item.icon || hasChildren ? 28 : 0,
+                color: 'text.secondary',
+                cursor: hasChildren ? 'pointer' : 'default',
+              }}
+              onClick={(e: React.MouseEvent) => {
+                if (hasChildren) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleExpanded(item.id);
+                }
+              }}
+            >
+              {item.icon ? (
+                <NavIcon name={item.icon} fontSize="small" />
+              ) : hasChildren ? (
+                isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />
+              ) : null}
+            </ListItemIcon>
+            {/* Title text — clicking navigates (if path set) and closes drawer */}
+            <ListItemText
+              primary={item.title}
+              sx={{ display: 'inline-flex', alignItems: 'center', m: 0 }}
+              slotProps={{
+                primary: {
+                  variant: hasChildren ? 'subtitle2' : 'body2',
+                  sx: {
+                    fontWeight: hasChildren ? 700 : 400,
+                    color: hasChildren ? 'text.primary' : undefined,
+                  },
+                },
+              }}
+            />
+          </ListItemButton>
+          {hasChildren ? (
+            <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+              <Box sx={{ ml: 0 }}>
+                {renderNavItems(children, currentPath, onClose, activeCheck, linkStyle, depth + 1)}
+              </Box>
+            </Collapse>
+          ) : null}
+        </Box>
+      );
+    });
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
@@ -121,64 +266,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Box>
         <Divider />
         <List sx={{ flex: 1, py: 1 }}>
-          {navPages.map((page) => {
-            const href = `/${page.slug}` as Route;
-            return (
-              <Link key={page.slug} href={href} style={linkSx} onClick={closeDrawer}>
-                <ListItemButton
-                  selected={isActive(href)}
-                  sx={{
-                    borderLeft: '3px solid transparent',
-                    '&.Mui-selected': {
-                      borderLeftColor: 'primary.main',
-                      bgcolor: 'rgba(235, 61, 40, 0.06)',
-                    },
-                  }}
-                >
-                  <ListItemText primary={page.navLabel ?? page.title} />
-                </ListItemButton>
-              </Link>
-            );
-          })}
-          {showConfigLink ? (
-            <Link href="/config" style={linkSx} onClick={closeDrawer}>
-              <ListItemButton
-                selected={pathname === '/config'}
-                sx={{
-                  borderLeft: '3px solid transparent',
-                  '&.Mui-selected': {
-                    borderLeftColor: 'primary.main',
-                    bgcolor: 'rgba(235, 61, 40, 0.06)',
-                  },
-                }}
-              >
-                <ListItemText primary="Config" />
-              </ListItemButton>
-            </Link>
-          ) : null}
-          {reviewParts.length > 0 ? (
-            <>
-              <Divider sx={{ my: 1 }} />
-              <Typography variant="caption" sx={{ px: 3, py: 1, color: 'text.secondary' }}>
-                Business review
-              </Typography>
-              {reviewParts.map((part) => {
-                const href = `/review/${part.partSlug}` as Route;
-                return (
-                  <Link key={part.partSlug} href={href} style={linkSx} onClick={closeDrawer}>
-                    <ListItemButton selected={pathname === href} sx={{ pl: 3 }}>
-                      <ListItemText
-                        primary={part.title}
-                        slotProps={{
-                          primary: { variant: 'body2', sx: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
-                        }}
-                      />
-                    </ListItemButton>
-                  </Link>
-                );
-              })}
-            </>
-          ) : null}
+          {renderNavItems(navItems, pathname, closeDrawer, isActive, linkSx, 0)}
+
         </List>
         <Divider />
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>

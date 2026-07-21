@@ -230,6 +230,35 @@ model KnowledgeSnippet {
   @@map("knowledge_snippets")
 }
 
+/// A navigation item in the app drawer. Supports parent-child hierarchy,
+/// drag-and-drop reorder, group-security gating, and dynamic route linking.
+model NavigationItem {
+  id             String           @id() @default(cuid())
+  /// Parent nav item for nested hierarchy (null = root-level).
+  parentId       String?          @map("parent_id")
+  parent         NavigationItem?  @relation("NavChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children       NavigationItem[] @relation("NavChildren")
+  sortOrder      Int              @default(0) @map("sort_order")
+  title          String
+  /// Route path e.g. "/dashboard", "/admin", "/sheet-profit-loss". External URLs also supported.
+  path           String           @default("")
+  /// MUI icon name (optional).
+  icon           String           @default("")
+  /// Auth tier required to see this nav item.
+  authTier       AuthTier         @default(public) @map("auth_tier")
+  /// Comma-separated security group codes. Empty means no group restriction.
+  requiredGroups String           @default("") @map("required_groups")
+  /// When false the item is hidden from the nav but still exists in the tree.
+  isVisible      Boolean          @default(true) @map("is_visible")
+  /// When true the path is treated as a dynamic /[slug] route rather than static.
+  isDynamic      Boolean          @default(false) @map("is_dynamic")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt() @map("updated_at")
+
+  @@index([parentId, sortOrder])
+  @@map("navigation_items")
+}
+
 model Secret {
   keyName        String   @id() @map("key_name")
   encryptedValue String   @map("encrypted_value")
