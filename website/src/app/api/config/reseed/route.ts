@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireWriteAuth } from '@/lib/auth/guards';
+import { requireWriteAuth, requireCapability } from '@/lib/auth/guards';
 import { jsonError, jsonOk } from '@/lib/api/response';
 import {
   CONFIG_UPLOAD_FIELD_NAMES,
@@ -11,7 +11,7 @@ import {
 import { seedFromSources, type SeedCounts } from '@/domain/seed/seed-runner';
 import type { SourceFileKey } from '@/domain/seed/source-files';
 
-export const maxDuration = 60;
+export const maxDuration = 300; // 5 min — workbook analysis + full DB seed can be heavy
 
 export interface ReseedResponse {
   counts: SeedCounts;
@@ -28,6 +28,9 @@ function fileFromForm(formData: FormData, key: string): File | null {
 export async function POST(request: Request): Promise<NextResponse> {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
+
+  const groupGuard = await requireCapability('config:write', request);
+  if (!groupGuard.ok) return groupGuard.response;
 
   let formData: FormData;
   try {

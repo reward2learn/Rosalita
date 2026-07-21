@@ -1,6 +1,5 @@
 /**
  * Ordered P&L line items matching the Red Ruby Excel workbook layout.
- * Based on: Red Ruby Club & Terrace Bar Cashflow Budgets.xlsx
  */
 export interface PnlLineItem {
   key: string;

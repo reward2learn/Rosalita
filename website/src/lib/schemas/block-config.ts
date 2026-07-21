@@ -69,6 +69,13 @@ export const reportsRollupConfigSchema = z.object({
   minTier: minTierSchema,
 });
 
+export const sheetViewerConfigSchema = z.object({
+  sheet: z.string().optional(),
+  columns: z.array(z.string()).optional(),
+  title: z.string().optional(),
+  minTier: minTierSchema,
+});
+
 export const blockConfigSchemas = {
   hero: heroConfigSchema,
   metric_grid: metricGridConfigSchema,
@@ -85,6 +92,7 @@ export const blockConfigSchemas = {
   chat_panel: chatPanelConfigSchema,
   review_blocks: reviewBlocksConfigSchema,
   reports_rollup: reportsRollupConfigSchema,
+  sheet_viewer: sheetViewerConfigSchema,
 } as const satisfies Record<BlockType, z.ZodType>;
 
 export type BlockConfigMap = {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { requireWriteAuth } from '@/lib/auth/guards';
+import { requireWriteAuth, requireCapability } from '@/lib/auth/guards';
 import { jsonError, jsonOk } from '@/lib/api/response';
 import { createClient } from '@/lib/db';
 import { getAppSettings, updateAppSettings } from '@/domain/config/app-settings-service';
@@ -27,6 +27,9 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
+
+  const groupGuard = await requireCapability('settings:write', request);
+  if (!groupGuard.ok) return groupGuard.response;
 
   let body: unknown;
   try {

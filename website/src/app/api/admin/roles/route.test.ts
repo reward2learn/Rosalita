@@ -25,11 +25,15 @@ import { getSecretPlaintext, setSecret } from '@/lib/secrets';
 function makeDb() {
   const roles = [
     { id: 'r-ama', code: 'ama', name: 'Ama', email: 'ama@redruby.com', isPlatformAdmin: false },
+    { id: 'r-made', code: 'made', name: 'Made', email: 'made@redruby.com', isPlatformAdmin: false },
     { id: 'r-admin', code: 'admin', name: 'Platform Admin', email: null, isPlatformAdmin: true },
   ];
   return {
     role: {
       findMany: vi.fn(async () => roles),
+      findUnique: vi.fn(async ({ where }: { where: { code: string } }) =>
+        roles.find((r) => r.code.toLowerCase() === String(where.code).toLowerCase()) ?? null,
+      ),
     },
   };
 }

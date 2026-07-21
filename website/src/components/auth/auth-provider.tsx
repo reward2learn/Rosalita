@@ -15,7 +15,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         tier: data.data.tier,
         user: data.data.user,
         roleCode: data.data.roleCode ?? null,
-        platformAdmin: data.data.platformAdmin ?? false,
+        platformAdmin:
+          (data.data.platformAdmin ?? false) ||
+          (data.data.groups ?? []).includes('platform-admin'),
+        groups: data.data.groups ?? [],
+        permissions: data.data.permissions ?? [],
       }));
       return;
     }

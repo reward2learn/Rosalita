@@ -171,6 +171,36 @@ exports.Prisma.RoleScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.UserAccountScalarFieldEnum = {
+  id: 'id',
+  sub: 'sub',
+  email: 'email',
+  name: 'name',
+  tier: 'tier',
+  roleCode: 'roleCode',
+  isActive: 'isActive',
+  lastSeenAt: 'lastSeenAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SecurityGroupScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  description: 'description',
+  isSystem: 'isSystem',
+  permissions: 'permissions',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.UserGroupScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  groupId: 'groupId',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.TaskScalarFieldEnum = {
   id: 'id',
   title: 'title',
@@ -209,6 +239,10 @@ exports.Prisma.SecretScalarFieldEnum = {
 exports.Prisma.AppSettingScalarFieldEnum = {
   id: 'id',
   webSearchEnabled: 'webSearchEnabled',
+  brandLogoText: 'brandLogoText',
+  brandLogoUrl: 'brandLogoUrl',
+  brandPrimaryColor: 'brandPrimaryColor',
+  brandSecondaryColor: 'brandSecondaryColor',
   updatedAt: 'updatedAt'
 };
 
@@ -228,10 +262,13 @@ exports.Prisma.GoogleOAuthConfigScalarFieldEnum = {
 exports.Prisma.ConversationScalarFieldEnum = {
   id: 'id',
   userName: 'userName',
+  ownerSub: 'ownerSub',
   title: 'title',
   messages: 'messages',
   messageCount: 'messageCount',
-  createdAt: 'createdAt'
+  archived: 'archived',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.PdfJobScalarFieldEnum = {
@@ -462,6 +499,9 @@ exports.Prisma.ModelName = {
   Lever: 'Lever',
   ActionItem: 'ActionItem',
   Role: 'Role',
+  UserAccount: 'UserAccount',
+  SecurityGroup: 'SecurityGroup',
+  UserGroup: 'UserGroup',
   Task: 'Task',
   TaskAssignment: 'TaskAssignment',
   KnowledgeSnippet: 'KnowledgeSnippet',

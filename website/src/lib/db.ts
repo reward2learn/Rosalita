@@ -45,3 +45,13 @@ export function createClient(session: DbSession = { tier: 'public' }) {
     },
   });
 }
+
+/**
+ * Internal client for bootstrap/migration and security-account operations.
+ * Uses a public-tier enhanced client; raw queries ($queryRawUnsafe /
+ * $executeRawUnsafe) bypass ZenStack policy filtering, so DDL, account upserts,
+ * and admin reads always succeed regardless of the caller's session.
+ */
+export function createBaseClient(): DbClient {
+  return createClient({ tier: 'public' });
+}

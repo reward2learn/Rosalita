@@ -23,6 +23,7 @@ vi.mock('@/domain/pdf/pdf-export-service', () => ({
 
 vi.mock('@/lib/db', () => ({
   createClient: vi.fn(() => ({})),
+  createBaseClient: vi.fn(() => ({})),
 }));
 
 import { getSecretPlaintext, setSecret } from '@/lib/secrets';

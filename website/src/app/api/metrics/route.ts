@@ -4,7 +4,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/db';
-import { requireWriteAuth } from '@/lib/auth/guards';
+import { requireWriteAuth, requireWrite } from '@/lib/auth/guards';
 import { ZReportService } from '@/domain/z-report/z-report-service';
 import {
   getDepartment,
@@ -212,6 +212,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
+  const groupGuard = await requireWrite('metrics', request);
+  if (!groupGuard.ok) return groupGuard.response;
 
   let body: unknown;
   try {

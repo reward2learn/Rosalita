@@ -59,6 +59,16 @@ export const chatApi = createApi({
       }),
       invalidatesTags: ['Conversations'],
     }),
+    archiveConversation: builder.mutation<
+      ApiEnvelope<{ id: number; archived: boolean }>,
+      { id: number; archived?: boolean }
+    >({
+      query: ({ id, archived }) => ({
+        url: `chat?resource=conversations&id=${id}${archived !== undefined ? `&archived=${archived}` : ''}`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['Conversations'],
+    }),
   }),
 });
 
@@ -69,4 +79,5 @@ export const {
   useGetConversationQuery,
   useLazyGetConversationQuery,
   useSaveConversationMutation,
+  useArchiveConversationMutation,
 } = chatApi;

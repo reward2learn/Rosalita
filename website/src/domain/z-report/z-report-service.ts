@@ -253,7 +253,9 @@ export class ZReportService {
     // Build correct reportTime from reportDate string + time string
     if (data.reportTime && typeof data.reportTime === 'string') {
       const dateStr = String(data.reportDate).slice(0, 10);
-      const timeStr = String(data.reportTime).slice(0, 8);
+      // data.reportTime is in ISO format "YYYY-MM-DDTHH:mm:ss.000Z"
+      // Extract time portion from positions 11-19 e.g. "22:02:00"
+      const timeStr = String(data.reportTime).slice(11, 19);
       data.reportTime = new Date(`${dateStr}T${timeStr}`);
     }
 

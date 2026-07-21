@@ -1,10 +1,11 @@
 'use client';
 
-import { Suspense, type FormEvent, useState } from 'react';
+import { Suspense, useEffect, useState, type FormEvent } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
@@ -14,26 +15,54 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import type { AuthTier } from '@/lib/page-catalog';
-import { useVerifyPinMutation } from '@/store/apis/auth-api';
+import { PERSONS } from '@/domain/security/persons';
+import { useGetSessionQuery, useVerifyPinMutation } from '@/store/apis/auth-api';
 
 export interface SignInPanelProps {
   requiredTier: AuthTier;
 }
 
-const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Platform Admin' },
-  { value: 'ama', label: 'Ama' },
-  { value: 'made', label: 'Made' },
-  { value: 'lukas', label: 'Lukas' },
-  { value: 'james', label: 'James' },
-];
+/** Options derived from the live PIN-users endpoint, falling back to PERSONS. */
+function usePinUsers(): { value: string; sub: string }[] {
+  const [users, setUsers] = useState<{ value: string; sub: string }[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth?action=list-pin-users')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.data?.users)) {
+          const active = data.data.users
+            .filter((u: { hasPin: boolean }) => u.hasPin)
+            .map((u: { name: string; sub: string }) => ({ value: u.name, sub: u.sub }));
+          setUsers(active.length > 0 ? active : PERSONS.map((p) => ({ value: p.name, sub: p.sub })));
+        }
+      })
+      .catch(() => {
+        // Fallback: show all known persons if the fetch fails.
+        setUsers(PERSONS.map((p) => ({ value: p.name, sub: p.sub })));
+      })
+      .finally(() => setLoaded(true));
+  }, []);
+
+  if (!loaded) return PERSONS.map((p) => ({ value: p.name, sub: p.sub }));
+  return users;
+}
 
 export function SignInPanel({ requiredTier }: SignInPanelProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [pin, setPin] = useState('');
-  const [role, setRole] = useState('admin');
+  const personOptions = usePinUsers();
+  const [personName, setPersonName] = useState(personOptions[0]?.value ?? '');
+  // Sync selected person when options resolve (e.g. after fetch completes).
+  useEffect(() => {
+    if (personOptions.length > 0 && !personOptions.some((o) => o.value === personName)) {
+      setPersonName(personOptions[0].value);
+    }
+  }, [personOptions, personName]);
   const [verifyPin, { isLoading, isError, error }] = useVerifyPinMutation();
+  const { refetch: refetchSession } = useGetSessionQuery();
 
   const oauthError = searchParams.get('auth') === 'error';
   const showPin = requiredTier === 'pin';
@@ -42,7 +71,13 @@ export function SignInPanel({ requiredTier }: SignInPanelProps) {
   const handlePinSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!pin.trim()) return;
-    await verifyPin({ role, pin: pin.trim() });
+    // Send the person's name so the endpoint can resolve the sub from PERSONS.
+    const result = await verifyPin({ name: personName, pin: pin.trim() });
+    if ('data' in result && result.data?.ok) {
+      // Cookie is set on the verify-pin response; force a session refetch so
+      // AuthProvider updates Redux state and the gate reveals admin content.
+      await refetchSession();
+    }
   };
 
   return (
@@ -106,17 +141,17 @@ export function SignInPanel({ requiredTier }: SignInPanelProps) {
               onSubmit={handlePinSubmit}
             >
               <FormControl size="small" fullWidth>
-                <InputLabel id="pin-role-label">Role</InputLabel>
+                <InputLabel id="pin-role-label">User Account</InputLabel>
                 <Select
                   labelId="pin-role-label"
-                  label="Role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
+                  label="User Account"
+                  value={personName}
+                  onChange={(e) => setPersonName(e.target.value)}
                   data-testid="pin-role-select"
                 >
-                  {ROLE_OPTIONS.map((opt) => (
-                    <MenuItem key={opt.value} value={opt.value}>
-                      {opt.label}
+                  {personOptions.map((opt) => (
+                    <MenuItem key={opt.sub} value={opt.value}>
+                      {opt.value}
                     </MenuItem>
                   ))}
                 </Select>

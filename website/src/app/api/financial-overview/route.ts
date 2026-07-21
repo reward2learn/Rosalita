@@ -4,7 +4,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/db';
-import { requireWriteAuth } from '@/lib/auth/guards';
+import { requireWriteAuth, requireRead, requireWrite } from '@/lib/auth/guards';
 import {
   FinancialProjectionService,
   SCENARIO_MAP,
@@ -444,6 +444,9 @@ async function handleReports(url: URL): Promise<NextResponse> {
 }
 
 export async function GET(request: Request) {
+  const groupGuard = await requireRead('financials', request);
+  if (!groupGuard.ok) return groupGuard.response;
+
   const url = new URL(request.url);
   const resource = url.searchParams.get('resource');
 
@@ -484,6 +487,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const groupGuard = await requireWrite('financials', request);
+  if (!groupGuard.ok) return groupGuard.response;
+
   const url = new URL(request.url);
   if (url.searchParams.get('resource') === 'monthly-actuals') {
     return handleMonthlyActuals(request, url);

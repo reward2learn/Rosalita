@@ -17,4 +17,6 @@ export interface SessionPayload {
   tier: 'public' | 'pin' | 'google';
   roleCode?: string | null;
   platformAdmin?: boolean;
+  groups?: string[];
+  permissions?: string[];
 }

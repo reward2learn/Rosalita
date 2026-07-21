@@ -138,7 +138,7 @@ export function TasksView({ forcedRole }: { forcedRole?: string | null } = {}) {
   }
 
   return (
-    <Box sx={{ maxWidth: 960, mx: 'auto', px: 3, py: 3 }}>
+    <Box sx={{  mx: 'auto', px: 3, py: 3 }}>
       <Stack direction="row" sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 800 }}>

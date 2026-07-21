@@ -9,6 +9,7 @@ import { ActionChecklistBlock } from '@/components/blocks/action-checklist-block
 import { ChartFinancialBlock } from '@/components/blocks/chart-financial-block';
 import { PnlTableBlock } from '@/components/blocks/pnl-table-block';
 import { ReportsRollupBlock } from '@/components/blocks/reports-rollup-block';
+import { SheetViewerBlock } from '@/components/blocks/sheet-viewer-block';
 import {
   OpsAdminTabsBlock,
   ZReportFormBlock,
@@ -36,6 +37,7 @@ export const BLOCK_REGISTRY: Record<BlockType, BlockComponent> = {
   chat_panel: ChatPanelBlock,
   review_blocks: ReviewBlocksBlock,
   reports_rollup: ReportsRollupBlock,
+  sheet_viewer: SheetViewerBlock,
 };
 
 export function getBlockComponent(blockType: BlockType): BlockComponent {

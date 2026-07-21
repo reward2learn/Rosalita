@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { requireWriteAuth } from '@/lib/auth/guards';
+import { requireWriteAuth, requireCapability } from '@/lib/auth/guards';
 import { jsonError, jsonOk } from '@/lib/api/response';
 import {
   deleteSecret,
@@ -15,6 +15,9 @@ export async function GET(request: Request) {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
 
+  const groupGuard = await requireCapability('config:write', request);
+  if (!groupGuard.ok) return groupGuard.response;
+
   const status = await getOpenAiKeyStatus();
   return jsonOk(status);
 }
@@ -22,6 +25,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
+
+  const groupGuard = await requireCapability('config:write', request);
+  if (!groupGuard.ok) return groupGuard.response;
 
   let body: unknown;
   try {
@@ -43,6 +49,9 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
+
+  const groupGuard = await requireCapability('config:write', request);
+  if (!groupGuard.ok) return groupGuard.response;
 
   await deleteSecret('OPENAI_API_KEY');
   const status = await getOpenAiKeyStatus();

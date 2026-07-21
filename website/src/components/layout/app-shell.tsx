@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import type { Route } from 'next';
@@ -31,13 +32,27 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const drawerOpen = useAppSelector((s) => s.ui.drawerOpen);
-  const { tier, user } = useAppSelector((s) => s.auth);
+  const { tier, user, groups } = useAppSelector((s) => s.auth);
   useListPagesQuery();
 
-  const navPages = listNavPages(tier);
+  // Brand config (loaded on mount — public endpoint, no auth needed)
+  const [brandText, setBrandText] = useState('Red Ruby');
+  const [brandLogoUrl, setBrandLogoUrl] = useState('');
+  useEffect(() => {
+    fetch('/api/brand-config')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.brandLogoUrl) setBrandLogoUrl(d.brandLogoUrl);
+        if (d.brandLogoText) setBrandText(d.brandLogoText);
+      })
+      .catch(() => {
+        // defaults — never break the UI for a missing config
+      });
+  }, []);
+
+  const navPages = listNavPages(tier, groups ?? []);
   const reviewParts = tierAllowsAccess(tier, 'google') ? listReviewParts() : [];
   const showConfigLink = tierAllowsAccess(tier, 'pin');
-  const isOpsChat = pathname === '/ops-chat';
 
   const closeDrawer = () => dispatch(setDrawerOpen(false));
   const toggleDrawer = () => dispatch(setDrawerOpen(!drawerOpen));
@@ -50,18 +65,27 @@ export function AppShell({ children }: { children: ReactNode }) {
       <AppBar position="sticky" elevation={0} color="transparent">
         <Toolbar sx={{ justifyContent: 'space-between', minHeight: 52 }}>
           <Link href="/dashboard" style={linkSx}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 800,
-                color: 'text.primary',
-              }}
-            >
-              Red Ruby <Box component="span" sx={{ color: 'primary.main' }}>Bali</Box>
-            </Typography>
+            {brandLogoUrl ? (
+              <Box
+                component="img"
+                src={brandLogoUrl}
+                alt={brandText}
+                sx={{ height: 32, width: 'auto', maxWidth: 180, objectFit: 'contain', display: 'block' }}
+              />
+            ) : (
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 800,
+                  color: 'text.primary',
+                }}
+              >
+                {brandText}
+              </Typography>
+            )}
           </Link>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {isOpsChat ? <SavedConversationsMenu /> : null}
+            <SavedConversationsMenu />
             <IconButton
               aria-label="Open navigation"
               onClick={toggleDrawer}

@@ -8,8 +8,9 @@ import {
   type Prisma,
   type TaskStatus,
 } from '@/generated/prisma';
-import { PAGE_CATALOG, REVIEW_PART_CATALOG } from '@/lib/page-catalog';
+import { getFullCatalog, PAGE_CATALOG, REVIEW_PART_CATALOG } from '@/lib/page-catalog';
 import type { DbClient } from '@/lib/db';
+import { PERSONS } from '@/domain/security/persons';
 import { parseBusinessReviewParts } from '@/lib/parse-business-review';
 import {
   parseFinancialProjectionsFromBuffer,
@@ -39,6 +40,12 @@ import {
   TARGET_METRICS,
   TASK_PLAYBOOK,
 } from '../../../lib/knowledge-base.js';
+import {
+  analyzeWorkbook,
+  generatePagesFromAnalysis,
+  generateAnalysisMarkdown,
+} from '@/domain/excel/workbook-analyzer';
+import { setDynamicPages } from '@/lib/page-catalog';
 
 export interface SeedCounts {
   financialProjections: number;
@@ -334,16 +341,29 @@ function buildActionItems(): { priority: ActionPriority; label: string; sortOrde
 
 /**
  * Known roles for the exit-viability task tracking system.
- * `code` matches the "Name:" prefix used in PRIORITY_ACTIONS labels.
+ * Derived from PERSONS — the shared source of truth for operational identities.
+ * `code` matches the "Name:" prefix used in PRIORITY_ACTIONS labels (with
+ * secondary lowercase match in parseTaskLabel for case-insensitive lookup).
+ * Preserves the original capitalized codes so existing task labels continue to work.
  */
-const KNOWN_ROLES: { code: string; name: string; isPlatformAdmin?: boolean; email?: string }[] = [
-  { code: 'Graham', name: 'Graham Bristow', isPlatformAdmin: true, email: 'graham@starworksglobal.com' },
-  { code: 'Admin', name: 'Platform Admin', isPlatformAdmin: true, email: 'reward2learn@gmail.com' },
-  { code: 'Ama', name: 'Ama (Finance / Books)' },
-  { code: 'Made', name: 'Made (Compliance / Permits)' },
-  { code: 'Lukas', name: 'Lukas (Operations / Data)' },
-  { code: 'James', name: 'James (Entertainment)' },
-];
+const KNOWN_ROLES: { code: string; name: string; isPlatformAdmin?: boolean; email?: string }[] =
+  PERSONS.filter((p) => p.sub !== 'admin' || true).map((p) => {
+    // Use the original capitalized code for task-label backward compat.
+    // Map the new persons schema to the legacy KNOWN_ROLES shape.
+    const legacyCode =
+      p.sub === 'admin' ? 'Admin' :
+      p.sub === 'ama' ? 'Ama' :
+      p.sub === 'graham' ? 'Graham' :
+      p.sub === 'james' ? 'James' :
+      p.sub === 'lucas' ? 'Lukas' :    // task labels use "Lukas:"
+      p.sub === 'made' ? 'Made' : p.sub;
+    return {
+      code: legacyCode,
+      name: p.isPlatformAdmin ? p.name : `${p.name} (${p.roleName})`,
+      isPlatformAdmin: p.isPlatformAdmin,
+      email: p.email,
+    };
+  });
 
 /** Resolve a known role by email (case-insensitive). Used by Google sign-in. */
 export function resolveRoleForEmail(email: string | undefined): {
@@ -352,10 +372,24 @@ export function resolveRoleForEmail(email: string | undefined): {
   isPlatformAdmin: boolean;
 } | null {
   if (!email) return null;
-  const lower = email.toLowerCase();
-  const match = KNOWN_ROLES.find((r) => r.email && r.email.toLowerCase() === lower);
+  const match = PERSONS.find((p) => p.email && p.email.toLowerCase() === email.toLowerCase());
   if (!match) return null;
-  return { code: match.code, name: match.name, isPlatformAdmin: match.isPlatformAdmin ?? false };
+  return { code: match.roleCode, name: match.name, isPlatformAdmin: match.isPlatformAdmin ?? false };
+}
+
+/**
+ * Operational identities the system knows about (PIN roles + platform admins).
+ * Used to backfill user_account rows so the User Accounts list shows prior users
+ * even before they re-sign-in. Platform admin uses sub 'admin'; PIN roles use
+ * their lowercased code as sub (matching verify-pin).
+ */
+export function listKnownAccounts(): { sub: string; name: string; tier: string; roleCode?: string | null }[] {
+  return PERSONS.map((p) => ({
+    sub: p.sub,
+    name: p.name,
+    tier: 'pin',
+    roleCode: p.roleCode,
+  }));
 }
 
 /** Parse "Ama: do the thing" → { ownerCodes: ['Ama'], title: 'do the thing' }. */
@@ -571,19 +605,31 @@ function resolveSources(options: SeedOptions): ResolvedSources {
   if (overrides.excel) {
     filesUsed.excel = 'upload';
     if (options.persistOverrides) {
-      writeSourceFile('excel', overrides.excel, sourceDir);
+      try {
+        writeSourceFile('excel', overrides.excel, sourceDir);
+      } catch (err) {
+        console.warn('[seed] Could not persist excel to disk (read-only filesystem?):', err instanceof Error ? err.message : err);
+      }
     }
   }
   if (overrides.businessReview) {
     filesUsed.businessReview = 'upload';
     if (options.persistOverrides) {
-      writeSourceFile('businessReview', overrides.businessReview, sourceDir);
+      try {
+        writeSourceFile('businessReview', overrides.businessReview, sourceDir);
+      } catch (err) {
+        console.warn('[seed] Could not persist businessReview to disk (read-only filesystem?):', err instanceof Error ? err.message : err);
+      }
     }
   }
   if (overrides.executiveSummary) {
     filesUsed.executiveSummary = 'upload';
     if (options.persistOverrides) {
-      writeSourceFile('executiveSummary', overrides.executiveSummary, sourceDir);
+      try {
+        writeSourceFile('executiveSummary', overrides.executiveSummary, sourceDir);
+      } catch (err) {
+        console.warn('[seed] Could not persist executiveSummary to disk (read-only filesystem?):', err instanceof Error ? err.message : err);
+      }
     }
   }
 
@@ -624,18 +670,72 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
   const { excel, businessReview, executiveSummary, filesUsed } = resolveSources(options);
 
   // Parse projections from Excel if it's available — otherwise skip.
+  // Gracefully handles workbooks that don't match the expected RedRuby/2027/2029/2030 sheet layout.
   let projections: FinancialProjectionRow[] | null = null;
   if (excel) {
-    projections = parseFinancialProjectionsFromBuffer(excel);
+    try {
+      projections = parseFinancialProjectionsFromBuffer(excel);
+    } catch (err) {
+      console.warn('[seed] Could not parse financial projections from workbook (wrong format?):', err instanceof Error ? err.message : err);
+      projections = null;
+    }
+  }
+
+  // ── Workbook analysis (derive sheet metadata, dynamic pages, use cases) ──
+  let workbookAnalysisMd = '';
+  if (excel) {
+    try {
+      const analysis = analyzeWorkbook(excel, filesUsed.excel === 'upload' ? 'uploaded workbook' : undefined);
+      workbookAnalysisMd = generateAnalysisMarkdown(analysis);
+
+      // Register dynamic pages for each sheet
+      const dynamicPages = generatePagesFromAnalysis(analysis);
+      setDynamicPages(dynamicPages);
+      console.log(`[seed] Generated ${dynamicPages.length} dynamic page(s) from workbook analysis`);
+
+      // Log analysis summary
+      for (const sheet of analysis.sheets) {
+        console.log(`[seed]   Sheet "${sheet.tabName}": ${sheet.columns.length} columns, ${sheet.rowCount} rows — ${sheet.title}`);
+      }
+
+    } catch (err) {
+      console.warn('[seed] Workbook analysis failed (non-critical):', err instanceof Error ? err.message : err);
+    }
   }
 
   const reviewParts = businessReview !== undefined ? parseBusinessReviewParts(businessReview) : [];
-  const termsMd = htmlToMarkdownish(readUtf8(TERMS_HTML_PATH));
-  const privacyMd = htmlToMarkdownish(readUtf8(PRIVACY_HTML_PATH));
+  let termsMd = '';
+  let privacyMd = '';
+  try {
+    termsMd = htmlToMarkdownish(readUtf8(TERMS_HTML_PATH));
+    privacyMd = htmlToMarkdownish(readUtf8(PRIVACY_HTML_PATH));
+  } catch (err) {
+    console.warn('[seed] Could not read legal HTML files (serverless deployment?):', err instanceof Error ? err.message : err);
+  }
   const knowledgeSnippets = buildKnowledgeSnippets(executiveSummary ?? '', termsMd, privacyMd);
+
+  // Append workbook analysis as a knowledge snippet
+  if (workbookAnalysisMd) {
+    knowledgeSnippets.push({
+      key: 'workbook_analysis',
+      category: 'document',
+      content: workbookAnalysisMd,
+    });
+  }
+
+  // Cache the workbook as a base64 knowledge snippet so the AI Content
+  // Generation endpoint can read it on serverless runtimes where the
+  // filesystem is read-only.
+  if (excel) {
+    knowledgeSnippets.push({
+      key: 'workbook_data',
+      category: 'cache',
+      content: excel.toString('base64'),
+    });
+  }
   const actionItems = buildActionItems();
   const builtTasks = buildTasks();
-  const pageEntries = Object.values(PAGE_CATALOG);
+  const pageEntries = Object.values(getFullCatalog());
 
   const counts: SeedCounts = {
     financialProjections: projections ? projections.length : 0,

@@ -9,7 +9,7 @@ function renderWithTier(tier: 'public' | 'pin' | 'google', bootstrapped = true) 
   const store = configureStore({
     reducer: { auth: authSlice.reducer },
     preloadedState: {
-      auth: { tier, user: null, bootstrapped },
+      auth: { tier, user: null, bootstrapped, groups: [], permissions: [] },
     },
   });
 
@@ -36,6 +36,6 @@ describe('AuthGate', () => {
 
   it('shows loading fallback until bootstrap completes', () => {
     renderWithTier('google', false);
-    expect(screen.getByText('Checking session…')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 });

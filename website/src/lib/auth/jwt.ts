@@ -16,6 +16,19 @@ export interface SessionClaims extends JWTPayload {
   roleCode?: string;
   /** True when the session belongs to a platform administrator (Graham / reward2learn). */
   platformAdmin?: boolean;
+  /** Security-group codes the user belongs to (used for group-gated API/route access). */
+  groups?: string[];
+  /** Effective capability codes (e.g. "financials:write"); platform admins carry "*". */
+  permissions?: string[];
+}
+
+/** True when the session is a platform admin by claim or platform-admin group membership. */
+export function sessionIsPlatformAdmin(
+  session: Pick<SessionClaims, 'platformAdmin' | 'groups'> | null | undefined,
+): boolean {
+  if (!session) return false;
+  if (session.platformAdmin) return true;
+  return (session.groups ?? []).includes('platform-admin');
 }
 
 function getJwtSecret(): Uint8Array {

@@ -1,7 +1,7 @@
 'use client';
 
-import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import type { ReactNode, SyntheticEvent } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import type { MouseEvent, ReactNode, SyntheticEvent, WheelEvent } from 'react';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -11,6 +11,7 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
@@ -46,6 +47,9 @@ import CallSplitIcon from '@mui/icons-material/CallSplit';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Chart as ChartJS,
   BarElement,
@@ -109,9 +113,11 @@ interface ReceiptImagePayload {
 function ReceiptThumbnails({
   images,
   onRemove,
+  onView,
 }: {
   images: ReceiptImagePayload[];
   onRemove: (index: number) => void;
+  onView?: (index: number) => void;
 }) {
   if (!images.length) return null;
   return (
@@ -127,7 +133,9 @@ function ReceiptThumbnails({
             borderRadius: 1,
             overflow: 'hidden',
             bgcolor: 'action.hover',
+            cursor: onView ? 'pointer' : 'default',
           }}
+          onClick={() => onView?.(i)}
         >
           <img
             src={img.dataUrl}
@@ -375,6 +383,189 @@ function SectionShell({ title, tooltip, children }: { title: string; tooltip?: s
   );
 }
 
+/** Modal for cropping a receipt photo before adding it to the list */
+function CropModal({
+  open,
+  imageDataUrl,
+  imageName,
+  onCrop,
+  onSkip,
+}: {
+  open: boolean;
+  imageDataUrl: string;
+  imageName: string;
+  /** Called with the cropped dataUrl */
+  onCrop: (croppedDataUrl: string) => void;
+  /** Called to keep the original */
+  onSkip: () => void;
+}) {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const imageWrapRef = useRef<HTMLDivElement>(null);
+  const [selection, setSelection] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+
+  // Reset selection when modal opens
+  useEffect(() => {
+    if (open) {
+      setSelection(null);
+      setIsDragging(false);
+      setDragStart(null);
+    }
+  }, [open]);
+
+  /** Percentage position relative to the image's rendered size (not the outer container) */
+  const getRelativePos = useCallback((clientX: number, clientY: number) => {
+    const rect = imageWrapRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    return {
+      x: (clientX - rect.left) / rect.width,
+      y: (clientY - rect.top) / rect.height,
+    };
+  }, []);
+
+  const handleMouseDown = useCallback((e: MouseEvent) => {
+    const pos = getRelativePos(e.clientX, e.clientY);
+    if (!pos) return;
+    setDragStart(pos);
+    setIsDragging(true);
+    setSelection({ x: pos.x, y: pos.y, w: 0, h: 0 });
+  }, [getRelativePos]);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || !dragStart) return;
+    const pos = getRelativePos(e.clientX, e.clientY);
+    if (!pos) return;
+
+    const left = Math.min(dragStart.x, pos.x);
+    const top = Math.min(dragStart.y, pos.y);
+    const right = Math.max(dragStart.x, pos.x);
+    const bottom = Math.max(dragStart.y, pos.y);
+
+    setSelection({ x: left, y: top, w: right - left, h: bottom - top });
+  }, [isDragging, dragStart, getRelativePos]);
+
+  const finishDrag = useCallback(() => {
+    setIsDragging(false);
+    setDragStart(null);
+    setSelection((prev) => {
+      if (prev && (prev.w < 0.02 || prev.h < 0.02)) return null;
+      return prev;
+    });
+  }, []);
+
+  const handleCrop = useCallback(() => {
+    const img = imgRef.current;
+    if (!img) return;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const natW = img.naturalWidth;
+    const natH = img.naturalHeight;
+
+    let sx: number, sy: number, sw: number, sh: number;
+    if (selection) {
+      sx = Math.round(selection.x * natW);
+      sy = Math.round(selection.y * natH);
+      sw = Math.round(selection.w * natW);
+      sh = Math.round(selection.h * natH);
+      // Clamp to image bounds
+      sw = Math.min(sw, natW - sx);
+      sh = Math.min(sh, natH - sy);
+    } else {
+      sx = 0; sy = 0; sw = natW; sh = natH;
+    }
+
+    canvas.width = sw;
+    canvas.height = sh;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+    const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    onCrop(croppedDataUrl);
+  }, [selection, onCrop]);
+
+  return (
+    <Dialog open={open} maxWidth="lg" fullWidth onClose={onSkip}>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="body1" noWrap sx={{ maxWidth: '80%' }}>
+          Crop — {imageName}
+        </Typography>
+        <IconButton onClick={onSkip} size="small">✕</IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ p: 0, bgcolor: '#000', overflow: 'hidden' }}>
+        <Box
+          sx={{
+            cursor: 'crosshair',
+            userSelect: 'none',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: 300,
+          }}
+        >
+          <Box
+            ref={imageWrapRef}
+            sx={{ position: 'relative', display: 'inline-block', lineHeight: 0 }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={finishDrag}
+            onMouseLeave={finishDrag}
+          >
+            <img
+              ref={imgRef}
+              src={imageDataUrl}
+              alt={imageName}
+              draggable={false}
+              style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block' }}
+            />
+            {/* Crop selection overlay */}
+            {selection ? (
+              <>
+                {/* Shaded areas around selection */}
+                <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: `${selection.y * 100}%`, bgcolor: 'rgba(0,0,0,0.55)', pointerEvents: 'none' }} />
+                <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${(1 - selection.y - selection.h) * 100}%`, bgcolor: 'rgba(0,0,0,0.55)', pointerEvents: 'none' }} />
+                <Box sx={{ position: 'absolute', top: `${selection.y * 100}%`, left: 0, width: `${selection.x * 100}%`, height: `${selection.h * 100}%`, bgcolor: 'rgba(0,0,0,0.55)', pointerEvents: 'none' }} />
+                <Box sx={{ position: 'absolute', top: `${selection.y * 100}%`, right: 0, width: `${(1 - selection.x - selection.w) * 100}%`, height: `${selection.h * 100}%`, bgcolor: 'rgba(0,0,0,0.55)', pointerEvents: 'none' }} />
+                {/* Selection border */}
+                <Box sx={{ position: 'absolute', top: `${selection.y * 100}%`, left: `${selection.x * 100}%`, width: `${selection.w * 100}%`, height: `${selection.h * 100}%`, border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.3)', pointerEvents: 'none' }} />
+                {/* Corner handles */}
+                <Box sx={{ position: 'absolute', top: `calc(${selection.y * 100}% - 6px)`, left: `calc(${selection.x * 100}% - 6px)`, width: 12, height: 12, border: '2px solid #fff', borderRadius: '50%', bgcolor: 'primary.main', pointerEvents: 'none' }} />
+                <Box sx={{ position: 'absolute', top: `calc(${selection.y * 100}% - 6px)`, right: `calc(${(1 - selection.x - selection.w) * 100}% - 6px)`, width: 12, height: 12, border: '2px solid #fff', borderRadius: '50%', bgcolor: 'primary.main', pointerEvents: 'none' }} />
+                <Box sx={{ position: 'absolute', bottom: `calc(${(1 - selection.y - selection.h) * 100}% - 6px)`, left: `calc(${selection.x * 100}% - 6px)`, width: 12, height: 12, border: '2px solid #fff', borderRadius: '50%', bgcolor: 'primary.main', pointerEvents: 'none' }} />
+                <Box sx={{ position: 'absolute', bottom: `calc(${(1 - selection.y - selection.h) * 100}% - 6px)`, right: `calc(${(1 - selection.x - selection.w) * 100}% - 6px)`, width: 12, height: 12, border: '2px solid #fff', borderRadius: '50%', bgcolor: 'primary.main', pointerEvents: 'none' }} />
+              </>
+            ) : (
+              <Typography
+                sx={{
+                  position: 'absolute',
+                  bottom: 16,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  color: 'white',
+                  bgcolor: 'rgba(0,0,0,0.6)',
+                  px: 2,
+                  py: 0.75,
+                  borderRadius: 1,
+                  fontSize: '0.85rem',
+                  pointerEvents: 'none',
+                }}
+              >
+                Click and drag to select crop area
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onSkip} color="inherit">Use Original</Button>
+        <Button onClick={handleCrop} variant="contained" startIcon={<AutoFixHighIcon />}>
+          Crop &amp; Confirm
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export interface PosOcrHandle {
   triggerParse: () => Promise<boolean>;
 }
@@ -393,9 +584,15 @@ const PosOcrPanel = forwardRef<PosOcrHandle, {
   const [images, setImages] = useState<ReceiptImagePayload[]>([]);
   const [text, setText] = useState('');
   useScanPosReceiptMutation();
-  const [parse, parseState] = useParsePosTextMutation();
+  const [parse] = useParsePosTextMutation();
   const abortRef = useRef<AbortController | null>(null);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number; status?: string } | null>(null);
+
+  // Crop modal state
+  const [cropTarget, setCropTarget] = useState<{ dataUrl: string; name: string } | null>(null);
+  const cropQueueRef = useRef<ReceiptImagePayload[]>([]);
+  // Image viewer state
+  const [viewIndex, setViewIndex] = useState<number | null>(null);
 
   // Reset on resetKey change
   const prevResetKey = useRef(resetKey);
@@ -404,8 +601,46 @@ const PosOcrPanel = forwardRef<PosOcrHandle, {
     if (resetKey !== undefined && resetKey !== 0) {
       setImages([]);
       setText('');
+      cropQueueRef.current = [];
+      setCropTarget(null);
     }
   }
+
+  /** Open crop modal for the next file in the queue, or flush the queue */
+  const processNextInQueue = useCallback(() => {
+    const next = cropQueueRef.current.shift();
+    if (next) {
+      setCropTarget({ dataUrl: next.dataUrl, name: next.name });
+    } else {
+      setCropTarget(null);
+    }
+  }, []);
+
+  /** Called when user confirms a crop — replace the cropped image into images */
+  const handleCropConfirm = useCallback((croppedDataUrl: string) => {
+    const target = cropTarget;
+    if (!target) return;
+    setImages((prev) => [...prev, {
+      dataUrl: croppedDataUrl,
+      mime: 'image/jpeg',
+      name: target.name,
+      captured_at: new Date().toISOString(),
+    }]);
+    processNextInQueue();
+  }, [cropTarget, processNextInQueue]);
+
+  /** Called when user skips crop — use original image */
+  const handleCropSkip = useCallback(() => {
+    const target = cropTarget;
+    if (!target) return;
+    setImages((prev) => [...prev, {
+      dataUrl: target.dataUrl,
+      mime: 'image/jpeg',
+      name: target.name,
+      captured_at: new Date().toISOString(),
+    }]);
+    processNextInQueue();
+  }, [cropTarget, processNextInQueue]);
 
   const handleScan = async () => {
     setScanProgress({ current: 0, total: images.length, failed: 0, status: 'scanning' });
@@ -488,14 +723,21 @@ const PosOcrPanel = forwardRef<PosOcrHandle, {
             multiple
             accept="image/*"
             type="file"
-            onChange={(event) => {
-              void readReceiptFiles(event.target.files).then(setImages);
+            onChange={async (event) => {
+              const files = await readReceiptFiles(event.target.files);
+              // Clear the input so re-selecting the same file triggers onChange
+              event.target.value = '';
+              if (!files.length) return;
+              // Enqueue all new files and process one at a time via crop modal
+              cropQueueRef.current.push(...files);
+              processNextInQueue();
             }}
           />
           </Button>
           <ReceiptThumbnails
             images={images}
             onRemove={(i) => setImages((prev) => prev.filter((_, idx) => idx !== i))}
+            onView={(i) => setViewIndex(i)}
           />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <Button
@@ -527,6 +769,20 @@ const PosOcrPanel = forwardRef<PosOcrHandle, {
           fullWidth
         />
       </Stack>
+      {/* Full-size image viewer with zoom */}
+      <ZoomableViewer
+        open={viewIndex !== null}
+        imageDataUrl={viewIndex !== null ? images[viewIndex].dataUrl : ''}
+        imageName={viewIndex !== null ? images[viewIndex].name : ''}
+        onClose={() => setViewIndex(null)}
+      />
+      <CropModal
+        open={!!cropTarget}
+        imageDataUrl={cropTarget?.dataUrl ?? ''}
+        imageName={cropTarget?.name ?? ''}
+        onCrop={handleCropConfirm}
+        onSkip={handleCropSkip}
+      />
     </SectionShell>
   );
 });
@@ -826,10 +1082,14 @@ function DayPosTab() {
   const [resetKey, setResetKey] = useState(0);
   const posOcrRef = useRef<PosOcrHandle>(null);
   const [expanded, setExpanded] = useState<string>('step1');
+  const [isParsing, setIsParsing] = useState(false);
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'chart'>('list');
   const [zrepDetail, setZrepDetail] = useState<{ date: string; dept: string } | null>(null);
   const [fullscreenImage, setFullscreenImage] = useState<ReceiptImage | null>(null);
+  const [viewStep2Img, setViewStep2Img] = useState<{ dataUrl: string; name: string } | null>(null);
+  const [cropStep2, setCropStep2] = useState<{ dataUrl: string; name: string } | null>(null);
+  const cropStep2Ref = useRef<ReceiptImagePayload[]>([]);
   const { data, isFetching } = useGetSchemaQuery(department);
   const { data: recentPayload } = useListMetricsQuery({ page: 1, limit: 5 });
   const schema = dataFromEnvelope<ZReportSchemaPayload>(data);
@@ -888,6 +1148,40 @@ function DayPosTab() {
     setExpanded(isExpanded ? panel : '');
   };
 
+  // --- Step 2 image crop handlers ---
+  const processStep2CropQueue = useCallback(() => {
+    const next = cropStep2Ref.current.shift();
+    if (next) {
+      setCropStep2({ dataUrl: next.dataUrl, name: next.name });
+    } else {
+      setCropStep2(null);
+    }
+  }, []);
+
+  const handleStep2CropConfirm = useCallback((croppedDataUrl: string) => {
+    const target = cropStep2;
+    if (!target) return;
+    setReceiptImages((prev) => [...prev, {
+      dataUrl: croppedDataUrl,
+      mime: 'image/jpeg',
+      name: target.name,
+      captured_at: new Date().toISOString(),
+    }]);
+    processStep2CropQueue();
+  }, [cropStep2, processStep2CropQueue]);
+
+  const handleStep2CropSkip = useCallback(() => {
+    const target = cropStep2;
+    if (!target) return;
+    setReceiptImages((prev) => [...prev, {
+      dataUrl: target.dataUrl,
+      mime: 'image/jpeg',
+      name: target.name,
+      captured_at: new Date().toISOString(),
+    }]);
+    processStep2CropQueue();
+  }, [cropStep2, processStep2CropQueue]);
+
   return (
     <Box sx={{ pb: 9 }}>
       <Accordion expanded={expanded === 'step1'} onChange={handleAccordion('step1')} sx={{ mb: 1 }}>
@@ -915,10 +1209,18 @@ function DayPosTab() {
             <Button
               variant="contained"
               fullWidth
-              onClick={() => void posOcrRef.current?.triggerParse()}
-              startIcon={<AutoFixHighIcon />}
+              disabled={isParsing}
+              onClick={async () => {
+                setIsParsing(true);
+                try {
+                  await posOcrRef.current?.triggerParse();
+                } finally {
+                  setIsParsing(false);
+                }
+              }}
+              startIcon={isParsing ? <CircularProgress size={20} color="inherit" /> : <AutoFixHighIcon />}
             >
-              Parse &amp; Prefill
+              {isParsing ? 'Parsing...' : 'Parse & Prefill'}
             </Button>
           </Box>
         </AccordionDetails>
@@ -1000,14 +1302,19 @@ function DayPosTab() {
                 multiple
                 accept="image/*"
                 type="file"
-                onChange={(event) => {
-                  void readReceiptFiles(event.target.files).then(setReceiptImages);
+                onChange={async (event) => {
+                  const files = await readReceiptFiles(event.target.files);
+                  event.target.value = '';
+                  if (!files.length) return;
+                  cropStep2Ref.current.push(...files);
+                  processStep2CropQueue();
                 }}
               />
             </Button>
             <ReceiptThumbnails
               images={receiptImages}
               onRemove={(i) => setReceiptImages((prev) => prev.filter((_, idx) => idx !== i))}
+              onView={(i) => setViewStep2Img({ dataUrl: receiptImages[i].dataUrl, name: receiptImages[i].name })}
             />
 
             {errors.size > 0 ? (
@@ -1133,6 +1440,19 @@ function DayPosTab() {
         </DialogContent>
       </Dialog>
       <ImageViewerModal open={!!fullscreenImage} image={fullscreenImage} onClose={() => setFullscreenImage(null)} />
+      <ZoomableViewer
+        open={!!viewStep2Img}
+        imageDataUrl={viewStep2Img?.dataUrl ?? ''}
+        imageName={viewStep2Img?.name ?? ''}
+        onClose={() => setViewStep2Img(null)}
+      />
+      <CropModal
+        open={!!cropStep2}
+        imageDataUrl={cropStep2?.dataUrl ?? ''}
+        imageName={cropStep2?.name ?? ''}
+        onCrop={handleStep2CropConfirm}
+        onSkip={handleStep2CropSkip}
+      />
     </Box>
   );
 }
@@ -1150,6 +1470,42 @@ function ExpenseOcrPanel({
   const [parse, parseState] = useParseExpenseTextMutation();
   const abortRef = useRef<AbortController | null>(null);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number; status?: string } | null>(null);
+  const [viewExpenseImg, setViewExpenseImg] = useState<{ dataUrl: string; name: string } | null>(null);
+  const [cropExpense, setCropExpense] = useState<{ dataUrl: string; name: string } | null>(null);
+  const cropExpenseRef = useRef<ReceiptImagePayload[]>([]);
+
+  const processExpenseCropQueue = useCallback(() => {
+    const next = cropExpenseRef.current.shift();
+    if (next) {
+      setCropExpense({ dataUrl: next.dataUrl, name: next.name });
+    } else {
+      setCropExpense(null);
+    }
+  }, []);
+
+  const handleExpenseCropConfirm = useCallback((croppedDataUrl: string) => {
+    const target = cropExpense;
+    if (!target) return;
+    setImages((prev) => [...prev, {
+      dataUrl: croppedDataUrl,
+      mime: 'image/jpeg',
+      name: target.name,
+      captured_at: new Date().toISOString(),
+    }]);
+    processExpenseCropQueue();
+  }, [cropExpense, processExpenseCropQueue]);
+
+  const handleExpenseCropSkip = useCallback(() => {
+    const target = cropExpense;
+    if (!target) return;
+    setImages((prev) => [...prev, {
+      dataUrl: target.dataUrl,
+      mime: 'image/jpeg',
+      name: target.name,
+      captured_at: new Date().toISOString(),
+    }]);
+    processExpenseCropQueue();
+  }, [cropExpense, processExpenseCropQueue]);
 
   const handleScan = async () => {
     setScanProgress({ current: 0, total: images.length, failed: 0, status: 'scanning' });
@@ -1217,14 +1573,19 @@ function ExpenseOcrPanel({
             multiple
             accept="image/*"
             type="file"
-            onChange={(event) => {
-              void readReceiptFiles(event.target.files).then(setImages);
+            onChange={async (event) => {
+              const files = await readReceiptFiles(event.target.files);
+              event.target.value = '';
+              if (!files.length) return;
+              cropExpenseRef.current.push(...files);
+              processExpenseCropQueue();
             }}
           />
           </Button>
           <ReceiptThumbnails
             images={images}
             onRemove={(i) => setImages((prev) => prev.filter((_, idx) => idx !== i))}
+            onView={(i) => setViewExpenseImg({ dataUrl: images[i].dataUrl, name: images[i].name })}
           />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
             <Button
@@ -1264,6 +1625,19 @@ function ExpenseOcrPanel({
             fullWidth
           />
       </Stack>
+      <ZoomableViewer
+        open={!!viewExpenseImg}
+        imageDataUrl={viewExpenseImg?.dataUrl ?? ''}
+        imageName={viewExpenseImg?.name ?? ''}
+        onClose={() => setViewExpenseImg(null)}
+      />
+      <CropModal
+        open={!!cropExpense}
+        imageDataUrl={cropExpense?.dataUrl ?? ''}
+        imageName={cropExpense?.name ?? ''}
+        onCrop={handleExpenseCropConfirm}
+        onSkip={handleExpenseCropSkip}
+      />
     </SectionShell>
   );
 }
@@ -1277,6 +1651,9 @@ function CostsPayrollTab() {
   const [receiptImages, setReceiptImages] = useState<ReceiptImagePayload[]>([]);
   const [notes, setNotes] = useState('');
   const [prefillMessage, setPrefillMessage] = useState<string | null>(null);
+  const [viewCostsImg, setViewCostsImg] = useState<{ dataUrl: string; name: string } | null>(null);
+  const [cropCosts, setCropCosts] = useState<{ dataUrl: string; name: string } | null>(null);
+  const cropCostsRef = useRef<ReceiptImagePayload[]>([]);
   const { data, isFetching } = useGetMonthlyActualsQuery({ period, department });
   const [triggerPrefill, prefillState] = useLazyGetMonthlyActualsQuery();
   const [save, saveState] = useSaveMonthlyActualsMutation();
@@ -1347,7 +1724,42 @@ function CostsPayrollTab() {
     setPrefillMessage(null);
   };
 
+  // --- Costs crop handlers ---
+  const processCostsCropQueue = useCallback(() => {
+    const next = cropCostsRef.current.shift();
+    if (next) {
+      setCropCosts({ dataUrl: next.dataUrl, name: next.name });
+    } else {
+      setCropCosts(null);
+    }
+  }, []);
+
+  const handleCostsCropConfirm = useCallback((croppedDataUrl: string) => {
+    const target = cropCosts;
+    if (!target) return;
+    setReceiptImages((prev) => [...prev, {
+      dataUrl: croppedDataUrl,
+      mime: 'image/jpeg',
+      name: target.name,
+      captured_at: new Date().toISOString(),
+    }]);
+    processCostsCropQueue();
+  }, [cropCosts, processCostsCropQueue]);
+
+  const handleCostsCropSkip = useCallback(() => {
+    const target = cropCosts;
+    if (!target) return;
+    setReceiptImages((prev) => [...prev, {
+      dataUrl: target.dataUrl,
+      mime: 'image/jpeg',
+      name: target.name,
+      captured_at: new Date().toISOString(),
+    }]);
+    processCostsCropQueue();
+  }, [cropCosts, processCostsCropQueue]);
+
   return (
+    <>
     <Grid container spacing={2.5}>
       <Grid size={{ xs: 12, lg: 7 }}>
         <SectionShell title="Costs & Payroll">
@@ -1481,14 +1893,19 @@ function CostsPayrollTab() {
                     multiple
                     accept="image/*"
                     type="file"
-                    onChange={(event) => {
-                      void readReceiptFiles(event.target.files).then(setReceiptImages);
+                    onChange={async (event) => {
+                      const files = await readReceiptFiles(event.target.files);
+                      event.target.value = '';
+                      if (!files.length) return;
+                      cropCostsRef.current.push(...files);
+                      processCostsCropQueue();
                     }}
                   />
                 </Button>
                 <ReceiptThumbnails
                   images={receiptImages}
                   onRemove={(i) => setReceiptImages((prev) => prev.filter((_, idx) => idx !== i))}
+                  onView={(i) => setViewCostsImg({ dataUrl: receiptImages[i].dataUrl, name: receiptImages[i].name })}
                 />
               </>
             ) : null}
@@ -1530,6 +1947,20 @@ function CostsPayrollTab() {
         )}
       </Grid>
     </Grid>
+      <ZoomableViewer
+        open={!!viewCostsImg}
+        imageDataUrl={viewCostsImg?.dataUrl ?? ''}
+        imageName={viewCostsImg?.name ?? ''}
+        onClose={() => setViewCostsImg(null)}
+      />
+      <CropModal
+        open={!!cropCosts}
+        imageDataUrl={cropCosts?.dataUrl ?? ''}
+        imageName={cropCosts?.name ?? ''}
+        onCrop={handleCostsCropConfirm}
+        onSkip={handleCostsCropSkip}
+      />
+    </>
   );
 }
 
@@ -1805,6 +2236,131 @@ function FillMissingTab() {
         </Button>
       </Stack>
     </SectionShell>
+  );
+}
+
+/** Image viewer with mouse-wheel zoom, pan, and zoom controls.
+ *  Works with a raw dataUrl (ReceiptImagePayload) rather than the DB ReceiptImage type. */
+function ZoomableViewer({
+  open,
+  imageDataUrl,
+  imageName,
+  onClose,
+}: {
+  open: boolean;
+  imageDataUrl: string;
+  imageName: string;
+  onClose: () => void;
+}) {
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Reset zoom when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      setScale(1);
+      setOffset({ x: 0, y: 0 });
+    }
+  }, [open]);
+
+  const handleWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
+    const delta = -Math.sign(e.deltaY) * 0.15;
+    setScale((prev) => Math.max(0.25, Math.min(8, +(prev + delta).toFixed(2))));
+  }, []);
+
+  const handleMouseDown = useCallback((e: MouseEvent) => {
+    if (scale <= 1) return;
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+  }, [scale, offset]);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isPanning) return;
+    setOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+  }, [isPanning, panStart]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false);
+  }, []);
+
+  const zoomIn = useCallback(() => setScale((prev) => Math.min(8, +(prev + 0.25).toFixed(2))), []);
+  const zoomOut = useCallback(() => setScale((prev) => Math.max(0.25, +(prev - 0.25).toFixed(2))), []);
+  const resetZoom = useCallback(() => { setScale(1); setOffset({ x: 0, y: 0 }); }, []);
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="body2" noWrap sx={{ maxWidth: '60%' }}>{imageName || 'Receipt'}</Typography>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
+            {Math.round(scale * 100)}%
+          </Typography>
+          <IconButton onClick={zoomOut} size="small" title="Zoom out"><ZoomOutIcon fontSize="small" /></IconButton>
+          <IconButton onClick={zoomIn} size="small" title="Zoom in"><ZoomInIcon fontSize="small" /></IconButton>
+          {scale !== 1 ? (
+            <IconButton onClick={resetZoom} size="small" title="Reset zoom"><RefreshIcon fontSize="small" /></IconButton>
+          ) : null}
+          <IconButton onClick={onClose} size="small">✕</IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent
+        sx={{
+          p: 0,
+          bgcolor: '#000',
+          overflow: 'hidden',
+          cursor: scale > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default',
+          position: 'relative',
+        }}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '70vh',
+            width: '100%',
+            height: '100%',
+            transform: `scale(${scale}) translate(${offset.x / scale}px, ${offset.y / scale}px)`,
+            transformOrigin: 'center center',
+            transition: isPanning ? 'none' : 'transform 0.15s ease',
+            pointerEvents: scale <= 1 ? 'none' : 'auto',
+          }}
+        >
+          <img
+            ref={imgRef}
+            src={imageDataUrl}
+            alt={imageName || 'receipt'}
+            draggable={false}
+            style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', display: 'block' }}
+          />
+        </Box>
+        {/* Dark vignette hint at bottom */}
+        {scale <= 1 ? (
+          <Typography
+            sx={{
+              position: 'absolute',
+              bottom: 16,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: '0.75rem',
+              pointerEvents: 'none',
+            }}
+          >
+            Scroll to zoom · Drag to pan when zoomed in
+          </Typography>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 

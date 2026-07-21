@@ -8,6 +8,7 @@ import { resolveOpenAiKey } from '@/lib/openai';
 import { KnowledgeService } from '@/domain/knowledge/knowledge-service';
 import { MONTHLY_TARGETS_SEED } from '@/domain/knowledge/knowledge-seed';
 import { getSessionFromRequest } from '@/lib/auth/session';
+import { sessionIsPlatformAdmin } from '@/lib/auth/jwt';
 import { legacyError } from '@/lib/api/response';
 import { sanitizeConversationMessages } from '@/lib/chat/conversation-messages';
 import {
@@ -28,9 +29,21 @@ import {
 import { resolveChatCompletionModel } from '@/lib/chat/chat-model';
 import { getAppSettings } from '@/domain/config/app-settings-service';
 import { isExplicitSessionRequest } from '@/lib/chat/session-tools';
+import { ensureConversationsColumns } from '@/lib/db-migrate';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
+
+let conversationsEnsured: Promise<boolean> | null = null;
+function ensureConversationsOnce(): Promise<boolean> {
+  if (!conversationsEnsured) {
+    conversationsEnsured = ensureConversationsColumns(createClient()).catch((err) => {
+      conversationsEnsured = null;
+      throw err;
+    });
+  }
+  return conversationsEnsured;
+}
 
 const attachmentSchema = z.object({
   name: z.string(),
@@ -393,6 +406,11 @@ async function handleVoicePost(request: Request): Promise<NextResponse> {
 
 async function handleConversations(request: Request, url: URL): Promise<NextResponse> {
   const session = await getSessionFromRequest(request);
+  try {
+    await ensureConversationsOnce();
+  } catch {
+    // Best-effort column ensure; queries surface a clear error if columns are missing.
+  }
   const userName = session?.name || session?.email || 'Anonymous';
   const db = createClient({
     tier: session?.tier ?? 'public',
@@ -417,6 +435,7 @@ async function handleConversations(request: Request, url: URL): Promise<NextResp
       const saved = await db.conversation.create({
         data: {
           userName,
+          ownerSub: session?.sub ?? null,
           title: (parsed.data.title || 'Chat Conversation').slice(0, 200),
           messages: messages as object[],
           messageCount: messages.length,
@@ -430,6 +449,33 @@ async function handleConversations(request: Request, url: URL): Promise<NextResp
       console.error('[conversations] POST error:', err);
       return legacyError('Failed to save conversation', 500);
     }
+  }
+
+  if (request.method === 'PATCH') {
+    const id = url.searchParams.get('id');
+    const numId = id ? parseInt(id, 10) : NaN;
+    if (!id || Number.isNaN(numId)) return legacyError('Invalid id', 400);
+
+    const existing = await db.conversation.findUnique({ where: { id: numId } });
+    if (!existing) return legacyError('Conversation not found', 404);
+
+    // Only the owner or a platform admin may archive/unarchive.
+    if (!sessionIsPlatformAdmin(session) && existing.ownerSub && existing.ownerSub !== session?.sub) {
+      return legacyError('Not allowed to modify this conversation', 403);
+    }
+
+    const archiveParam = url.searchParams.get('archived');
+    const archived = archiveParam === 'true' ? true : archiveParam === 'false' ? false : !existing.archived;
+
+    const updated = await db.conversation.update({
+      where: { id: numId },
+      data: { archived },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: { id: updated.id, archived: updated.archived },
+    });
   }
 
   const id = url.searchParams.get('id');
@@ -454,14 +500,26 @@ async function handleConversations(request: Request, url: URL): Promise<NextResp
   }
 
   const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '20', 10), 50);
+  const includeArchived = url.searchParams.get('archived') === 'true';
+  const ownerFilter = url.searchParams.get('owner');
+
+  // Non-admins may only see their own conversations; admins may scope via ?owner=.
+  const scopedOwner = sessionIsPlatformAdmin(session) ? ownerFilter ?? undefined : session?.sub;
+
   const rows = await db.conversation.findMany({
+    where: {
+      ...(includeArchived ? {} : { archived: false }),
+      ...(scopedOwner ? { ownerSub: scopedOwner } : {}),
+    },
     orderBy: { createdAt: 'desc' },
     take: limit,
     select: {
       id: true,
       userName: true,
+      ownerSub: true,
       title: true,
       messageCount: true,
+      archived: true,
       createdAt: true,
     },
   });
@@ -471,14 +529,18 @@ async function handleConversations(request: Request, url: URL): Promise<NextResp
     data: rows.map((r: {
       id: number;
       userName: string;
+      ownerSub: string | null;
       title: string;
       messageCount: number;
+      archived: boolean;
       createdAt: Date;
     }) => ({
       id: r.id,
       user_name: r.userName,
+      owner_sub: r.ownerSub,
       title: r.title,
       message_count: r.messageCount,
+      archived: r.archived,
       created_at: r.createdAt,
     })),
   });
@@ -503,4 +565,13 @@ export async function POST(request: Request) {
   if (resource === 'conversations') return handleConversations(request, url);
 
   return handleChatPost(request);
+}
+
+export async function PATCH(request: Request) {
+  const url = new URL(request.url);
+  const resource = url.searchParams.get('resource');
+
+  if (resource === 'conversations') return handleConversations(request, url);
+
+  return legacyError('Method not allowed', 405);
 }

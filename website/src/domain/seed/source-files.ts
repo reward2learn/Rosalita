@@ -2,9 +2,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
 export const SOURCE_FILENAMES = {
-  excel: 'Red Ruby Club & Terrace Bar Cashflow Budgets.xlsx',
-  businessReview: 'Red Ruby Business Review — MVP Exit Diagnostics — July 2026.md',
-  executiveSummary: 'Red Ruby Executive Summary — MVP Exit Viability — July 2026.md',
+  excel: 'red-ruby-cashflow.xlsx',
+  businessReview: 'business-review.md',
+  executiveSummary: 'executive-summary.md',
 } as const;
 
 export type SourceFileKey = keyof typeof SOURCE_FILENAMES;

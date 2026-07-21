@@ -1,9 +1,6 @@
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import type { DbClient } from '@/lib/db';
 import { REVIEW_PART_FALLBACKS } from '@/domain/content/review-part-fallbacks';
-import { parseBusinessReviewParts } from '@/lib/parse-business-review';
-import { REVIEW_PART_CATALOG, resolveReviewPart } from '@/lib/page-catalog';
+import { resolveReviewPart } from '@/lib/page-catalog';
 
 export interface ReviewPartContent {
   slug: string;
@@ -11,52 +8,22 @@ export interface ReviewPartContent {
   markdown: string;
 }
 
-const BUSINESS_REVIEW_PATHS = [
-  resolve(process.cwd(), '../Red Ruby Business Review — June 2026.md'),
-  resolve(process.cwd(), 'Red Ruby Business Review — June 2026.md'),
-];
-
-let cachedParts: Map<string, ReviewPartContent> | null = null;
-
-function loadPartsFromMarkdown(): Map<string, ReviewPartContent> {
-  if (cachedParts) return cachedParts;
-
-  const path = BUSINESS_REVIEW_PATHS.find((candidate) => existsSync(candidate));
-  if (!path) {
-    cachedParts = new Map();
-    return cachedParts;
-  }
-
-  const parsed = parseBusinessReviewParts(readFileSync(path, 'utf8'));
-  cachedParts = new Map(
-    parsed.map((part) => {
-      const catalog = REVIEW_PART_CATALOG[part.slug];
-      return [
-        part.slug,
-        {
-          slug: part.slug,
-          title: catalog?.title ?? part.title,
-          markdown: part.markdown,
-        },
-      ];
-    }),
-  );
-  return cachedParts;
-}
-
-function normalizeSlug(slug: string): string {
-  return slug.trim().toLowerCase();
-}
-
+/**
+ * Load a single review part from the database.  Falls back to the bundled
+ * inline fallbacks (compiled at build time).  File-system markdown is no
+ * longer read — the AI Content Generation pipeline saves directly to the
+ * `business_review_parts` table.
+ */
 export async function getReviewPartContent(
   db: DbClient,
   rawSlug: string,
 ): Promise<ReviewPartContent | null> {
-  const slug = normalizeSlug(rawSlug);
+  const slug = rawSlug.trim().toLowerCase();
   if (!resolveReviewPart(slug)) {
     return null;
   }
 
+  // DB is the source of truth (populated by AI Content Generation or seed).
   const row = await db.businessReviewPart.findUnique({ where: { slug } });
   if (row) {
     return {
@@ -66,8 +33,6 @@ export async function getReviewPartContent(
     };
   }
 
-  const fromFile = loadPartsFromMarkdown().get(slug);
-  if (fromFile) return fromFile;
-
+  // Inline fallbacks compiled from the last manual markdown (static deployment).
   return REVIEW_PART_FALLBACKS[slug] ?? null;
 }

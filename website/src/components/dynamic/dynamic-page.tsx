@@ -46,6 +46,7 @@ function BlockSection({
 
 export function DynamicPage({ page }: DynamicPageProps) {
   const tier = useAppSelector((s) => s.auth.tier);
+  const platformAdmin = useAppSelector((s) => s.auth.platformAdmin);
   const showSignIn = page.slug === 'dashboard' && tier === 'public';
 
   return (
@@ -64,7 +65,7 @@ export function DynamicPage({ page }: DynamicPageProps) {
         {page.title}
       </Box>
 
-      {page.pdfExport ? (
+      {page.pdfExport && platformAdmin ? (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pt: 2 }}>
           <PdfExportButton page={`/${page.slug}`} label="PDF" />
         </Box>

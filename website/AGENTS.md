@@ -33,12 +33,14 @@ bun run seed                # upsert financial_projections + content (requires P
 
 ### Production database seed
 
-Chart data comes from `financial_projections`, loaded from `../Red Ruby Club & Terrace Bar Cashflow Budgets.xlsx` via the seed script. **Seeding does not run on Vercel deploy** — run manually after first deploy or when the workbook changes.
+Chart data comes from `financial_projections`, loaded from a cashflow workbook via the seed script or the AI Content Generation admin tab. **Seeding does not run on Vercel deploy** — run manually after first deploy or when the workbook changes.
 
 1. Copy production `POSTGRES_URL` from Vercel → Project → Settings → Environment Variables (or use the same value in local `.env.local`).
 2. From `website/`: `bun run seed -- --dry-run` (expect `financial_projections: 48`).
 3. `bun run seed` (idempotent upserts).
-4. Verify: `curl -s 'https://redrubybali.vercel.app/api/financial-overview?scenario=conservative' | head -c 200` — `labels` should list `Jan 2026` … `Dec 2027`, not `[]`.
+4. Verify: `curl -s 'https://redrubybali.vercel.app/api/financial-overview?scenario=conservative' | head -c 200` — `labels` should list `Jan 2026` … `Dec 2035`, not `[]`.
+
+> **Note:** The Business Review and Executive Summary are now auto-generated from the June 2026 workbook via the **Platform Admin → AI Content Generation** tab. No manual markdown file upload is required.
 
 Legacy transition (optional): `vercel dev` if you need side-by-side with unmigrated `api/*.js`.
 

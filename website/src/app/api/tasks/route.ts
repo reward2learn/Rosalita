@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/db';
-import { requireWriteAuth, requireSession } from '@/lib/auth/guards';
+import { requireWriteAuth, requireSession, requireRead, requireWrite } from '@/lib/auth/guards';
 import { jsonError, jsonOk } from '@/lib/api/response';
 import { ensureTaskTables, seedTaskTracking } from '@/domain/seed/seed-runner';
 import type { SessionClaims } from '@/lib/auth/jwt';
@@ -115,6 +115,9 @@ export async function GET(request: Request): Promise<NextResponse> {
   const guard = await requireSession(request);
   if (!guard.ok) return guard.response;
 
+  const groupGuard = await requireRead('tasks', request);
+  if (!groupGuard.ok) return groupGuard.response;
+
   const { searchParams } = new URL(request.url);
   const requestedRole = searchParams.get('role')?.trim() || null;
 
@@ -169,6 +172,9 @@ export async function GET(request: Request): Promise<NextResponse> {
 export async function POST(request: Request): Promise<NextResponse> {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
+
+  const groupGuard = await requireWrite('tasks', request);
+  if (!groupGuard.ok) return groupGuard.response;
 
   let body: unknown;
   try {
@@ -226,6 +232,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 export async function PATCH(request: Request): Promise<NextResponse> {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
+
+  const groupGuard = await requireWrite('tasks', request);
+  if (!groupGuard.ok) return groupGuard.response;
 
   let body: unknown;
   try {

@@ -1,5 +1,8 @@
 /**
  * Code-first page catalog — runtime SSoT at MVP.
+ * Supports static catalog entries and dynamically registered pages
+ * (e.g. from workbook analysis after an Excel upload).
+ *
  * DB AppPage/PageSection seeded in P6; catalog wins at runtime.
  */
 export type AuthTier = 'public' | 'pin' | 'google';
@@ -19,7 +22,8 @@ export type BlockType =
   | 'chat_panel'
   | 'review_blocks'
   | 'kpi_cards'
-  | 'reports_rollup';
+  | 'reports_rollup'
+  | 'sheet_viewer';
 
 export interface PageSectionDefinition {
   blockType: BlockType;
@@ -33,6 +37,8 @@ export interface PageDefinition {
   navLabel?: string;
   showInNav?: boolean;
   pdfExport?: boolean;
+  /** Security-group codes required to see this page in nav / access it (membership-based). */
+  requiredGroups?: string[];
   sections: PageSectionDefinition[];
 }
 
@@ -105,6 +111,22 @@ export const REVIEW_PART_CATALOG: Record<string, ReviewPartDefinition> = {
   ...DYNAMIC_PARTS,
 };
 
+/** Dynamic pages registered at runtime (e.g. from workbook analysis after reseed). */
+let DYNAMIC_PAGES: Record<string, PageDefinition> = {};
+
+/**
+ * Register dynamically generated pages — called after workbook analysis
+ * during the reseed pipeline so sheet-derived analytics pages appear in the nav.
+ */
+export function setDynamicPages(pages: PageDefinition[]): void {
+  DYNAMIC_PAGES = Object.fromEntries(pages.map((p) => [p.slug, p]));
+}
+
+/** Combined static + dynamic page catalog (evaluated lazily so dynamic pages are included). */
+export function getFullCatalog(): Record<string, PageDefinition> {
+  return { ...PAGE_CATALOG, ...DYNAMIC_PAGES };
+}
+
 export const PAGE_CATALOG: Record<string, PageDefinition> = {
   dashboard: {
     slug: 'dashboard',
@@ -156,6 +178,7 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
     navLabel: 'Ops Admin',
     showInNav: true,
     authTier: 'pin',
+    requiredGroups: ['ops-admin'],
     sections: [{ blockType: 'ops_admin_tabs', config: {} }],
   },
   review: {
@@ -238,15 +261,16 @@ export function tierAllowsAccess(current: AuthTier, required: AuthTier): boolean
   return TIER_RANK[current] >= TIER_RANK[required];
 }
 
-export function listNavPages(tier: AuthTier): PageDefinition[] {
-  return Object.values(PAGE_CATALOG)
+export function listNavPages(tier: AuthTier, groups: string[] = []): PageDefinition[] {
+  return Object.values(getFullCatalog())
     .filter((p) => p.showInNav !== false)
     .filter((p) => tierAllowsAccess(tier, p.authTier))
+    .filter((p) => !p.requiredGroups || p.requiredGroups.length === 0 || groups.includes('platform-admin') || p.requiredGroups.some((g) => groups.includes(g)))
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
 export function resolvePage(slug: string): PageDefinition | null {
-  return PAGE_CATALOG[slug] ?? null;
+  return getFullCatalog()[slug] ?? null;
 }
 
 export function resolveReviewPart(partSlug: string): ReviewPartDefinition | null {

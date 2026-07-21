@@ -8,6 +8,8 @@ export interface AuthState {
   bootstrapped: boolean;
   roleCode?: string | null;
   platformAdmin?: boolean;
+  groups: string[];
+  permissions: string[];
 }
 
 const initialState: AuthState = {
@@ -16,6 +18,8 @@ const initialState: AuthState = {
   bootstrapped: false,
   roleCode: null,
   platformAdmin: false,
+  groups: [],
+  permissions: [],
 };
 
 export const authSlice = createSlice({
@@ -30,6 +34,8 @@ export const authSlice = createSlice({
           user: SessionUser | null;
           roleCode?: string | null;
           platformAdmin?: boolean;
+          groups?: string[];
+          permissions?: string[];
         };
       },
     ) {
@@ -37,6 +43,8 @@ export const authSlice = createSlice({
       state.user = action.payload.user;
       state.roleCode = action.payload.roleCode ?? null;
       state.platformAdmin = action.payload.platformAdmin ?? false;
+      state.groups = action.payload.groups ?? [];
+      state.permissions = action.payload.permissions ?? [];
       state.bootstrapped = true;
     },
     setTier(state, action: { payload: AuthTier }) {

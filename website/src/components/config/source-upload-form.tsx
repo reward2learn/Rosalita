@@ -1,7 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import Accordion from '@mui/material/Accordion';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import AccordionSummary from '@mui/material/AccordionSummary';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -16,6 +19,9 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DescriptionIcon from '@mui/icons-material/Description';
+import SummarizeIcon from '@mui/icons-material/Summarize';
 import {
   CONFIG_UPLOAD_FIELD_NAMES,
   hasAnyUpload,
@@ -47,7 +53,7 @@ const FILE_FIELDS: {
     apiName: CONFIG_UPLOAD_FIELD_NAMES.excel,
     label: 'Cashflow workbook (XLSX)',
     accept: '.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel',
-    hint: 'Red Ruby Club & Terrace Bar Cashflow Budgets.xlsx',
+    hint: 'red-ruby-cashflow.xlsx — uploaded via AI Content Generation tab or Config page',
   },
   {
     key: 'businessReview',
@@ -55,7 +61,7 @@ const FILE_FIELDS: {
     apiName: CONFIG_UPLOAD_FIELD_NAMES.businessReview,
     label: 'Business Review (Markdown)',
     accept: '.md,.markdown,.txt,text/markdown,text/plain',
-    hint: 'Red Ruby Business Review — MVP Exit Diagnostics — July 2026.md',
+    hint: 'business-review.md — or use AI Content Generation tab to auto-generate from the workbook',
   },
   {
     key: 'executiveSummary',
@@ -63,7 +69,7 @@ const FILE_FIELDS: {
     apiName: CONFIG_UPLOAD_FIELD_NAMES.executiveSummary,
     label: 'Executive Summary (Markdown)',
     accept: '.md,.markdown,.txt,text/markdown,text/plain',
-    hint: 'Red Ruby Executive Summary — MVP Exit Viability — July 2026.md',
+    hint: 'executive-summary.md — or use AI Content Generation tab to auto-generate from the workbook',
   },
 ];
 
@@ -261,38 +267,486 @@ export function SourceUploadForm() {
   );
 }
 
+interface SeedDetails {
+  counts: Record<string, number>;
+  pageDetails: { slug: string; title: string; authTier: string; sectionCount: number; sections: { blockType: string; sortOrder: number }[] }[];
+  reviewPartDetails: { slug: string; title: string; partKey: string; markdownLength: number; markdownPreview: string }[];
+  snippetDetails: { key: string; category: string; contentLength: number; contentPreview: string }[];
+  taskDetails: { title: string; priority: string; status: string; roles: string[] }[];
+  roleDetails: { code: string; name: string; email: string | null }[];
+  targetDetails: { month: string; targetRevenue: number; targetEbitda: number; targetGuests: number }[];
+  leverDetails: { num: number; name: string; impact: string }[];
+  actionItemDetails: { priority: string; label: string; completed: boolean }[];
+  executiveSummary: string | null;
+  seedStatus?: {
+    ok: boolean;
+    warnings: string[];
+    totalTables: number;
+    totalRows: number;
+  };
+}
+
+/** Human-readable labels for the seed table keys. */
+const TABLE_LABELS: Record<string, string> = {
+  appPages: 'App Pages',
+  pageSections: 'Page Sections',
+  businessReviewParts: 'Business Review Parts',
+  knowledgeSnippets: 'Knowledge Snippets',
+  tasks: 'Tasks',
+  roles: 'Roles',
+  monthlyTargets: 'Monthly Targets',
+  levers: 'Levers',
+  actionItems: 'Action Items',
+  financialProjections: 'Financial Projections',
+};
+
 function SeedSummary({ result }: { result: ReseedResponse }) {
   const rows = Object.entries(result.counts) as [string, number][];
+  const [details, setDetails] = useState<SeedDetails | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [expandedTable, setExpandedTable] = useState<string | null>(null);
+  const [showAiContent, setShowAiContent] = useState(false);
+
+  const fetchDetails = useCallback(async () => {
+    setLoadingDetails(true);
+    try {
+      const res = await fetch('/api/config/seed-details');
+      if (res.ok) {
+        const payload = await res.json();
+        if (payload.success) setDetails(payload);
+        else console.warn('[seed-details] API error:', payload.error);
+      }
+    } catch {
+      // non-critical
+    } finally {
+      setLoadingDetails(false);
+    }
+  }, []);
+
+  const handleToggle = (table: string) => {
+    if (expandedTable === table) {
+      setExpandedTable(null);
+      return;
+    }
+    setExpandedTable(table);
+    if (!details) void fetchDetails();
+  };
+
+  /** Render the detail panel for a given table. */
+  function renderDetail(table: string) {
+    if (!details) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+          <CircularProgress size={20} />
+        </Box>
+      );
+    }
+
+    switch (table) {
+      case 'appPages':
+        return (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Slug</TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell>Tier</TableCell>
+                <TableCell align="right">Sections</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {details.pageDetails.map((p) => (
+                <TableRow key={p.slug}>
+                  <TableCell>{p.slug}</TableCell>
+                  <TableCell>{p.title}</TableCell>
+                  <TableCell>{p.authTier}</TableCell>
+                  <TableCell align="right">{p.sectionCount}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        );
+
+      case 'pageSections':
+        return (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>
+            {(details.counts?.pageSections ?? 0)} sections across{' '}
+            {details.pageDetails.length} pages. Each section renders a block type (chart, table, markdown, etc.)
+            in the corresponding page.
+          </Typography>
+        );
+
+      case 'businessReviewParts':
+        if (details.reviewPartDetails.length === 0) {
+          return (
+            <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>
+              No Business Review parts seeded. Use the AI Content Generation tab to generate them from the workbook.
+            </Typography>
+          );
+        }
+        return (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Part</TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell align="right">Length</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {details.reviewPartDetails.map((p) => (
+                <TableRow key={p.slug}>
+                  <TableCell>{p.partKey}</TableCell>
+                  <TableCell>{p.title}</TableCell>
+                  <TableCell align="right">{(p.markdownLength / 1000).toFixed(1)}K</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        );
+
+      case 'knowledgeSnippets':
+        return (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Key</TableCell>
+                <TableCell>Category</TableCell>
+                <TableCell align="right">Length</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {details.snippetDetails.map((s) => (
+                <TableRow key={s.key}>
+                  <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{s.key}</TableCell>
+                  <TableCell>{s.category}</TableCell>
+                  <TableCell align="right">{(s.contentLength / 1000).toFixed(1)}K</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        );
+
+      case 'tasks':
+        return (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Task</TableCell>
+                <TableCell>Priority</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Roles</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {details.taskDetails.map((t, i) => (
+                <TableRow key={i}>
+                  <TableCell>{t.title}</TableCell>
+                  <TableCell>{t.priority}</TableCell>
+                  <TableCell>{t.status}</TableCell>
+                  <TableCell>{t.roles.join(', ') || '—'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        );
+
+      case 'roles':
+        return (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Code</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {details.roleDetails.map((r) => (
+                <TableRow key={r.code}>
+                  <TableCell>{r.code}</TableCell>
+                  <TableCell>{r.name}</TableCell>
+                  <TableCell>{r.email ?? '—'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        );
+
+      case 'monthlyTargets':
+        return (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Month</TableCell>
+                <TableCell align="right">Revenue</TableCell>
+                <TableCell align="right">EBITDA</TableCell>
+                <TableCell align="right">Guests</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {details.targetDetails.map((t) => (
+                <TableRow key={t.month}>
+                  <TableCell>{t.month}</TableCell>
+                  <TableCell align="right">{t.targetRevenue.toLocaleString('id-ID')}</TableCell>
+                  <TableCell align="right">{t.targetEbitda.toLocaleString('id-ID')}</TableCell>
+                  <TableCell align="right">{t.targetGuests}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        );
+
+      case 'levers':
+        return (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>#</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Impact</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {details.leverDetails.map((l) => (
+                <TableRow key={l.num}>
+                  <TableCell>{l.num}</TableCell>
+                  <TableCell>{l.name}</TableCell>
+                  <TableCell>{l.impact}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        );
+
+      case 'actionItems':
+        return (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Priority</TableCell>
+                <TableCell>Action</TableCell>
+                <TableCell>Done</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {details.actionItemDetails.map((a, i) => (
+                <TableRow key={i}>
+                  <TableCell>{a.priority}</TableCell>
+                  <TableCell>{a.label}</TableCell>
+                  <TableCell>{a.completed ? '✓' : '—'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        );
+
+      default:
+        return (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>
+            {result.counts[table as keyof typeof result.counts] ?? 0} rows seeded in <code>{table}</code>.
+          </Typography>
+        );
+    }
+  }
 
   return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-        Seed summary
-      </Typography>
-      <Stack direction="row" spacing={1} useFlexGap sx={{ mb: 2, flexWrap: 'wrap' }}>
-        {result.uploaded.map((key) => (
-          <Chip key={key} size="small" color="primary" label={`Uploaded: ${key}`} />
-        ))}
-        {(Object.entries(result.filesUsed) as [string, string][]).map(([key, source]) => (
-          <Chip key={`${key}-${source}`} size="small" variant="outlined" label={`${key}: ${source}`} />
-        ))}
-      </Stack>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Table</TableCell>
-            <TableCell align="right">Rows</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map(([table, count]) => (
-            <TableRow key={table}>
-              <TableCell>{table}</TableCell>
-              <TableCell align="right">{count}</TableCell>
-            </TableRow>
+    <Stack spacing={2}>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+          Seed Summary
+        </Typography>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ mb: 2, flexWrap: 'wrap' }}>
+          {result.uploaded.map((key) => (
+            <Chip key={key} size="small" color="primary" label={`Uploaded: ${key}`} />
           ))}
-        </TableBody>
-      </Table>
-    </Paper>
+          {(Object.entries(result.filesUsed) as [string, string][]).map(([key, source]) => (
+            <Chip key={`${key}-${source}`} size="small" variant="outlined" label={`${key}: ${source}`} />
+          ))}
+        </Stack>
+
+        {/* ── Seed status / warnings ──────────────────────── */}
+        {details?.seedStatus ? (
+          <Box sx={{ mb: 2 }}>
+            {details.seedStatus.warnings.length > 0 ? (
+              <Alert severity="warning" sx={{ mb: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  Seed completed with {details.seedStatus.warnings.length} warning(s)
+                </Typography>
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  {details.seedStatus.warnings.map((w, i) => (
+                    <li key={i}>
+                      <Typography variant="caption">{w}</Typography>
+                    </li>
+                  ))}
+                </ul>
+              </Alert>
+            ) : (
+              <Alert severity="success" sx={{ mb: 1 }}>
+                <Typography variant="body2">
+                  Seed completed successfully — {details.seedStatus.totalRows} rows across {details.seedStatus.totalTables} tables.
+                </Typography>
+              </Alert>
+            )}
+          </Box>
+        ) : null}
+
+        {rows.map(([table, count]) => (
+          <Accordion
+            key={table}
+            expanded={expandedTable === table}
+            onChange={() => handleToggle(table)}
+            elevation={0}
+            sx={{
+              border: '1px solid',
+              borderColor: 'divider',
+              '&:before': { display: 'none' },
+              mb: 0.5,
+            }}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  flex: 1,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>{TABLE_LABELS[table] ?? table}</span>
+                <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400, ml: 2 }}>
+                  {count}
+                </Box>
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 1.5 }}>
+              {renderDetail(table)}
+            </AccordionDetails>
+          </Accordion>
+        ))}
+      </Paper>
+
+      {/* ── AI-Generated Content ──────────────────────────── */}
+      {details ? (
+        <>
+          {/* Business Review */}
+          {details.reviewPartDetails.length > 0 ? (
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+                <DescriptionIcon color="primary" />
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  AI-Generated Business Review
+                </Typography>
+              </Stack>
+              {details.reviewPartDetails.map((part) => (
+                <Accordion
+                  key={part.slug}
+                  elevation={0}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    '&:before': { display: 'none' },
+                    mb: 0.5,
+                  }}
+                >
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {part.title}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography
+                      variant="body2"
+                      component="pre"
+                      sx={{
+                        whiteSpace: 'pre-wrap',
+                        fontFamily: 'monospace',
+                        fontSize: '0.75rem',
+                        bgcolor: 'rgba(0,0,0,0.3)',
+                        p: 2,
+                        borderRadius: 1,
+                        maxHeight: 400,
+                        overflow: 'auto',
+                      }}
+                    >
+                      {part.markdownPreview}
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+            </Paper>
+          ) : null}
+
+          {/* Executive Summary */}
+          {details.executiveSummary ? (
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+                <SummarizeIcon color="primary" />
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  AI-Generated Executive Summary
+                </Typography>
+              </Stack>
+              <Typography
+                variant="body2"
+                component="pre"
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'monospace',
+                  fontSize: '0.75rem',
+                  bgcolor: 'rgba(0,0,0,0.3)',
+                  p: 2,
+                  borderRadius: 1,
+                  maxHeight: 400,
+                  overflow: 'auto',
+                }}
+              >
+                {details.executiveSummary.length > 2000
+                  ? details.executiveSummary.slice(0, 2000) + '\n\n... (truncated, open the Summary page for the full document)'
+                  : details.executiveSummary}
+              </Typography>
+              <Box sx={{ mt: 1 }}>
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={() => setShowAiContent(!showAiContent)}
+                >
+                  {showAiContent ? 'Show Less' : 'Show Full Content'}
+                </Button>
+              </Box>
+              {showAiContent ? (
+                <Typography
+                  variant="body2"
+                  component="pre"
+                  sx={{
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'monospace',
+                    fontSize: '0.75rem',
+                    bgcolor: 'rgba(0,0,0,0.3)',
+                    p: 2,
+                    borderRadius: 1,
+                    maxHeight: 600,
+                    overflow: 'auto',
+                    mt: 1,
+                  }}
+                >
+                  {details.executiveSummary}
+                </Typography>
+              ) : null}
+            </Paper>
+          ) : null}
+
+          {details.reviewPartDetails.length === 0 && !details.executiveSummary ? (
+            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(235,61,40,0.04)' }}>
+              <Typography variant="body2" color="text.secondary">
+                No AI-generated content available yet. Go to <strong>Platform Admin → AI Content Generation</strong>{' '}
+                to generate the Business Review and Executive Summary from the workbook.
+              </Typography>
+            </Paper>
+          ) : null}
+        </>
+      ) : null}
+    </Stack>
   );
 }

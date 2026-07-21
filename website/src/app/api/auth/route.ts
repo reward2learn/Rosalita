@@ -11,8 +11,9 @@ import {
   getGoogleOAuthCredentials,
   getGoogleOAuthPublicConfig,
 } from '@/lib/auth/google-oauth';
-import { signSession } from '@/lib/auth/jwt';
+import { sessionIsPlatformAdmin, signSession } from '@/lib/auth/jwt';
 import { resolveRoleForEmail } from '@/domain/seed/seed-runner';
+import { PERSONS, resolvePerson } from '@/domain/security/persons';
 import {
   clearSessionCookie,
   getOrigin,
@@ -21,9 +22,10 @@ import {
 } from '@/lib/auth/session';
 import { requireGoogle } from '@/lib/auth/guards';
 import { getSecretPlaintext } from '@/lib/secrets';
-import { createClient } from '@/lib/db';
+import { createClient, createBaseClient } from '@/lib/db';
 import { PdfExportService } from '@/domain/pdf/pdf-export-service';
-import { ensureJobQueueTable } from '@/lib/db-migrate';
+import { ensureJobQueueTable, ensureSecurityTables } from '@/lib/db-migrate';
+import { resolveGroupCodesForSub, resolveCapabilitiesForSub, upsertUserAccount } from '@/domain/security/security-service';
 import { legacyError, jsonError } from '@/lib/api/response';
 
 export const maxDuration = 60;
@@ -40,7 +42,8 @@ function ensureJobQueueOnce(): Promise<boolean> {
 }
 
 const verifyPinSchema = z.object({
-  role: z.string().min(1),
+  name: z.string().min(1).optional(),
+  role: z.string().min(1).optional(),
   pin: z.string().min(1),
 });
 
@@ -59,10 +62,12 @@ export async function GET(request: Request) {
       return handleMe(request);
     case 'logout':
       return handleLogout(request);
+    case 'list-pin-users':
+      return handleListPinUsers();
     case 'pdf':
       return handlePdf(request, url);
     default:
-      return jsonError('Unknown action — use google|google-callback|google-config|me|logout|pdf|verify-pin|store-key|store-google-oauth', 400);
+      return jsonError('Unknown action — use google|google-callback|google-config|me|logout|pdf|verify-pin|store-key|store-google-oauth|list-pin-users', 400);
   }
 }
 
@@ -179,6 +184,15 @@ async function handleGoogleCallback(request: Request, url: URL): Promise<NextRes
     };
 
     const matchedRole = resolveRoleForEmail(user.email);
+    const { groups, permissions } = await resolveSessionGroups({
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      tier: 'google',
+      roleCode: matchedRole?.code,
+    });
+    const platformAdmin =
+      (matchedRole?.isPlatformAdmin ?? false) || groups.includes('platform-admin');
     const token = await signSession({
       sub: user.id,
       tier: 'google',
@@ -186,7 +200,9 @@ async function handleGoogleCallback(request: Request, url: URL): Promise<NextRes
       name: user.name,
       picture: user.picture,
       roleCode: matchedRole?.code,
-      platformAdmin: matchedRole?.isPlatformAdmin ?? false,
+      platformAdmin,
+      groups,
+      permissions,
     });
 
     const response = NextResponse.redirect(new URL(`${redirectTo}?auth=success`, origin));
@@ -195,6 +211,36 @@ async function handleGoogleCallback(request: Request, url: URL): Promise<NextRes
   } catch (err) {
     console.error('[auth/google-callback] Error:', err instanceof Error ? err.message : err);
     return NextResponse.redirect(new URL(`${redirectTo}?auth=error`, origin));
+  }
+}
+
+/**
+ * Persist the signed-in identity as a UserAccount (idempotent) and resolve the
+ * security-group codes to embed in the session token. Best-effort: failures here
+ * must not block sign-in, so errors are swallowed and groups default to [].
+ */
+async function resolveSessionGroups(input: {
+  sub: string;
+  email?: string | null;
+  name?: string | null;
+  tier: string;
+  roleCode?: string | null;
+}): Promise<{ groups: string[]; permissions: string[] }> {
+  try {
+    // Raw client: account persistence must not be blocked by ZenStack policies.
+    // Don't pass knownAccounts here — that would re-create deleted users.
+    // The current user's account is created via upsertUserAccount below.
+    const db = createBaseClient();
+    await ensureSecurityTables(db);
+    await upsertUserAccount(db, input);
+    const groups = await resolveGroupCodesForSub(db, input.sub);
+    const permissions = await resolveCapabilitiesForSub(db, input.sub);
+    return { groups, permissions };
+  } catch (err) {
+    // Sign-in must still succeed even if group resolution fails, but we log so
+    // the failure is diagnosable instead of silently dropping accounts.
+    console.error('[auth/resolveSessionGroups]', err instanceof Error ? err.message : err);
+    return { groups: [], permissions: [] };
   }
 }
 
@@ -215,7 +261,9 @@ async function handleMe(request: Request): Promise<NextResponse> {
           : null,
         tier: session?.tier ?? 'public',
         roleCode: session?.roleCode ?? null,
-        platformAdmin: session?.platformAdmin ?? false,
+        platformAdmin: sessionIsPlatformAdmin(session),
+        groups: session?.groups ?? [],
+        permissions: session?.permissions ?? [],
       },
     });
   } catch {
@@ -240,30 +288,56 @@ async function handleVerifyPin(request: Request): Promise<NextResponse> {
 
   const parsed = verifyPinSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: 'role and pin are required' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'name (or role) and pin are required' }, { status: 400 });
   }
 
-  const { role, pin } = parsed.data;
+  const { name, role, pin } = parsed.data;
 
   try {
-    // Platform admin uses the shared ADMIN_PIN secret.
-    const secretKey = role === 'admin' || role === 'platform' ? 'ADMIN_PIN' : `ROLE_PIN_${role.toUpperCase()}`;
+    // Resolve the person identity by name (e.g. "Ama") or fall back to role (sub).
+    let sub: string;
+    let person: ReturnType<typeof resolvePerson>;
+    if (name) {
+      person = PERSONS.find((p) => p.name.toLowerCase() === name.toLowerCase());
+      if (!person) {
+        return NextResponse.json({ ok: false, error: 'Unknown user' }, { status: 400 });
+      }
+      sub = person.sub;
+    } else if (role) {
+      sub = role.toLowerCase();
+      person = resolvePerson(sub);
+    } else {
+      return NextResponse.json({ ok: false, error: 'name or role is required' }, { status: 400 });
+    }
+
+    const isPlatformAdmin = person?.isPlatformAdmin ?? sub === 'admin';
+
+    // PIN key: USER_PIN_<sub> for individuals, ADMIN_PIN for platform admin.
+    const secretKey = isPlatformAdmin ? 'ADMIN_PIN' : `USER_PIN_${sub}`;
     const stored = await getSecretPlaintext(secretKey);
     if (!stored) {
-      return NextResponse.json({ ok: false, error: 'PIN not configured for this role' });
+      return NextResponse.json({ ok: false, error: 'PIN not configured for this user' });
     }
     if (pin.trim() !== stored.trim()) {
       return NextResponse.json({ ok: false, error: 'Incorrect PIN' });
     }
 
-    const isPlatformAdmin = role === 'admin' || role === 'platform';
-    const roleName = isPlatformAdmin ? 'Platform Admin' : role;
-    const token = await signSession({
-      sub: isPlatformAdmin ? 'admin' : role.toLowerCase(),
-      name: roleName,
+    const roleCode = person?.roleCode ?? null;
+    const { groups, permissions } = await resolveSessionGroups({
+      sub,
+      name: person?.name ?? sub,
       tier: 'pin',
-      roleCode: isPlatformAdmin ? undefined : role,
-      platformAdmin: isPlatformAdmin,
+      roleCode,
+    });
+    const platformAdmin = isPlatformAdmin || groups.includes('platform-admin');
+    const token = await signSession({
+      sub,
+      name: person?.name ?? sub,
+      tier: 'pin',
+      roleCode,
+      platformAdmin,
+      groups,
+      permissions,
     });
     const response = NextResponse.json({ ok: true, success: true });
     setSessionCookie(response, token);
@@ -272,6 +346,21 @@ async function handleVerifyPin(request: Request): Promise<NextResponse> {
     console.error('[auth/verify-pin]', err);
     return NextResponse.json({ ok: false, error: 'Server error' }, { status: 500 });
   }
+}
+
+/**
+ * Public endpoint that returns the list of persons who have a PIN configured,
+ * so the sign-in dropdown only shows users who can actually authenticate.
+ */
+async function handleListPinUsers(): Promise<NextResponse> {
+  const results = await Promise.all(
+    PERSONS.map(async (p) => {
+      const key = p.isPlatformAdmin ? 'ADMIN_PIN' : `USER_PIN_${p.sub}`;
+      const hasPin = (await getSecretPlaintext(key)) != null;
+      return { name: p.name, sub: p.sub, hasPin };
+    }),
+  );
+  return NextResponse.json({ success: true, data: { users: results } });
 }
 
 async function handlePdf(request: Request, url: URL): Promise<NextResponse> {
@@ -285,7 +374,11 @@ async function handlePdf(request: Request, url: URL): Promise<NextResponse> {
 
     const db = createClient({ tier: guard.session.tier, sub: guard.session.sub });
     const pdfService = new PdfExportService(db);
-    await ensureJobQueueOnce();
+    try {
+      await ensureJobQueueOnce();
+    } catch {
+      // Table ensure is best-effort; queueJob surfaces the real error if the table is missing.
+    }
     const jobId = await pdfService.queueJob(guard.session.sub, {
       origin,
       sessionCookie,

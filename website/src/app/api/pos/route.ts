@@ -2,7 +2,7 @@
  * POS OCR + parse API — legacy reference: website/api/pos.js
  */
 import { NextResponse } from 'next/server';
-import { requireWriteAuth } from '@/lib/auth/guards';
+import { requireWriteAuth, requireCapability } from '@/lib/auth/guards';
 import { handlePosParse, handlePosScan } from '@/domain/pos/pos-handlers';
 import { handleExpenseParse, handleExpenseScan } from '@/domain/pos/expense-handlers';
 import { legacyError } from '@/lib/api/response';
@@ -10,6 +10,9 @@ import { legacyError } from '@/lib/api/response';
 export async function POST(request: Request) {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
+
+  const groupGuard = await requireCapability('pos:use', request);
+  if (!groupGuard.ok) return groupGuard.response;
 
   const url = new URL(request.url);
   let body: Record<string, unknown> = {};

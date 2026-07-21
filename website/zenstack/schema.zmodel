@@ -159,6 +159,57 @@ model Role {
   @@map("roles")
 }
 
+/// A signed-in user account (keyed by the auth provider subject / sub).
+model UserAccount {
+  id          String        @id @default(cuid())
+  sub         String        @unique @map("sub")
+  email       String?       @map("email")
+  name        String?       @map("name")
+  tier        String        @default("google") @map("tier")
+  roleCode    String?       @map("role_code")
+  isActive    Boolean       @default(true) @map("is_active")
+  lastSeenAt  DateTime?     @map("last_seen_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  groups      UserGroup[]
+
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('update', auth().tier == pin || auth().tier == google)
+  @@map("user_accounts")
+}
+
+/// A security group used to gate API calls and routes by membership.
+model SecurityGroup {
+  id          String      @id @default(cuid())
+  code        String      @unique @map("code")
+  name        String
+  description String?     @map("description")
+  isSystem    Boolean     @default(false) @map("is_system")
+  /// Capability codes granted to members (e.g. "financials:write", "tasks:read").
+  permissions String[]    @default([]) @map("permissions")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  members     UserGroup[]
+
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
+  @@map("security_groups")
+}
+
+/// Membership linking a user account to a security group.
+model UserGroup {
+  id      String        @id @default(cuid())
+  user    UserAccount   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String        @map("user_id")
+  group   SecurityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String        @map("group_id")
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@unique([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
+  @@map("user_groups")
+}
+
 /// A tracked action item derived from the MVP Business Review priority actions.
 model Task {
   id          String           @id @default(cuid())
@@ -221,11 +272,15 @@ model Secret {
   @@map("secrets")
 }
 
-/// Singleton app settings (chat flags, etc.).
+/// Singleton app settings — chat flags, brand config, etc.
 model AppSetting {
-  id               String   @id @default("default")
-  webSearchEnabled Boolean  @default(false) @map("web_search_enabled")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default("default")
+  webSearchEnabled   Boolean  @default(false) @map("web_search_enabled")
+  brandLogoText      String   @default("") @map("brand_logo_text")
+  brandLogoUrl       String   @default("") @map("brand_logo_url")
+  brandPrimaryColor  String   @default("#eb3d28") @map("brand_primary_color")
+  brandSecondaryColor String  @default("#0af9fe") @map("brand_secondary_color")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@allow('all', true)
   @@map("app_settings")
@@ -252,10 +307,13 @@ model GoogleOAuthConfig {
 model Conversation {
   id           Int      @id @default(autoincrement())
   userName     String   @default("Anonymous") @map("user_name")
+  ownerSub     String?  @map("owner_sub")
   title        String   @default("Chat Conversation")
   messages     Json     @default("[]")
   messageCount Int      @default(0) @map("message_count")
+  archived     Boolean  @default(false) @map("archived")
   createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Server-side only (/api/chat?resource=conversations) — session enforced in route handler
   @@allow('all', true)

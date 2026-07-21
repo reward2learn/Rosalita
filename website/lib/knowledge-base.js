@@ -1,7 +1,7 @@
 /**
- * Red Ruby Business Review — Knowledge Base (MVP Exit Viability)
+ * Red Ruby Business Review — Knowledge Base
  * Used by /api/chat as the AI's system prompt context.
- * Contains all key data from the July 2026 exit viability analysis.
+ * Contains key business data from the latest financial analysis.
  */
 
 export const BUSINESS_NAME = 'Red Ruby Club & Terrace Bar';

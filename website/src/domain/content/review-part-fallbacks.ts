@@ -1,4 +1,4 @@
-/** Auto-generated from Red Ruby Business Review — June 2026.md — do not edit manually. */
+/** Auto-generated review part fallbacks — do not edit manually. */
 /** Regenerate: bun run scripts/generate-review-part-fallbacks.ts */
 
 export interface ReviewPartFallback {

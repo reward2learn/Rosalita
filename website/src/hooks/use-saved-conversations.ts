@@ -14,6 +14,8 @@ interface ConversationSummary {
   title?: string;
   message_count?: number;
   created_at?: string;
+  archived?: boolean;
+  owner_sub?: string | null;
 }
 
 function isConversationSummary(value: unknown): value is ConversationSummary {
@@ -42,7 +44,7 @@ function normalizeLoadedMessages(value: unknown): ChatStreamMessage[] {
 
 export function useSavedConversations() {
   const dispatch = useAppDispatch();
-  const { data: conversationsPayload, isFetching: conversationsLoading } = useListConversationsQuery(10);
+  const { data: conversationsPayload, isFetching: conversationsLoading } = useListConversationsQuery(20);
   const [loadConversation, { isFetching: isLoadingConversation }] = useLazyGetConversationQuery();
 
   const conversations = useMemo(() => {
