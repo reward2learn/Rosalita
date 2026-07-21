@@ -2,13 +2,19 @@
  * Clear Seeded Data API
  *
  * POST /api/admin/clear-seed
- *   Deletes all seeded content from the database so the admin can
- *   re-upload and re-seed from scratch.
+ *   Deletes seeded content from the database.
+ *
+ *   Body (full clear):
+ *     { "confirm": "CLEAR ALL SEEDED DATA" }
+ *     Deletes ALL seed tables.
+ *
+ *   Body (targeted clear):
+ *     { "tables": ["business_review_parts", "knowledge_snippets"], "confirm": "CLEAR SELECTED" }
+ *     Deletes only the specified tables (must include confirm string "CLEAR SELECTED").
  *
  *   Preserves operational data: Z-reports, conversations, user accounts,
  *   security groups, secrets, app settings, and PDF jobs.
  *
- *   Body: { confirm?: string } — must pass `confirm: "CLEAR ALL SEEDED DATA"`
  *   Returns: { deleted: Record<string, number> } — counts per table
  */
 
@@ -22,12 +28,7 @@ import { jsonError, jsonOk } from '@/lib/api/response';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
-const clearSchema = z.object({
-  confirm: z.literal('CLEAR ALL SEEDED DATA'),
-});
-
-/** Tables that hold seeded content — deleted in dependency order. */
-const SEED_TABLES = [
+const tableNames = [
   'page_sections',
   'app_pages',
   'task_assignments',
@@ -44,64 +45,74 @@ const SEED_TABLES = [
   'financial_projections',
 ] as const;
 
+const clearSchema = z.discriminatedUnion('mode', [
+  z.object({ mode: z.literal('all'), confirm: z.literal('CLEAR ALL SEEDED DATA') }),
+  z.object({
+    mode: z.literal('selected'),
+    tables: z.array(z.enum(tableNames)).min(1),
+    confirm: z.literal('CLEAR SELECTED'),
+  }),
+]);
+
+export type ClearMode = 'all' | 'selected';
+
 export async function POST(request: Request): Promise<NextResponse> {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
   if (!sessionIsPlatformAdmin(guard.session)) return jsonError('Platform admin only', 403);
 
-  // Validate confirmation token
   let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return jsonError('Invalid JSON body', 400);
-  }
+  try { body = await request.json(); } catch { return jsonError('Invalid JSON body', 400); }
 
   const parsed = clearSchema.safeParse(body);
   if (!parsed.success) {
     return jsonError(
-      'Send { "confirm": "CLEAR ALL SEEDED DATA" } to confirm deletion. This cannot be undone.',
+      'Send { "mode": "all", "confirm": "CLEAR ALL SEEDED DATA" } or ' +
+      '{ "mode": "selected", "tables": [...], "confirm": "CLEAR SELECTED" }',
       400,
     );
   }
 
+  const tablesToDelete: readonly string[] = parsed.data.mode === 'all'
+    ? tableNames
+    : parsed.data.tables;
+
   const connStr = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
-  if (!connStr) {
-    return jsonError('POSTGRES_URL not configured', 500);
-  }
+  if (!connStr) return jsonError('POSTGRES_URL not configured', 500);
 
   const prisma = new PrismaClient({ datasources: { db: { url: connStr } } });
 
   try {
     const deleted: Record<string, number> = {};
 
-    // Delete in reverse-dependency order (child tables first, then parents)
-    for (const table of SEED_TABLES) {
+    // Delete in reverse-dependency order
+    const orderedTables = tableNames.filter((t) => tablesToDelete.includes(t));
+    for (const table of orderedTables) {
       try {
-        // Use raw SQL for tables that may not have a Prisma model, or
-        // the model-based delete for those that do.
         const result = await prisma.$executeRawUnsafe(`DELETE FROM "${table}"`);
         deleted[table] = Number(result);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        console.warn(`[clear-seed] Table "${table}" delete failed (may not exist): ${message}`);
-        deleted[table] = -1; // signifies error / doesn't exist
+        console.warn(`[clear-seed] Table "${table}" delete failed: ${message}`);
+        deleted[table] = -1;
       }
     }
 
-    // Also clear the dynamic pages registry so fresh pages are generated on next seed
-    const { setDynamicPages } = await import('@/lib/page-catalog');
-    setDynamicPages([]);
+    if (parsed.data.mode === 'all') {
+      const { setDynamicPages } = await import('@/lib/page-catalog');
+      setDynamicPages([]);
+    }
 
-    console.log('[clear-seed] Seeded data cleared:', JSON.stringify(deleted));
+    console.log('[clear-seed] Cleared:', JSON.stringify(deleted));
 
     return jsonOk({
       deleted,
-      message: 'All seeded data has been cleared. Upload a new workbook via the Config page and re-seed.',
+      message: parsed.data.mode === 'all'
+        ? 'All seeded data has been cleared.'
+        : `Selected tables cleared: ${parsed.data.tables.join(', ')}`,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(`Clear failed: ${message}`, 500);
+    return jsonError(`Clear failed: ${err instanceof Error ? err.message : String(err)}`, 500);
   } finally {
     await prisma.$disconnect();
   }
