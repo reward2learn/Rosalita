@@ -249,14 +249,6 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
     authTier: 'public',
     sections: [{ blockType: 'doc_markdown', config: { source: 'privacy-policy.html' } }],
   },
-  'tax-structure': {
-    slug: 'tax-structure',
-    title: 'Tax Structure Notes',
-    navLabel: 'Tax Notes',
-    showInNav: true,
-    authTier: 'public',
-    sections: [{ blockType: 'doc_markdown', config: { source: 'part-o' } }],
-  },
 };
 
 const TIER_RANK: Record<AuthTier, number> = {

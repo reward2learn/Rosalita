@@ -117,25 +117,33 @@ async function deriveNavItemsFromCatalog(): Promise<Record<string, unknown>[]> {
     });
 }
 
-/** Seed the navigation_items table from the static page catalog when the table is empty. */
-async function seedFromCatalogIfEmpty(prisma: ReturnType<typeof getClient>): Promise<boolean> {
-  const count = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-    `SELECT COUNT(*)::bigint AS count FROM navigation_items`,
+/** Seed any catalog pages not yet in the navigation_items table (idempotent). */
+async function seedMissingFromCatalog(prisma: ReturnType<typeof getClient>): Promise<number> {
+  // Get IDs already in the table
+  const existing = await prisma.$queryRawUnsafe<{ id: string }[]>(
+    `SELECT id FROM navigation_items`,
   );
-  if (Number(count[0]?.count ?? 0) > 0) return false; // already seeded
+  const existingIds = new Set(existing.map((r) => r.id));
 
   const catalogItems = await deriveNavItemsFromCatalog();
-  if (catalogItems.length === 0) return false;
+  let inserted = 0;
 
   for (const item of catalogItems) {
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO navigation_items (id, parent_id, sort_order, title, path, icon, auth_tier, required_groups, is_visible, is_dynamic)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO NOTHING`,
-      item.id, item.parentId, item.sortOrder, item.title, item.path, item.icon,
-      item.authTier, item.requiredGroups, item.isVisible, item.isDynamic,
-    );
+    const itemId = item.id as string;
+    if (existingIds.has(itemId)) continue; // skip if already present
+    try {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO navigation_items (id, parent_id, sort_order, title, path, icon, auth_tier, required_groups, is_visible, is_dynamic)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        itemId, item.parentId, item.sortOrder, item.title, item.path, item.icon,
+        item.authTier, item.requiredGroups, item.isVisible, item.isDynamic,
+      );
+      inserted++;
+    } catch {
+      // ignore duplicates from race conditions
+    }
   }
-  return true;
+  return inserted;
 }
 
 // ── GET ─────────────────────────────────────────────────
@@ -148,7 +156,8 @@ export async function GET(request: Request): Promise<NextResponse> {
   const prisma = getClient();
   try {
     await ensureTable(prisma);
-    await seedFromCatalogIfEmpty(prisma);
+    const seeded = await seedMissingFromCatalog(prisma);
+    if (seeded > 0) console.log(`[navigation] Seeded ${seeded} new item(s) from page catalog`);
 
     const items = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
       `SELECT id, parent_id AS "parentId", sort_order AS "sortOrder", title, path, icon,

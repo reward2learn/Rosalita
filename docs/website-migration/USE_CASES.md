@@ -85,7 +85,6 @@
 | UC-DOC-01 | Full review navigation Parts A–O | google | `/review/[partSlug]` | `BusinessReviewPart` | Business Review MD Parts A–O | Seeded P6; **no review.html port** |
 | UC-DOC-02 | Part content rendering | google | `/review/[partSlug]` | `doc_markdown` | MD sections | No 5344-line HTML port |
 | UC-DOC-03 | Executive summary page | google | `/summary` | `AppPage` | `summary.html` | PIN denied overlay |
-| UC-DOC-04 | Tax loss notes | public | `/tax-structure` | `doc_markdown` | Part O / `tax-structure.html` | Static tables |
 
 ### Operations & AI
 
