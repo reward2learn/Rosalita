@@ -84,7 +84,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function SourceUploadForm() {
+export function SourceUploadForm({ showSummaryOnly }: { showSummaryOnly?: boolean }) {
   const [reseed, { isLoading, isError, error, isSuccess, data, reset: resetMutation }] =
     useReseedFromSourcesMutation();
   const [fieldStatus, setFieldStatus] = useState<Record<FileField, string | null>>({
@@ -171,36 +171,38 @@ export function SourceUploadForm() {
 
   return (
     <Box component="section" sx={{ maxWidth: 720, mx: 'auto', py: 4, px: 2 }}>
-      <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-        Source Config
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Upload one or more source files to replace on disk and re-run the database seed pipeline.
-        Omitted files keep their existing copies.
-      </Typography>
+      {!showSummaryOnly ? (
+        <>
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+            Source Config
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Upload one or more source files to replace on disk and re-run the database seed pipeline.
+            Omitted files keep their existing copies.
+          </Typography>
 
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Stack
-          component="form"
-          spacing={3}
-          onSubmit={handleSubmit(onSubmit)}
-          data-testid="source-upload-form"
-        >
-          {FILE_FIELDS.map((field) => {
-            const file = selectedFiles[field.key];
-            const status = fieldStatus[field.key];
-            const isValid = file && status?.startsWith('Ready');
+          <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+            <Stack
+              component="form"
+              spacing={3}
+              onSubmit={handleSubmit(onSubmit)}
+              data-testid="source-upload-form"
+            >
+              {FILE_FIELDS.map((field) => {
+                const file = selectedFiles[field.key];
+                const status = fieldStatus[field.key];
+                const isValid = file && status?.startsWith('Ready');
 
-            return (
-              <Box key={field.key}>
-                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                  {field.label}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                  {field.hint}
-                </Typography>
-                <Button
-                  component="label"
+                return (
+                  <Box key={field.key}>
+                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                      {field.label}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                      {field.hint}
+                    </Typography>
+                    <Button
+                      component="label"
                   variant="outlined"
                   startIcon={<CloudUploadIcon />}
                   fullWidth
@@ -249,6 +251,9 @@ export function SourceUploadForm() {
           </Button>
         </Stack>
       </Paper>
+
+        </>
+      ) : null}
 
       {apiError ? (
         <Alert severity="error" sx={{ mb: 2 }} role="alert">
