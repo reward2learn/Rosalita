@@ -100,8 +100,8 @@ export function SheetViewerBlock({ config }: { config: Record<string, unknown> }
   const rows = useMemo(() => {
     if (!data) return [];
     return data.rows.map((row, idx) => ({
-      id: (data.page - 1) * data.perPage + idx + 1,
       ...row,
+      _rowIndex: (data.page - 1) * data.perPage + idx + 1,
     }));
   }, [data]);
 
@@ -123,6 +123,7 @@ export function SheetViewerBlock({ config }: { config: Record<string, unknown> }
         <DataGrid
           rows={rows}
           columns={columns}
+          getRowId={(row) => row._rowIndex}
           loading={loading}
           rowCount={data.totalRows}
           paginationMode="server"
