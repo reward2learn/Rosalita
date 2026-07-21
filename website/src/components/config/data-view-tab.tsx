@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -30,6 +30,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DescriptionIcon from '@mui/icons-material/Description';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 // ── Types from seed-details API ─────────────────────────
 
@@ -248,6 +250,115 @@ export function DataViewTab() {
     }
   }, [selected, categories, fetchDetails]);
 
+  // ── Export / Import ──────────────────────────────────
+
+  const exportCategoryAsJson = useCallback((cat: CategoryConfig) => {
+    // Wrap in a portable format: { table: "<table_name>", data: [...] }
+    // This ensures the import endpoint can identify which table to write to.
+    const payload = { table: cat.table, data: cat.detail };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${cat.key}-data.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const exportAllAsJson = useCallback(() => {
+    const allData: Record<string, unknown> = {};
+    for (const cat of categories) {
+      allData[cat.table] = cat.detail;
+    }
+    const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'all-seeded-data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [categories]);
+
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportJson = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const errors: string[] = [];
+      let totalImported = 0;
+
+      // Resolve entries from the uploaded JSON.
+      // Supports three formats:
+      //   1. Wrapped:  { "table": "knowledge_snippets", "data": [...] }
+      //   2. Bulk:     { "knowledge_snippets": [...], "business_review_parts": [...] }
+      //   3. Raw:      [...]  (single category array — we can't know the table, so skip)
+      let entries: [string, unknown[]][] = [];
+
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.table && Array.isArray(parsed.data)) {
+          // Format 1: single-category wrapped export
+          entries = [[parsed.table, parsed.data]];
+        } else {
+          // Format 2: bulk export — keys are table names, values are arrays
+          entries = Object.entries(parsed).filter(
+            (entry): entry is [string, unknown[]] => {
+              const key = entry[0] as string;
+              // Filter out non-table keys and non-array values
+              if (key === 'table' || key === 'data') return false;
+              return Array.isArray(entry[1]);
+            },
+          );
+        }
+      } else if (Array.isArray(parsed)) {
+        // Format 3: raw array — we don't know the table name
+        errors.push('Raw array detected. Please use a file exported from the "JSON" button which includes the table name.');
+      }
+
+      if (entries.length === 0 && errors.length === 0) {
+        errors.push('No importable data found in the JSON file.');
+      }
+
+      for (const [table, data] of entries) {
+        if (!Array.isArray(data) || data.length === 0) continue;
+        try {
+          const res = await fetch('/api/config/import-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ table, data }),
+          });
+          const result = await res.json();
+          if (result.success) {
+            totalImported += result.data.imported;
+          } else {
+            errors.push(`${table}: ${result.error ?? 'Import failed'}`);
+          }
+        } catch (err) {
+          errors.push(`${table}: ${err instanceof Error ? err.message : 'Request failed'}`);
+        }
+      }
+
+      if (errors.length > 0) {
+        setImportResult(`Imported ${totalImported} rows. Warnings/errors:\n${errors.join('\n')}`);
+      } else {
+        setImportResult(`Imported ${totalImported} rows successfully.`);
+      }
+      void fetchDetails();
+    } catch (err) {
+      setImportResult(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setImporting(false);
+    }
+  }, [fetchDetails]);
+
   // ── Loading / error ───────────────────────────────────
 
   if (loading) {
@@ -300,6 +411,11 @@ export function DataViewTab() {
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>{cat.label}</Typography>
               </Box>
               <Chip label={`${cat.count} rows`} size="small" variant="outlined" color={cat.count > 0 ? 'primary' : 'default'} />
+              {cat.detail.length > 0 ? (
+                <Button size="small" variant="text" onClick={(e) => { e.stopPropagation(); exportCategoryAsJson(cat); }} startIcon={<DownloadIcon />} sx={{ minWidth: 0, p: 0.5 }}>
+                  JSON
+                </Button>
+              ) : null}
             </Stack>
           </AccordionSummary>
           <AccordionDetails sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 2 }}>
@@ -309,6 +425,22 @@ export function DataViewTab() {
       ))}
 
       <Divider />
+
+      {/* Export / Import bar */}
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button size="small" variant="outlined" startIcon={<DownloadIcon />} onClick={exportAllAsJson} disabled={categories.every((c) => c.detail.length === 0)}>
+            Export All as JSON
+          </Button>
+          <Button size="small" variant="outlined" component="label" startIcon={importing ? <CircularProgress size={16} /> : <UploadFileIcon />} disabled={importing}>
+            {importing ? 'Importing...' : 'Upload JSON'}
+            <input hidden type="file" accept=".json" ref={fileInputRef} onChange={handleImportJson} />
+          </Button>
+          {importResult ? (
+            <Typography variant="caption" color={importResult.includes('failed') ? 'error' : 'success.main'}>{importResult}</Typography>
+          ) : null}
+        </Stack>
+      </Paper>
 
       {/* Action area */}
       <Paper variant="outlined" sx={{ p: 3, borderColor: selected.size > 0 ? 'error.main' : 'divider', borderStyle: selected.size > 0 ? 'dashed' : 'solid' }}>

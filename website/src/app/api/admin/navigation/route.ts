@@ -117,7 +117,7 @@ async function deriveNavItemsFromCatalog(): Promise<Record<string, unknown>[]> {
     });
 }
 
-/** Seed any catalog pages not yet in the navigation_items table (idempotent). */
+/** Seed any catalog / DB pages not yet in the navigation_items table (idempotent). */
 async function seedMissingFromCatalog(prisma: ReturnType<typeof getClient>): Promise<number> {
   // Get IDs already in the table
   const existing = await prisma.$queryRawUnsafe<{ id: string }[]>(
@@ -128,21 +128,45 @@ async function seedMissingFromCatalog(prisma: ReturnType<typeof getClient>): Pro
   const catalogItems = await deriveNavItemsFromCatalog();
   let inserted = 0;
 
-  for (const item of catalogItems) {
-    const itemId = item.id as string;
-    if (existingIds.has(itemId)) continue; // skip if already present
+  // Helper: insert a single nav item if not already present
+  const insertIfMissing = async (id: string, title: string, path: string, authTier: string) => {
+    if (existingIds.has(id)) return;
     try {
       await prisma.$executeRawUnsafe(
         `INSERT INTO navigation_items (id, parent_id, sort_order, title, path, icon, auth_tier, required_groups, is_visible, is_dynamic)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        itemId, item.parentId, item.sortOrder, item.title, item.path, item.icon,
-        item.authTier, item.requiredGroups, item.isVisible, item.isDynamic,
+         VALUES ($1, NULL, $2, $3, $4, '', $5, '', TRUE, FALSE)`,
+        id, inserted, title, path, authTier,
       );
       inserted++;
-    } catch {
-      // ignore duplicates from race conditions
-    }
+    } catch { /* ignore */ }
+  };
+
+  // Insert from in-memory catalog
+  for (const item of catalogItems) {
+    await insertIfMissing(
+      item.id as string,
+      item.title as string,
+      item.path as string,
+      item.authTier as string,
+    );
   }
+
+  // Also check the app_pages DB table for pages not in the in-memory catalog
+  // (fixes cold-start issue where DYNAMIC_PAGES is empty for dynamically generated sheet pages)
+  try {
+    const dbPages = await prisma.$queryRawUnsafe<{ slug: string; title: string; auth_tier: string }[]>(
+      `SELECT slug, title, auth_tier FROM app_pages ORDER BY sort_order ASC`,
+    );
+    for (const dbp of dbPages) {
+      const navId = `static-${dbp.slug}`;
+      if (!existingIds.has(navId) && !catalogItems.some((c) => c.id === navId)) {
+        await insertIfMissing(navId, dbp.title, `/${dbp.slug}`, dbp.auth_tier);
+      }
+    }
+  } catch {
+    // app_pages table may not exist yet
+  }
+
   return inserted;
 }
 
