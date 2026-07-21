@@ -156,20 +156,63 @@ function guessDataType(
 
 function findHeaderRow(ws: WorkSheet): { headerRow: number; headers: string[] } {
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as unknown[][];
-  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+  const maxScan = Math.min(rows.length, 20);
+
+  // Keywords that indicate a row is a column header (not a title / metadata row)
+  const HEADER_KEYWORDS = /description|amount|total|date|revenue|account|name|qty|price|cost|sales|income|expense|balance|number|ref|period|transaction|debit|credit|unit|rate|pct|margin|bills|covers|guests|staff|code|type|category|item|product|service|charge|discount|tax|subtotal|net|gross/i;
+
+  // Keywords that indicate a row is a title / section header (not column headers)
+  const TITLE_KEYWORDS = /^(profit\s*&?\s*loss|balance\s*sheet|trial\s*balance|general\s*ledger|periode|period|month\s*of|input\s*data|auto\s*calc)/i;
+
+  let bestRow = 0;
+  let bestScore = 0;
+  let bestHeaders: string[] = [];
+
+  for (let i = 0; i < maxScan; i++) {
     const row = rows[i] ?? [];
-    const nonEmpty = row.filter((c) => c !== '' && c !== undefined && c !== null);
-    // A header row typically has 3+ non-empty cells and contains label-like text
-    if (
-      nonEmpty.length >= 3 &&
-      nonEmpty.some((c) => /description|amount|total|date|revenue|account|name/i.test(String(c)))
-    ) {
-      return { headerRow: i + 1, headers: row.map((c) => String(c ?? '')) };
+    const nonEmpty = row.filter((c) => c !== '' && c !== undefined && c !== null) as unknown[];
+    const totalCells = row.length;
+    const nonEmptyCount = nonEmpty.length;
+
+    if (nonEmptyCount === 0) continue;
+
+    // Skip rows that are clearly titles (single long text cell with title keywords)
+    const firstCell = String(row[0] ?? '').trim();
+    if (nonEmptyCount <= 2 && TITLE_KEYWORDS.test(firstCell)) continue;
+
+    // Count how many non-empty cells look like column headers (text, not numeric)
+    let headerLikeCount = 0;
+    let numericCount = 0;
+    for (const cell of nonEmpty) {
+      const str = String(cell);
+      if (str === '#N/A' || str === '#REF!' || str === '#VALUE!') continue; // skip error cells
+      const num = Number(cell);
+      const isNumeric = typeof cell === 'number' || (typeof cell === 'string' && /^[\d,.\-]+$/.test(str.trim()) && isFinite(num));
+      if (isNumeric && Math.abs(num) > 0) {
+        numericCount++;
+      } else if (HEADER_KEYWORDS.test(str)) {
+        headerLikeCount++;
+      }
+    }
+
+    // Score: prefer rows with high header-like count, low numeric count, and many non-empty cells
+    const textRatio = nonEmptyCount > 0 ? (nonEmptyCount - numericCount) / nonEmptyCount : 0;
+    const score = headerLikeCount * 3 + textRatio * 2 + (nonEmptyCount >= 3 ? 1 : 0);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestRow = i;
+      bestHeaders = row.map((c) => String(c ?? ''));
     }
   }
-  // Fallback: treat first row as header if it has any text content
-  const firstRow = (rows[0] ?? []).map((c) => String(c ?? ''));
-  return { headerRow: 1, headers: firstRow };
+
+  // If no row scored above threshold, fall back to first row with any text content
+  if (bestScore < 2 && rows.length > 0) {
+    const firstRow = (rows[0] ?? []).map((c) => String(c ?? ''));
+    return { headerRow: 1, headers: firstRow };
+  }
+
+  return { headerRow: bestRow + 1, headers: bestHeaders };
 }
 
 // ── Date/period extraction ──────────────────────────────
@@ -457,26 +500,15 @@ export function generatePagesFromAnalysis(
     const slug = `sheet-${sheet.slug}`;
     const sections: PageSectionDefinition[] = [];
 
-    // Add a doc_markdown section with sheet description
+    // Add a sheet_viewer block to render the full data table from the workbook cache
     sections.push({
-      blockType: 'doc_markdown',
+      blockType: 'sheet_viewer',
       config: {
-        source: `sheet-${sheet.slug}`,
-        title: sheet.title,
+        sheet: sheet.tabName,
+        columns: sheet.columns.map((c) => c.label),
+        title: `${sheet.title} — Data`,
       },
     });
-
-    // Add a reports_rollup block for financial sheets
-    if (sheet.hasFinancialData) {
-      sections.push({
-        blockType: 'reports_rollup',
-        config: {
-          sheet: sheet.tabName,
-          columns: sheet.columns.map((c) => c.label),
-          title: sheet.title,
-        },
-      });
-    }
 
     pages.push({
       slug,
@@ -495,6 +527,62 @@ export function generatePagesFromAnalysis(
  * Generate a markdown summary from the workbook analysis that can be stored
  * as a knowledge snippet for the AI chat context.
  */
+/**
+ * Generate a markdown description for a single sheet (used for the doc_markdown block).
+ */
+export function generateSheetMarkdown(sheet: SheetAnalysis): string {
+  const lines: string[] = [
+    `# ${sheet.tabName} — ${sheet.title}`,
+    ``,
+    `**Rows**: ${sheet.rowCount}  |  **Columns**: ${sheet.columnCount}`,
+  ];
+  if (sheet.hasFinancialData) lines.push(`**Financial data**: Yes`);
+  if (sheet.periods.length) lines.push(`**Periods**: ${sheet.periods.join(', ')}`);
+  lines.push(``);
+  lines.push(`## Column Reference`);
+  lines.push(``);
+  lines.push(`| # | Column | Data Type | Sample Values |`);
+  lines.push(`|---|--------|----------|---------------|`);
+  for (let i = 0; i < sheet.columns.length; i++) {
+    const col = sheet.columns[i];
+    const samples = col.samples.map((s) => String(s).slice(0, 30)).join(', ');
+    lines.push(`| ${i + 1} | ${col.label} | ${col.dataType} | ${samples || '—'} |`);
+  }
+  lines.push(``);
+
+  // Data preview table with up to 10 rows of actual data
+  if (sheet.sampleRows.length > 0) {
+    const previewRows = sheet.sampleRows.slice(0, 10);
+    const colKeys = Object.keys(previewRows[0] ?? {}).slice(0, 8);
+
+    lines.push(`## Data Preview (${previewRows.length} of ${sheet.rowCount} rows)`);
+    lines.push(``);
+    // Table header
+    lines.push(`| ${colKeys.map((k, i) => `Col ${i + 1}`).join(' | ')} |`);
+    lines.push(`| ${colKeys.map(() => '---').join(' | ')} |`);
+    // Table rows
+    for (const row of previewRows) {
+      const vals = colKeys.map((k) => {
+        const v = row[k];
+        if (v === '' || v === undefined || v === null) return '—';
+        const s = String(v).slice(0, 25);
+        return s.replace(/\|/g, '\\|');
+      });
+      lines.push(`| ${vals.join(' | ')} |`);
+    }
+    lines.push(``);
+    if (sheet.rowCount > 10) {
+      lines.push(`> *Full data available in the sheet viewer below — ${sheet.rowCount} total rows.*`);
+      lines.push(``);
+    }
+  }
+
+  lines.push(`---`);
+  lines.push(`*Use the interactive data table below to browse, sort, and search the full sheet content.*`);
+  lines.push(``);
+  return lines.join('\n');
+}
+
 export function generateAnalysisMarkdown(analysis: WorkbookAnalysis): string {
   const lines: string[] = [
     `# Workbook Analysis: ${analysis.fileName}`,

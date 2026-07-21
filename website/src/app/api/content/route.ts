@@ -1,9 +1,32 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/db';
-import { getReviewPartContent } from '@/domain/content/review-part-service';
-import { KnowledgeService } from '@/domain/knowledge/knowledge-service';
+/**
+ * Content API — serves markdown content for doc_markdown blocks.
+ *
+ * GET /api/content?source=<source>
+ *
+ * Source resolution order:
+ *   1. review:part-a      → BusinessReviewPart table
+ *   2. review/part-a      → BusinessReviewPart table
+ *   3. Known aliases:
+ *        executive-summary  → knowledge_snippets (key: executive_summary)
+ *        terms-of-service.html → legal/ HTML file
+ *        privacy-policy.html   → legal/ HTML file
+ *        part-o               → BusinessReviewPart
+ *   4. part-[a-o]          → BusinessReviewPart
+ *   5. Everything else     → knowledge_snippets (key: source with [.-] → _)
+ *        e.g. sheet-month-on-month → key: sheet_month_on_month
+ *        e.g. workbook-summary     → key: workbook_summary
+ *
+ * Uses a direct PrismaClient for DB reads to avoid ZenStack policy
+ * filtering on models that may not have explicit @@allow('read', true).
+ */
 
-/** Map doc_markdown `source` config keys to DB lookups. */
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@/generated/prisma';
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// ── Source resolution ───────────────────────────────────
+
 const SOURCE_ALIASES: Record<string, { type: 'snippet'; key: string } | { type: 'part'; slug: string } | { type: 'file'; filename: string }> = {
   'executive-summary': { type: 'snippet', key: 'executive_summary' },
   'terms-of-service.html': { type: 'file', filename: 'terms-of-service.html' },
@@ -28,12 +51,9 @@ function resolveSource(source: string): { type: 'snippet'; key: string } | { typ
   return { type: 'snippet', key: normalized.replace(/[.-]/g, '_') };
 }
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+// ── HTML helpers ────────────────────────────────────────
 
-/** Read bundled legal HTML from legal/ subdirectory */
 function readBundledHtml(filename: string): string | null {
-  // Scoped to legal/ subdirectory — prevents Turbopack from tracing the whole project
   const safeName = filename.replace(/\.\./g, '').replace(/[/\\]/g, '');
   const path = resolve(process.cwd(), 'legal', safeName);
   if (!existsSync(path)) return null;
@@ -61,6 +81,18 @@ function htmlToMarkdownish(html: string): string {
     .trim();
 }
 
+// ── Prisma helper ───────────────────────────────────────
+
+function getClient() {
+  const url = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
+  if (!url) throw new Error('POSTGRES_URL is not set');
+  return new PrismaClient({ datasources: { db: { url } } });
+}
+
+// ── GET handler ─────────────────────────────────────────
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request): Promise<NextResponse> {
   const { searchParams } = new URL(request.url);
   const source = searchParams.get('source');
@@ -69,19 +101,22 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Missing source query parameter' }, { status: 400 });
   }
 
+  const prisma = getClient();
+
   try {
-    const db = createClient();
     const resolved = resolveSource(source);
 
     if (resolved.type === 'part') {
-      const part = await getReviewPartContent(db, resolved.slug);
-      if (!part) {
+      const row = await prisma.businessReviewPart.findUnique({
+        where: { slug: resolved.slug },
+      });
+      if (!row) {
         return NextResponse.json({ error: 'Content not found', source }, { status: 404 });
       }
       return NextResponse.json({
         source,
-        title: part.title,
-        markdown: part.markdown,
+        title: row.title,
+        markdown: row.markdown,
         contentType: 'markdown',
       });
     }
@@ -99,20 +134,23 @@ export async function GET(request: Request): Promise<NextResponse> {
       });
     }
 
-    const knowledge = new KnowledgeService(db);
-    const snippet = await knowledge.getSnippetByKey(resolved.key);
-    if (!snippet) {
+    // Snippet lookup — uses direct PrismaClient (no ZenStack policy filtering)
+    const row = await prisma.knowledgeSnippet.findUnique({
+      where: { key: resolved.key },
+    });
+    if (!row) {
       return NextResponse.json({ error: 'Content not found', source }, { status: 404 });
     }
-
     return NextResponse.json({
       source,
-      title: snippet.key,
-      markdown: snippet.content,
-      contentType: snippet.category === 'document' ? 'markdown' : 'text',
+      title: row.key,
+      markdown: row.content,
+      contentType: row.category === 'document' ? 'markdown' : 'text',
     });
   } catch (err) {
     console.error('[content]', source, err);
     return NextResponse.json({ error: 'Content unavailable', source }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }

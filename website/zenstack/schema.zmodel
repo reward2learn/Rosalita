@@ -254,6 +254,8 @@ model KnowledgeSnippet {
   content  String @db.Text
   category String
 
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
   @@map("knowledge_snippets")
 }
 

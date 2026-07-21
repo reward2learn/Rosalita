@@ -1,22 +1,10 @@
 'use client';
 
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
+import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
-
-/**
- * SheetViewerBlock
- *
- * Renders a sheet's data from the workbook analysis stored as a knowledge snippet.
- * The component fetches the analysis from the content API and renders a summary table.
- * In a full implementation this would query sheet data from the database or XLSX cache.
- */
+import { DataGrid, type GridColDef, type GridValidRowModel } from '@mui/x-data-grid';
 
 interface SheetViewerConfig {
   sheet?: string;
@@ -24,65 +12,133 @@ interface SheetViewerConfig {
   title?: string;
 }
 
-function formatIdr(value: unknown): string {
-  const n = Number(value ?? 0);
-  if (!Number.isFinite(n)) return String(value ?? '');
-  if (n >= 1_000_000_000) return `IDR ${(n / 1_000_000_000).toFixed(2)}B`;
-  if (n >= 1_000_000) return `IDR ${(n / 1_000_000).toFixed(0)}M`;
-  return `IDR ${n.toLocaleString('id-ID')}`;
+interface SheetDataPayload {
+  sheet: string;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  totalRows: number;
+  page: number;
+  perPage: number;
+  totalPages: number;
+}
+
+const PER_PAGE = 200;
+
+function isLikelyFinancial(key: string, value: unknown): boolean {
+  if (typeof value === 'number' && Math.abs(value) > 1000) return true;
+  const k = key.toLowerCase();
+  return /amount|total|sales|revenue|cost|price|balance|amount|sum|income|expense/i.test(k);
+}
+
+function formatCellValue(key: string, value: unknown): string | number {
+  if (value === '' || value === undefined || value === null) return '';
+  if (typeof value === 'number') {
+    if (isLikelyFinancial(key, value)) {
+      if (value >= 1_000_000_000) return `IDR ${(value / 1_000_000_000).toFixed(2)}B`;
+      if (value >= 1_000_000) return `IDR ${(value / 1_000_000).toLocaleString('id-ID')}`;
+      if (value >= 1_000) return `IDR ${(value / 1_000).toFixed(0)}K`;
+      return value.toLocaleString('id-ID');
+    }
+    return value.toLocaleString('id-ID');
+  }
+  return String(value);
 }
 
 export function SheetViewerBlock({ config }: { config: Record<string, unknown> }) {
-  const { sheet, columns, title } = config as SheetViewerConfig;
+  const { sheet, title } = config as SheetViewerConfig;
+  const [data, setData] = useState<SheetDataPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: PER_PAGE });
+
+  const fetchPage = useCallback((page: number) => {
+    if (!sheet) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    const params = new URLSearchParams({ sheet, page: String(page + 1), perPage: String(PER_PAGE) });
+    fetch(`/api/sheet-data?${params}`)
+      .then((r) => r.json())
+      .then((payload) => {
+        if (payload.error) setError(payload.error);
+        else setData(payload);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Request failed'))
+      .finally(() => setLoading(false));
+  }, [sheet]);
+
+  useEffect(() => {
+    if (sheet) fetchPage(paginationModel.page);
+    else setLoading(false);
+  }, [paginationModel.page, sheet, fetchPage]);
+
+  const columns: GridColDef[] = useMemo(() => {
+    if (!data) return [];
+    return data.columns.map((col) => ({
+      field: col,
+      headerName: col,
+      flex: 1,
+      minWidth: 100,
+      sortable: true,
+      filterable: true,
+      resizable: true,
+      valueGetter: (_value: unknown, row: GridValidRowModel) => {
+        const raw = row[col];
+        if (isLikelyFinancial(col, raw) && typeof raw === 'number') {
+          return raw; // keep numeric for sorting
+        }
+        return raw ?? '';
+      },
+      valueFormatter: (value: unknown) => {
+        if (typeof value === 'number' && isLikelyFinancial(col, value)) {
+          return formatCellValue(col, value);
+        }
+        return value ?? '';
+      },
+    }));
+  }, [data]);
+
+  const rows = useMemo(() => {
+    if (!data) return [];
+    return data.rows.map((row, idx) => ({
+      id: (data.page - 1) * data.perPage + idx + 1,
+      ...row,
+    }));
+  }, [data]);
 
   return (
-    <Paper variant="outlined" sx={{ p: 2.5 }}>
-      <Stack spacing={2}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {title ?? sheet ?? 'Sheet Data'}
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 130px)', minHeight: 400, width: '100%' }}>
+      {title ? (
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, flexShrink: 0 }}>
+          {title}
         </Typography>
+      ) : null}
 
-        <Typography variant="body2" color="text.secondary">
-          {columns?.length ? (
-            <>
-              Columns: <strong>{(columns ?? []).join(', ')}</strong>
-            </>
-          ) : null}
-          {sheet ? (
-            <>
-              &nbsp;· Source sheet: <strong>{sheet}</strong>
-            </>
-          ) : null}
-        </Typography>
-
-        {columns && columns.length > 0 ? (
-          <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" sx={{ '& th': { fontWeight: 700 } }}>
-              <TableHead>
-                <TableRow>
-                  {columns.map((col) => (
-                    <TableCell key={col}>{col}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <TableRow>
-                  <TableCell colSpan={columns.length} align="center">
-                    <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                      Sheet data loads from the workbook cache on the full report page.
-                      Use the tracking page for interactive drill-down.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </Box>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            No column metadata available for this sheet.
-          </Typography>
-        )}
-      </Stack>
-    </Paper>
+      {!sheet ? (
+        <Typography color="text.secondary">No sheet configured.</Typography>
+      ) : loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={24} /></Box>
+      ) : error ? (
+        <Typography color="error">{error}</Typography>
+      ) : data ? (
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          loading={loading}
+          rowCount={data.totalRows}
+          paginationMode="server"
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          pageSizeOptions={[PER_PAGE]}
+          disableRowSelectionOnClick
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1,
+            '& .MuiDataGrid-cell': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+            '& .MuiDataGrid-columnHeader': { fontWeight: 700 },
+          }}
+        />
+      ) : null}
+    </Box>
   );
 }

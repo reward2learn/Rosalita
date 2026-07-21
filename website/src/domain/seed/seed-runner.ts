@@ -44,6 +44,7 @@ import {
   analyzeWorkbook,
   generatePagesFromAnalysis,
   generateAnalysisMarkdown,
+  generateSheetMarkdown,
 } from '@/domain/excel/workbook-analyzer';
 import { setDynamicPages } from '@/lib/page-catalog';
 
@@ -683,6 +684,7 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
 
   // ── Workbook analysis (derive sheet metadata, dynamic pages, use cases) ──
   let workbookAnalysisMd = '';
+  const sheetSnippets: { key: string; category: string; content: string }[] = [];
   if (excel) {
     try {
       const analysis = analyzeWorkbook(excel, filesUsed.excel === 'upload' ? 'uploaded workbook' : undefined);
@@ -693,10 +695,29 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
       setDynamicPages(dynamicPages);
       console.log(`[seed] Generated ${dynamicPages.length} dynamic page(s) from workbook analysis`);
 
-      // Log analysis summary
+      // Log analysis summary and create per-sheet knowledge snippets
+      // so the content API can serve doc_markdown blocks for each sheet page.
       for (const sheet of analysis.sheets) {
         console.log(`[seed]   Sheet "${sheet.tabName}": ${sheet.columns.length} columns, ${sheet.rowCount} rows — ${sheet.title}`);
+        // Key must match what resolveSource() produces from "sheet-{slug}" source:
+        // source="sheet-month-on-month" → resolveSource replaces [.-] with _
+        //   → key = "sheet_month_on_month"
+        // So the slug hyphens must be replaced with underscores.
+        const snippetKey = `sheet_${sheet.slug.replace(/-/g, '_')}`;
+        sheetSnippets.push({
+          key: snippetKey,
+          category: 'sheet',
+          content: generateSheetMarkdown(sheet),
+        });
       }
+
+      // Also create the workbook overview snippet used by the /workbook page.
+      // source="workbook-summary" → resolveSource → key="workbook_summary"
+      sheetSnippets.push({
+        key: 'workbook_summary',
+        category: 'document',
+        content: workbookAnalysisMd,
+      });
 
     } catch (err) {
       console.warn('[seed] Workbook analysis failed (non-critical):', err instanceof Error ? err.message : err);
@@ -721,6 +742,12 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
       category: 'document',
       content: workbookAnalysisMd,
     });
+  }
+
+  // Append per-sheet description snippets so the content API can
+  // serve doc_markdown blocks for dynamically generated sheet pages.
+  for (const s of sheetSnippets) {
+    knowledgeSnippets.push(s);
   }
 
   // Cache the workbook as a base64 knowledge snippet so the AI Content

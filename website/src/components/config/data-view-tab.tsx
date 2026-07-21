@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -121,11 +122,25 @@ export function DataViewTab() {
     {
       key: 'app_pages', table: 'app_pages', label: 'App Pages', icon: '📄',
       count: details.counts.appPages ?? 0, detail: details.pageDetails,
-      renderDetail: () => details.pageDetails.length > 0 ? (
-        <Table size="small"><TableHead><TableRow><TableCell>Slug</TableCell><TableCell>Title</TableCell><TableCell>Tier</TableCell><TableCell align="right">Sections</TableCell></TableRow></TableHead><TableBody>
-          {details.pageDetails.map((p) => <TableRow key={p.slug}><TableCell>{p.slug}</TableCell><TableCell>{p.title}</TableCell><TableCell>{p.authTier}</TableCell><TableCell align="right">{p.sectionCount}</TableCell></TableRow>)}
-        </TableBody></Table>
-      ) : <Typography variant="body2" color="text.secondary">No pages seeded.</Typography>,
+      renderDetail: () => {
+        if (details.pageDetails.length === 0) return <Typography variant="body2" color="text.secondary">No pages seeded.</Typography>;
+        return (
+          <Table size="small"><TableHead><TableRow><TableCell>Slug</TableCell><TableCell>Title</TableCell><TableCell>Tier</TableCell><TableCell align="right">Sections</TableCell></TableRow></TableHead><TableBody>
+            {details.pageDetails.map((p) => (
+              <TableRow key={p.slug} hover sx={{ cursor: 'pointer' }} onClick={() => window.location.href = `/${p.slug}`}>
+                <TableCell>
+                  <Link href={`/${p.slug}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={(e) => e.stopPropagation()}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}>{p.slug}</Typography>
+                  </Link>
+                </TableCell>
+                <TableCell>{p.title}</TableCell>
+                <TableCell>{p.authTier}</TableCell>
+                <TableCell align="right">{p.sectionCount}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody></Table>
+        );
+      },
     },
     {
       key: 'business_review', table: 'business_review_parts', label: 'Business Review Parts', icon: '📝',
@@ -280,8 +295,11 @@ export function DataViewTab() {
   }, [categories]);
 
   const [importing, setImporting] = useState(false);
+  const [importingCategory, setImportingCategory] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<string | null>(null);
+  const [categoryImportResults, setCategoryImportResults] = useState<Record<string, string | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const categoryFileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const handleImportJson = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -359,6 +377,42 @@ export function DataViewTab() {
     }
   }, [fetchDetails]);
 
+  /** Import a file for a specific category only. */
+  const handleCategoryImport = useCallback(async (cat: CategoryConfig, file: File) => {
+    setImportingCategory(cat.key);
+    setCategoryImportResults((prev) => ({ ...prev, [cat.key]: null }));
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+
+      // Accept either wrapped { table, data } format or raw array
+      const table = parsed.table || cat.table;
+      const data = parsed.data || (Array.isArray(parsed) ? parsed : null);
+
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        setCategoryImportResults((prev) => ({ ...prev, [cat.key]: 'No data found in file' }));
+        return;
+      }
+
+      const res = await fetch('/api/config/import-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, data }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setCategoryImportResults((prev) => ({ ...prev, [cat.key]: `Imported ${result.data.imported} rows` }));
+        void fetchDetails();
+      } else {
+        setCategoryImportResults((prev) => ({ ...prev, [cat.key]: result.error ?? 'Import failed' }));
+      }
+    } catch (err) {
+      setCategoryImportResults((prev) => ({ ...prev, [cat.key]: `Error: ${err instanceof Error ? err.message : String(err)}` }));
+    } finally {
+      setImportingCategory(null);
+    }
+  }, [fetchDetails]);
+
   // ── Loading / error ───────────────────────────────────
 
   if (loading) {
@@ -415,6 +469,33 @@ export function DataViewTab() {
                 <Button size="small" variant="text" onClick={(e) => { e.stopPropagation(); exportCategoryAsJson(cat); }} startIcon={<DownloadIcon />} sx={{ minWidth: 0, p: 0.5 }}>
                   JSON
                 </Button>
+              ) : null}
+              <Button
+                size="small"
+                variant="text"
+                component="label"
+                disabled={importingCategory === cat.key}
+                onClick={(e) => e.stopPropagation()}
+                startIcon={importingCategory === cat.key ? <CircularProgress size={14} /> : <UploadFileIcon />}
+                sx={{ minWidth: 0, p: 0.5 }}
+              >
+                {importingCategory === cat.key ? '...' : 'Upload'}
+                <input
+                  hidden
+                  type="file"
+                  accept=".json"
+                  ref={(el) => { categoryFileInputs.current[cat.key] = el; }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) { void handleCategoryImport(cat, file); }
+                    e.target.value = '';
+                  }}
+                />
+              </Button>
+              {categoryImportResults[cat.key] ? (
+                <Typography variant="caption" sx={{ color: categoryImportResults[cat.key]?.includes('Error') || categoryImportResults[cat.key]?.includes('failed') ? 'error.main' : 'success.main' }}>
+                  {categoryImportResults[cat.key]}
+                </Typography>
               ) : null}
             </Stack>
           </AccordionSummary>

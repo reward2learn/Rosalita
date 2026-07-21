@@ -55,7 +55,7 @@ describe('ReportsRollupBlock', () => {
     const store = makeStore();
     render(
       <Provider store={store}>
-        <ReportsRollupBlock />
+        <ReportsRollupBlock config={{}} />
       </Provider>,
     );
 
