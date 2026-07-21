@@ -28,8 +28,9 @@ import {
   validateExcelUpload,
   validateMarkdownUpload,
 } from '@/lib/config/upload-validation';
-import { useReseedFromSourcesMutation } from '@/store/apis/config-api';
+import { useReseedFromSourcesMutation, useReprocessFromCacheMutation } from '@/store/apis/config-api';
 import type { ReseedResponse } from '@/app/api/config/reseed/route';
+import type { ReprocessResponse } from '@/app/api/config/reprocess/route';
 
 interface SourceUploadFormValues {
   excel: FileList | null;
@@ -87,6 +88,8 @@ function formatBytes(bytes: number): string {
 export function SourceUploadForm({ showSummaryOnly }: { showSummaryOnly?: boolean }) {
   const [reseed, { isLoading, isError, error, isSuccess, data, reset: resetMutation }] =
     useReseedFromSourcesMutation();
+  const [reprocess, { isLoading: isReprocessing, isError: isReprocessError, error: reprocessError, isSuccess: isReprocessSuccess, data: reprocessData, reset: resetReprocess }] =
+    useReprocessFromCacheMutation();
   const [fieldStatus, setFieldStatus] = useState<Record<FileField, string | null>>({
     excel: null,
     businessReview: null,
@@ -252,6 +255,40 @@ export function SourceUploadForm({ showSummaryOnly }: { showSummaryOnly?: boolea
         </Stack>
       </Paper>
 
+          {/* ── Reprocess from cached workbook ───────────────── */}
+          <Paper variant="outlined" sx={{ p: 3, mb: 3, borderColor: isReprocessSuccess ? 'success.main' : undefined }}>
+            <Stack spacing={2}>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  Reprocess from cached workbook
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Re-run the seed pipeline using the previously uploaded workbook stored in the database.
+                  No file re-upload required. This will refresh dynamic pages, sheet metadata, and knowledge snippets.
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                color="secondary"
+                disabled={isReprocessing}
+                startIcon={isReprocessing ? <CircularProgress size={18} color="inherit" /> : undefined}
+                onClick={() => { resetReprocess(); void reprocess(); }}
+                data-testid="reprocess-btn"
+              >
+                {isReprocessing ? 'Reprocessing…' : 'Reprocess from cache'}
+              </Button>
+              {isReprocessError && reprocessError && 'data' in reprocessError ? (
+                <Alert severity="error" role="alert">
+                  {String((reprocessError.data as { error?: string })?.error ?? 'Reprocess failed')}
+                </Alert>
+              ) : null}
+              {isReprocessSuccess && reprocessData?.success && reprocessData.data ? (
+                <Alert severity="success" role="status">
+                  Reprocessed successfully from cached workbook.
+                </Alert>
+              ) : null}
+            </Stack>
+          </Paper>
         </>
       ) : null}
 
@@ -268,6 +305,10 @@ export function SourceUploadForm({ showSummaryOnly }: { showSummaryOnly?: boolea
       ) : null}
 
       {result ? <SeedSummary result={result} /> : null}
+
+      {isReprocessSuccess && reprocessData?.success && reprocessData.data ? (
+        <SeedSummary result={reprocessData.data} />
+      ) : null}
     </Box>
   );
 }

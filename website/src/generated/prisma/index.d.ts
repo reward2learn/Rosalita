@@ -200,7 +200,8 @@ export const BlockType: {
   kpi_cards: 'kpi_cards',
   ops_admin_tabs: 'ops_admin_tabs',
   review_blocks: 'review_blocks',
-  reports_rollup: 'reports_rollup'
+  reports_rollup: 'reports_rollup',
+  sheet_viewer: 'sheet_viewer'
 };
 
 export type BlockType = (typeof BlockType)[keyof typeof BlockType]

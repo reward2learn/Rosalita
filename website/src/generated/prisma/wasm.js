@@ -484,7 +484,8 @@ exports.BlockType = exports.$Enums.BlockType = {
   kpi_cards: 'kpi_cards',
   ops_admin_tabs: 'ops_admin_tabs',
   review_blocks: 'review_blocks',
-  reports_rollup: 'reports_rollup'
+  reports_rollup: 'reports_rollup',
+  sheet_viewer: 'sheet_viewer'
 };
 
 exports.ActionPriority = exports.$Enums.ActionPriority = {

@@ -27,7 +27,7 @@ interface SheetDataPayload {
   totalPages: number;
 }
 
-const PER_PAGE = 200;
+const PER_PAGE = 100;
 
 function isLikelyFinancial(key: string, value: unknown): boolean {
   if (typeof value === 'number' && Math.abs(value) > 1000) return true;

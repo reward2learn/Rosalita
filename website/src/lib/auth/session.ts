@@ -67,7 +67,17 @@ export async function getSession(): Promise<SessionClaims | null> {
 
 const PRODUCTION_APP_URL = 'https://redrubybali.vercel.app';
 
+/** Detect whether we are running in a local development environment. */
+function isLocalDev(): boolean {
+  // Vercel sets VERCEL_ENV on both deployments and `vercel dev`.
+  // When it's unset we're running a plain Next.js dev server (bun run dev, npm run dev).
+  return !process.env.VERCEL_ENV;
+}
+
 function resolveCanonicalAppUrl(): string {
+  // In local dev without Vercel, default to localhost:3000
+  if (isLocalDev()) return 'http://localhost:3000';
+
   const fromPublic = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
   if (fromPublic) return fromPublic;
   if (process.env.VERCEL_ENV === 'production') return PRODUCTION_APP_URL;
@@ -77,12 +87,17 @@ function resolveCanonicalAppUrl(): string {
 }
 
 export function getOrigin(request: Request): string {
-  if (process.env.VERCEL_ENV === 'production') {
-    return resolveCanonicalAppUrl();
-  }
-
+  // Determine the origin from the request's Host header.
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '';
   const proto = request.headers.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
-  if (host) return `${proto}://${host.split(',')[0].trim()}`;
+  if (host) {
+    const origin = `${proto}://${host.split(',')[0].trim()}`;
+    // On production Vercel domains, use the canonical URL for consistency
+    if (origin.includes('redrubybali.vercel.app') || origin.includes(process.env.VERCEL_URL ?? '')) {
+      return resolveCanonicalAppUrl();
+    }
+    return origin;
+  }
+  // Fallback when no request host is available
   return resolveCanonicalAppUrl();
 }

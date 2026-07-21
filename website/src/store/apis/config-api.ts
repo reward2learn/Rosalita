@@ -2,6 +2,7 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQuery } from '@/store/base-query';
 import type { ApiEnvelope } from '@/store/api-types';
 import type { ReseedResponse } from '@/app/api/config/reseed/route';
+import type { ReprocessResponse } from '@/app/api/config/reprocess/route';
 
 export interface OpenAiKeyStatus {
   configured: boolean;
@@ -23,6 +24,12 @@ export const configApi = createApi({
         url: 'config/reseed',
         method: 'POST',
         body,
+      }),
+    }),
+    reprocessFromCache: builder.mutation<ApiEnvelope<ReprocessResponse>, void>({
+      query: () => ({
+        url: 'config/reprocess',
+        method: 'POST',
       }),
     }),
     getOpenAiKeyStatus: builder.query<ApiEnvelope<OpenAiKeyStatus>, void>({
@@ -61,6 +68,7 @@ export const configApi = createApi({
 
 export const {
   useReseedFromSourcesMutation,
+  useReprocessFromCacheMutation,
   useGetOpenAiKeyStatusQuery,
   useSaveOpenAiKeyMutation,
   useClearOpenAiKeyMutation,

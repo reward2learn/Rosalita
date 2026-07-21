@@ -72,6 +72,7 @@ enum BlockType {
   ops_admin_tabs
   review_blocks
   reports_rollup
+  sheet_viewer
 }
 
 enum JobStatus {

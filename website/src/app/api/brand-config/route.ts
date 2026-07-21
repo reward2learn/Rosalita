@@ -13,6 +13,16 @@ import { getAppSettings } from '@/domain/config/app-settings-service';
 export const dynamic = 'force-dynamic';
 
 export async function GET(): Promise<NextResponse> {
+  // Graceful fallback when no DB is configured (local dev, demo mode)
+  if (!process.env.POSTGRES_URL && !process.env.DATABASE_URL) {
+    return NextResponse.json({
+      brandLogoText: '',
+      brandLogoUrl: '',
+      brandPrimaryColor: '#eb3d28',
+      brandSecondaryColor: '#0af9fe',
+    });
+  }
+
   try {
     const db = createClient();
     const settings = await getAppSettings(db);

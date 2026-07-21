@@ -45,7 +45,13 @@ export async function GET(request: Request): Promise<NextResponse> {
   const userGroups = groupsParam.split(',').map((g) => g.trim()).filter(Boolean);
   const userTierRank = TIER_RANK[tier] ?? 0;
 
-  const prisma = getClient();
+  // If no DB is configured, return empty nav (graceful fallback for dev/demo)
+  const dbUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
+  if (!dbUrl) {
+    return NextResponse.json({ items: [] });
+  }
+
+  const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
   try {
     const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
       `SELECT id, parent_id AS "parentId", sort_order AS "sortOrder", title, path, icon,
