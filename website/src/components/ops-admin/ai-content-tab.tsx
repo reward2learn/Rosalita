@@ -36,6 +36,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 interface AiContentStatus {
   promptLength: number;
   promptPreview: string;
+  /** Full prompt text (provided by the latest GET response). */
+  fullPrompt?: string;
   dataSummary: string;
   existingContent: {
     executiveSummary: string | null;
@@ -116,6 +118,7 @@ export function AiContentTab() {
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [showFullPrompt, setShowFullPrompt] = useState(false);
+  const [showFullDataSummary, setShowFullDataSummary] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   // Clear-seed state
@@ -343,8 +346,8 @@ export function AiContentTab() {
   // ── Helpers ───────────────────────────────────────────
 
   const copyPrompt = useCallback(() => {
-    if (!status?.promptPreview) return;
-    void navigator.clipboard.writeText(status.promptPreview);
+    if (!status?.fullPrompt && !status?.promptPreview) return;
+    void navigator.clipboard.writeText(status.fullPrompt ?? status.promptPreview);
   }, [status]);
 
   /** Determine which steps are completed / active / pending */
@@ -790,6 +793,51 @@ export function AiContentTab() {
               }}
             >
               {status?.promptPreview ?? 'Loading...'}
+            </Typography>
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* ── Full Prompt accordion ─────────────────────── */}
+      <Accordion
+        expanded={showFullDataSummary || showFullPrompt}
+        onChange={() => setShowFullPrompt((p) => !p)}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography sx={{ fontWeight: 700 }}>
+            Full Generation Prompt
+            {status ? ` (${(status.promptLength / 1000).toFixed(0)}K chars)` : ''}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack spacing={1}>
+            <Stack direction="row" spacing={1}>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<ContentCopyIcon />}
+                onClick={() => {
+                  if (status?.fullPrompt) navigator.clipboard.writeText(status.fullPrompt);
+                }}
+              >
+                Copy Full Prompt
+              </Button>
+            </Stack>
+            <Typography
+              variant="body2"
+              component="pre"
+              sx={{
+                whiteSpace: 'pre-wrap',
+                fontFamily: 'monospace',
+                fontSize: '0.7rem',
+                bgcolor: 'rgba(0,0,0,0.3)',
+                p: 2,
+                borderRadius: 1,
+                maxHeight: 500,
+                overflow: 'auto',
+              }}
+            >
+              {status?.fullPrompt ?? status?.promptPreview ?? 'Loading...'}
             </Typography>
           </Stack>
         </AccordionDetails>

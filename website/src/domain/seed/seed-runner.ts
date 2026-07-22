@@ -776,15 +776,24 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
     knowledgeSnippets.push(s);
   }
 
-  // Cache the workbook as a base64 knowledge snippet so the AI Content
-  // Generation endpoint can read it on serverless runtimes where the
-  // filesystem is read-only.
-  if (excelBuffer) {
+  // Cache each workbook as a base64 knowledge snippet so the AI Content
+  // Generation endpoint and reprocess can read them on serverless runtimes
+  // where the filesystem is read-only.
+  const allExcelBuffers: Buffer[] = Array.isArray(excel) ? excel : (excel ? [excel] : []);
+  if (allExcelBuffers.length > 0) {
     knowledgeSnippets.push({
       key: 'workbook_data',
       category: 'cache',
-      content: excelBuffer.toString('base64'),
+      content: allExcelBuffers[0]!.toString('base64'),
     });
+    // Additional workbooks stored as workbook_data_1, workbook_data_2, etc.
+    for (let i = 1; i < allExcelBuffers.length; i++) {
+      knowledgeSnippets.push({
+        key: `workbook_data_${i}`,
+        category: 'cache',
+        content: allExcelBuffers[i]!.toString('base64'),
+      });
+    }
   }
   const actionItems = buildActionItems();
   const builtTasks = buildTasks();

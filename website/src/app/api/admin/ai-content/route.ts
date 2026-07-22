@@ -190,6 +190,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       data: {
         promptLength: fullPrompt.length,
         promptPreview,
+        fullPrompt,
         dataSummary,
         existingContent,
         excelPeriod: data.period,

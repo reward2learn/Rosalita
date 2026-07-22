@@ -40,7 +40,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const prisma = new PrismaClient();
 
   try {
-    // Try to read the cached workbook from the knowledge_snippets table
+    // Read the primary cached workbook from knowledge_snippets
     const cached = await prisma.knowledgeSnippet.findUnique({
       where: { key: 'workbook_data' },
     });
@@ -52,10 +52,22 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
-    const excelBuffer = Buffer.from(cached.content, 'base64');
+    const excelBuffers: Buffer[] = [Buffer.from(cached.content, 'base64')];
+
+    // Read additional cached workbooks (workbook_data_1, workbook_data_2, ...)
+    for (let i = 1; i < 10; i++) {
+      const extra = await prisma.knowledgeSnippet.findUnique({
+        where: { key: `workbook_data_${i}` },
+      });
+      if (extra?.content) {
+        excelBuffers.push(Buffer.from(extra.content, 'base64'));
+      } else {
+        break;
+      }
+    }
 
     const result = await seedFromSources({
-      overrides: { excel: excelBuffer },
+      overrides: { excel: excelBuffers },
       persistOverrides: false, // read-only filesystem on Vercel
     });
 
