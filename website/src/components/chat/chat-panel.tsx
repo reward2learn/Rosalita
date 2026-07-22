@@ -106,6 +106,7 @@ export function ChatPanel() {
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [findingTitle, setFindingTitle] = useState('');
   const [findingTitleDialogOpen, setFindingTitleDialogOpen] = useState(false);
+  const [pendingFindingContent, setPendingFindingContent] = useState<string | null>(null);
   const reviewParts = listReviewParts();
 
   // Prefill from ?prompt= (e.g. when arriving from a task's "Ask AI" button).
@@ -341,6 +342,9 @@ export function ChatPanel() {
     setMenuAnchor(null);
     setMenuMessageIndex(null);
 
+    // Save the content for the confirm handler
+    setPendingFindingContent(msg.content);
+
     // Extract first line as default title
     const firstLine = msg.content.split('\n')[0]?.replace(/^#{1,3}\s+/, '').replace(/^\*\*|\*\*$/g, '').trim() ?? '';
     setFindingTitle(firstLine.slice(0, 80));
@@ -348,9 +352,7 @@ export function ChatPanel() {
   }, [menuMessageIndex, messages]);
 
   const handleConfirmAddToDashboard = useCallback(async () => {
-    if (menuMessageIndex === null) return;
-    const msg = messages[menuMessageIndex];
-    if (!msg || msg.role !== 'assistant') return;
+    if (!pendingFindingContent) return;
 
     setFindingTitleDialogOpen(false);
     setActionStatus('Saving...');
@@ -359,7 +361,7 @@ export function ChatPanel() {
       const res = await fetch('/api/chat/ai-findings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: msg.content, title: findingTitle || undefined }),
+        body: JSON.stringify({ content: pendingFindingContent, title: findingTitle || undefined }),
       });
       const payload = await res.json();
       if (payload.success) {
@@ -369,8 +371,10 @@ export function ChatPanel() {
       }
     } catch {
       setActionStatus('❌ Network error');
+    } finally {
+      setPendingFindingContent(null);
     }
-  }, [menuMessageIndex, messages, findingTitle]);
+  }, [pendingFindingContent, findingTitle]);
 
   const displayStatus = voiceStatus ?? status;
   const voicePhaseLabel = voiceMode ? VOICE_PHASE_LABEL[voicePhase] : null;
