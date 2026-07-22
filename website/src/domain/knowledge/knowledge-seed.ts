@@ -155,7 +155,11 @@ export function buildStructuredPromptFromSnippets(
   const byCategory = new Map<string, string[]>();
   for (const s of snippets) {
     const list = byCategory.get(s.category) ?? [];
-    list.push(s.content);
+    // Truncate individual snippets to 1500 chars to stay under 6000 TPM for search-preview
+    const truncated = s.content.length > 1500
+      ? s.content.slice(0, 1500) + '\n\n[...content truncated for prompt size — full data available in the Business Review parts]'
+      : s.content;
+    list.push(truncated);
     byCategory.set(s.category, list);
   }
 
@@ -174,9 +178,29 @@ export function buildStructuredPromptFromSnippets(
     risks: '## Key Risks to Monitor',
   };
 
-  for (const [category, contents] of byCategory) {
-    const title = categoryTitles[category] ?? `## ${category}`;
+  // Priority order: core categories first, then document/analysis last
+  const priorityOrder = ['overview', 'strategy', 'metrics', 'actions', 'risks'];
+  const processed = new Set<string>();
+
+  // 1) Add prioritized categories first
+  for (const cat of priorityOrder) {
+    const contents = byCategory.get(cat);
+    if (!contents || contents.length === 0) continue;
+    processed.add(cat);
+    const title = categoryTitles[cat] ?? `## ${cat}`;
     sections.push('', title, contents.join('\n\n'));
+  }
+
+  // 2) Add remaining categories (document, analysis, etc.) with tighter limits
+  for (const [category, contents] of byCategory) {
+    if (processed.has(category)) continue;
+    processed.add(category);
+    // For non-core categories, combine and cap at 1000 chars total
+    const combined = contents.join('\n\n');
+    const limited = combined.length > 1000
+      ? combined.slice(0, 1000) + '\n\n[...additional data truncated — see full documents in the Business Review section]'
+      : combined;
+    sections.push('', `## ${category}`, limited);
   }
 
   const targetsBlock = MONTHLY_TARGETS_SEED.map(
@@ -196,5 +220,12 @@ export function buildStructuredPromptFromSnippets(
     '5. Highlight BEP coverage and margin metrics.',
   );
 
-  return sections.join('\n');
+  let result = sections.join('\n');
+
+  // Hard cap at 18000 chars (~4500 tokens) to stay within 6000 TPM rate limit
+  if (result.length > 18000) {
+    result = result.slice(0, 18000) + '\n\n[System prompt truncated to fit rate limits — full context available in the Business Review parts]';
+  }
+
+  return result;
 }

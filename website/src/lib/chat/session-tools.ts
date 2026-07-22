@@ -5,13 +5,15 @@ export type ChatSessionAction =
   | 'new_chat_session'
   | 'clear_conversation'
   | 'close_conversation'
-  | 'save_conversation';
+  | 'save_conversation'
+  | 'update_review_documents';
 
 export const CHAT_SESSION_ACTIONS: ChatSessionAction[] = [
   'new_chat_session',
   'clear_conversation',
   'close_conversation',
   'save_conversation',
+  'update_review_documents',
 ];
 
 export function isChatSessionAction(value: unknown): value is ChatSessionAction {
@@ -24,7 +26,7 @@ export function isClientClearSessionAction(action: ChatSessionAction): boolean {
     || action === 'close_conversation';
 }
 
-const EXPLICIT_SESSION_REQUEST_PATTERN = /\b(new chat|fresh chat|start over|start fresh|clear(?: the)?(?: chat| conversation)|close(?: the)? conversation|save(?: this)?(?: chat| conversation)|save conversation)\b/i;
+const EXPLICIT_SESSION_REQUEST_PATTERN = /\b(new chat|fresh chat|start over|start fresh|clear(?: the)?(?: chat| conversation)|close(?: the)? conversation|save(?: this)?(?: chat| conversation)|save conversation|update(?: the)?(?: review|documents?|business review)|save to review|update review)\b/i;
 
 /** Only attach session tools when the user is clearly asking to manage the chat UI. */
 export function isExplicitSessionRequest(message: string): boolean {
@@ -34,7 +36,11 @@ export function isExplicitSessionRequest(message: string): boolean {
 export const CHAT_SESSION_TOOL_INSTRUCTIONS = `You can manage the active chat session with tools that mirror the chat UI buttons.
 Only call a session tool when the user explicitly asks to start a new chat, clear the chat, close the conversation, or save the conversation.
 Never call session tools for business questions, metrics, revenue, operations, or general knowledge requests.
-When a session tool is appropriate, call the matching tool before confirming the action in your reply.`;
+When a session tool is appropriate, call the matching tool before confirming the action in your reply.
+
+To update the Business Review and Executive Summary with insights from your conversation:
+- When the user says something like "update the review" or "save this to the review" or provides substantive new financial/operational information, call the "update_review_documents" tool.
+- Include a brief summary of the key changes or new information to incorporate.`;
 
 export const CHAT_SESSION_OPENAI_TOOLS = [
   {
@@ -74,6 +80,24 @@ export const CHAT_SESSION_OPENAI_TOOLS = [
             description: 'Optional short title for the saved conversation',
           },
         },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'update_review_documents',
+      description: 'Update the Business Review and Executive Summary documents with insights, corrections, or new information from the current conversation.',
+      parameters: {
+        type: 'object',
+        properties: {
+          summary: {
+            type: 'string',
+            description: 'Brief summary of the key updates, new data, or corrections to incorporate into the Business Review and Executive Summary.',
+          },
+        },
+        required: ['summary'],
         additionalProperties: false,
       },
     },
@@ -145,6 +169,30 @@ export async function executeSessionTool(
         toolMessage: `Conversation saved (id ${saved.id}).`,
         clientAction: 'save_conversation',
       };
+    }
+    case 'update_review_documents': {
+      const summary = typeof args.summary === 'string' ? args.summary.trim() : '';
+      if (!summary) {
+        return { toolMessage: 'Please provide a summary of what to update in the review.' };
+      }
+
+      try {
+        const res = await fetch('/api/chat/update-review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: ctx.messages, summary }),
+        });
+        const payload = await res.json();
+        if (payload.success) {
+          return {
+            toolMessage: `✅ Business Review and Executive Summary updated based on our conversation. ${payload.data.partsUpdated} review part(s) updated.`,
+            clientAction: 'update_review_documents',
+          };
+        }
+        return { toolMessage: `Failed to update: ${payload.error ?? 'Unknown error'}` };
+      } catch (err) {
+        return { toolMessage: `Error updating review: ${err instanceof Error ? err.message : String(err)}` };
+      }
     }
     default:
       return { toolMessage: `Unknown session tool: ${toolName}` };

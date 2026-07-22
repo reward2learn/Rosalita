@@ -231,6 +231,104 @@ function buildUserMessage(message: string, attachments: ChatAttachment[]): OpenA
   };
 }
 
+/**
+ * MapReduce for oversized chat context.
+ *
+ * When the system prompt (knowledge snippets + instructions) exceeds the
+ * model's rate limit, this function splits it into chunks, calls OpenAI
+ * once per chunk to extract facts relevant to the user's question, then
+ * combines everything into a compact context prompt for the final answer.
+ *
+ * This mirrors the two-phase pattern used in AI Content Generation.
+ */
+async function mapReduceContext(
+  fullContext: string,
+  userMessage: string,
+  apiKey: string,
+  model: string,
+): Promise<string> {
+  // Split the context into chunks by ## section headers
+  const sections = fullContext.split(/(?=## )/);
+  const chunks: string[] = [];
+  let currentChunk = '';
+
+  for (const section of sections) {
+    if (currentChunk.length + section.length > 3000 && currentChunk.length > 0) {
+      chunks.push(currentChunk);
+      currentChunk = section;
+    } else {
+      currentChunk += section;
+    }
+  }
+  if (currentChunk.length > 0) chunks.push(currentChunk);
+
+  // Map phase: extract relevant info from each chunk
+  const extractedParts: string[] = [];
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: 'You extract relevant business context for a given user question. Return ONLY facts and data points relevant to the question, in 2-3 concise bullet points. If nothing is relevant, return "NONE". Do not include any other text.',
+            },
+            {
+              role: 'user',
+              content: `Context section ${i + 1}/${chunks.length}:\n${chunk}\n\nUser question: ${userMessage}\n\nExtract ONLY facts/data points relevant to answering this question. Return "NONE" if nothing is relevant.`,
+            },
+          ],
+          temperature: 0.1,
+          max_tokens: 500,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const reply = result.choices?.[0]?.message?.content ?? '';
+        if (reply.trim() !== 'NONE') {
+          extractedParts.push(reply.trim());
+        }
+      }
+    } catch {
+      // skip failed chunk
+    }
+  }
+
+  // Reduce: build a compact context from extracted parts
+  if (extractedParts.length === 0) {
+    return fullContext.slice(0, 15000);
+  }
+
+  const reduced = [
+    '## Business Context (Relevant excerpts)',
+    '',
+    ...extractedParts,
+    '',
+    '## Monthly Projection Targets',
+    fullContext.includes('Monthly Projection Targets')
+      ? fullContext.split('## Monthly Projection Targets')[1]?.split('## How You Answer')[0]?.trim() ?? ''
+      : '',
+    '',
+    '## How You Answer',
+    '1. Use IDR formatting (e.g., "IDR 2.2B", "IDR 166M").',
+    '2. Reference specific Business Review parts when relevant.',
+    '3. Use live database data for performance tracking questions.',
+    '4. Be concise and data-driven.',
+    '5. Highlight BEP coverage and margin metrics.',
+  ].join('\n');
+
+  return reduced;
+}
+
 async function handleChatPost(request: Request): Promise<Response> {
   let body: unknown;
   try {
@@ -265,6 +363,35 @@ async function handleChatPost(request: Request): Promise<Response> {
     }
 
     const systemPrompt = await knowledge.buildSystemPrompt();
+
+    // Resolve API key early — needed for MapReduce phase below
+    const apiKey = await resolveOpenAiKey();
+    if (!apiKey) {
+      const reply = 'I\'m not fully configured yet. The owner needs to add an OpenAI API key.';
+      if (stream === true) {
+        const encoder = new TextEncoder();
+        const sseBody = new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: reply } }] })}\n\n`));
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          },
+        });
+        return new Response(sseBody, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+            'X-Accel-Buffering': 'no',
+          },
+        });
+      }
+      return NextResponse.json({
+        success: true,
+        data: { reply },
+      });
+    }
+
     const appSettings = await getAppSettings(db);
     const webSearchEnabled = appSettings.webSearchEnabled;
     const sessionToolsEnabled = isExplicitSessionRequest(message);
@@ -279,6 +406,26 @@ async function handleChatPost(request: Request): Promise<Response> {
       role: 'system',
       content: systemSections.join('\n\n'),
     }];
+
+    // ── MapReduce: if system prompt is too large, extract relevant context in chunks ──
+    const systemMsg = messages[0];
+    if (systemMsg && typeof systemMsg.content === 'string' && systemMsg.content.length > 18000) {
+      try {
+        const reducedContext = await mapReduceContext(
+          systemMsg.content,
+          message,
+          apiKey,
+          'gpt-4o-mini', // cheaper model for the map phase
+        );
+        systemMsg.content = reducedContext;
+      } catch {
+        // If MapReduce fails, fall back to simple truncation
+        if (typeof systemMsg.content === 'string') {
+          systemMsg.content = systemMsg.content.slice(0, 20000)
+            + '\n\n[Context truncated to fit model limits — see Business Review parts for full details]';
+        }
+      }
+    }
 
     for (const msg of history.slice(-6)) {
       if (msg.role === 'user' || msg.role === 'assistant') {
@@ -307,33 +454,6 @@ async function handleChatPost(request: Request): Promise<Response> {
       userName,
       messages: sessionMessages,
     };
-
-    const apiKey = await resolveOpenAiKey();
-    if (!apiKey) {
-      const reply = 'I\'m not fully configured yet. The owner needs to add an OpenAI API key.';
-      if (stream === true) {
-        const encoder = new TextEncoder();
-        const sseBody = new ReadableStream({
-          start(controller) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: reply } }] })}\n\n`));
-            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-            controller.close();
-          },
-        });
-        return new Response(sseBody, {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-            'X-Accel-Buffering': 'no',
-          },
-        });
-      }
-      return NextResponse.json({
-        success: true,
-        data: { reply },
-      });
-    }
 
     return completeChatWithSessionTools({
       apiKey,

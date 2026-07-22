@@ -17,6 +17,7 @@ import Select from '@mui/material/Select';
 import { getReviewPartDisplayTitle, listReviewParts, setDynamicReviewParts } from '@/lib/page-catalog';
 import type { ReviewPartDefinition } from '@/lib/page-catalog';
 import { useGetReviewPartQuery } from '@/store/apis/content-api';
+import { AiFindingsBlock } from '@/components/blocks/ai-findings-block';
 import { useEffect, useMemo, useState } from 'react';
 
 const reviewCardSx = {
@@ -284,6 +285,7 @@ export function ReviewBlocks() {
             })}
           </Stack>
         </Paper>
+        <AiFindingsBlock />
       </Stack>
     </Box>
   );

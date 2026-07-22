@@ -19,6 +19,8 @@ import { extractExcelData } from '@/domain/excel/excel-extractor';
 import { buildGenerationPrompt } from '@/domain/ai-content/prompt-builder';
 import { resolveOpenAiKey } from '@/lib/openai';
 import type { DbClient } from '@/lib/db';
+import { parseReviewParts } from '@/domain/ai-content/parse-review-parts';
+import type { ReviewPart } from '@/domain/ai-content/parse-review-parts';
 
 // ── Progress reporting ──────────────────────────────────
 
@@ -68,16 +70,23 @@ export interface SavedResult {
 
 // ── AI Call ─────────────────────────────────────────────
 
-async function callOpenAi(
+/**
+ * Call OpenAI to generate a single document (business review OR executive summary).
+ * Keeps each response within the model's 16384 output-token limit.
+ */
+async function callOpenAiForDocument(
   prompt: string,
   apiKey: string,
+  documentType: 'businessReview' | 'executiveSummary',
   model = 'gpt-4o',
   onProgress?: ProgressCallback,
-): Promise<AiGeneratedContent> {
+): Promise<string> {
+  const docLabel = documentType === 'businessReview' ? 'Business Review' : 'Executive Summary';
+
   onProgress?.({
     step: 'openai',
-    message: `Calling OpenAI (${model}) — this may take 30–60 seconds...`,
-    pct: 40,
+    message: `Calling OpenAI — generating ${docLabel} (${model})...`,
+    pct: documentType === 'businessReview' ? 40 : 55,
   });
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -92,15 +101,15 @@ async function callOpenAi(
         {
           role: 'system',
           content:
-            'You are a precise financial analyst and business writer. You ALWAYS return only valid JSON with exactly the keys requested. You never include explanatory text outside the JSON.',
+            'You are a precise financial analyst and business writer. You ALWAYS return only valid JSON with exactly the key requested.',
         },
         {
           role: 'user',
-          content: prompt,
+          content: `${prompt}\n\nGenerate ONLY the "${documentType}" document as a JSON object with a single key "${documentType}" containing the full Markdown string. Do NOT include the other document.`,
         },
       ],
       temperature: 0.3,
-      max_tokens: 16000,
+      max_tokens: 16384,
       response_format: { type: 'json_object' },
     }),
   });
@@ -110,21 +119,13 @@ async function callOpenAi(
     throw new Error(`OpenAI API error (${response.status}): ${errBody}`);
   }
 
-  onProgress?.({
-    step: 'openai',
-    message: 'OpenAI response received — parsing JSON...',
-    pct: 60,
-  });
-
   const result = await response.json();
   const reply = result.choices?.[0]?.message?.content ?? '';
 
-  // Parse the JSON response
   let parsed: Record<string, string>;
   try {
     parsed = JSON.parse(reply);
   } catch {
-    // Try to extract JSON from the response if wrapped in markdown code fences
     const jsonMatch = reply.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
       parsed = JSON.parse(jsonMatch[1]);
@@ -135,82 +136,11 @@ async function callOpenAi(
     }
   }
 
-  return {
-    businessReview: parsed.businessReview ?? '',
-    executiveSummary: parsed.executiveSummary ?? '',
-    promptLength: prompt.length,
-    responseLength: reply.length,
-    model,
-  };
+  return parsed[documentType] ?? '';
 }
 
 // ── Content parsing helpers ─────────────────────────────
-
-interface ReviewPart {
-  slug: string;
-  partKey: string;
-  title: string;
-  sortOrder: number;
-  markdown: string;
-}
-
-/**
- * Parse the Business Review markdown into part-based sections.
- * Splits on ## Part X: or ### Part X: headers.
- */
-function parseReviewParts(markdown: string): ReviewPart[] {
-  const parts: ReviewPart[] = [];
-  // Match headers like: ## Part A: ... or ### Part A: ...
-  const partRegex = /^#{1,3}\s+(Part\s+([A-Z]):\s*(.+))/gm;
-  const matches: {
-    index: number;
-    fullMatch: string;
-    partKey: string;
-    title: string;
-  }[] = [];
-
-  let match;
-  while ((match = partRegex.exec(markdown)) !== null) {
-    matches.push({
-      index: match.index,
-      fullMatch: match[0],
-      partKey: match[2],
-      title: match[1].trim(),
-    });
-  }
-
-  // If no parts found, create one default part
-  if (matches.length === 0) {
-    parts.push({
-      slug: 'part-a',
-      partKey: 'A',
-      title: 'Part A: Business Review',
-      sortOrder: 0,
-      markdown: markdown,
-    });
-    return parts;
-  }
-
-  for (let i = 0; i < matches.length; i++) {
-    const current = matches[i];
-    const next = matches[i + 1];
-    const startIdx = current.index;
-    const endIdx = next ? next.index : markdown.length;
-    const sectionContent = markdown.slice(startIdx, endIdx).trim();
-
-    const slug = `part-${current.partKey.toLowerCase()}`;
-    parts.push({
-      slug,
-      partKey: current.partKey,
-      title: current.title,
-      sortOrder: i,
-      markdown: sectionContent,
-    });
-  }
-
-  return parts;
-}
-
+// (parseReviewParts imported from parse-review-parts.ts)
 // ── DB save helpers ─────────────────────────────────────
 
 async function saveExecutiveSummary(
@@ -354,25 +284,40 @@ export async function generateAndSave(
       return { success: false, error: errorMsg, prompt };
     }
 
-    // ── 4. Call AI ──────────────────────────────────────
-    const content = await callOpenAi(prompt, apiKey, model, onProgress);
+    // ── 4. Call AI in two phases ─────────────────────────
+    // Phase 1: Generate Business Review
+    onProgress?.({
+      step: 'openai',
+      message: 'Generating Business Review from financial data (phase 1 of 2)...',
+      pct: 40,
+    });
 
-    // ── 5. Validate response ────────────────────────────
-    if (!content.businessReview && !content.executiveSummary) {
-      const errorMsg =
-        'AI returned empty content for both Business Review and Executive Summary.';
-      onProgress?.({
-        step: 'error',
-        message: errorMsg,
-        pct: 0,
-        detail: { contentLengths: { businessReview: 0, executiveSummary: 0 } },
-      });
-      return { success: false, error: errorMsg, prompt, content };
-    }
+    const businessReview = await callOpenAiForDocument(
+      prompt, apiKey, 'businessReview', model, onProgress,
+    );
+
+    // Phase 2: Generate Executive Summary
+    onProgress?.({
+      step: 'openai',
+      message: 'Generating Executive Summary from financial data (phase 2 of 2)...',
+      pct: 55,
+    });
+
+    const executiveSummary = await callOpenAiForDocument(
+      prompt, apiKey, 'executiveSummary', model, onProgress,
+    );
+
+    const content: AiGeneratedContent = {
+      businessReview,
+      executiveSummary,
+      promptLength: prompt.length,
+      responseLength: businessReview.length + executiveSummary.length,
+      model: model ?? 'gpt-4o',
+    };
 
     onProgress?.({
       step: 'parsing',
-      message: 'Parsing AI response into Business Review sections and Executive Summary...',
+      message: 'AI responses received — parsing into Business Review sections and Executive Summary...',
       pct: 65,
     });
 

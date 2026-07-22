@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -10,8 +10,13 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
+import InputLabel from '@mui/material/InputLabel';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
+import Select from '@mui/material/Select';
 import Slider from '@mui/material/Slider';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -21,6 +26,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DownloadIcon from '@mui/icons-material/Download';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import MicNoneIcon from '@mui/icons-material/MicNone';
@@ -44,6 +50,7 @@ import {
   type ChatStreamMessage,
 } from '@/store/chat-stream-slice';
 import { isClientClearSessionAction, isExplicitSessionRequest } from '@/lib/chat/session-tools';
+import { listReviewParts, getReviewPartDisplayTitle } from '@/lib/page-catalog';
 import { useTtsVoicePreference } from '@/hooks/use-tts-voice-preference';
 import { useVoiceConversation } from '@/hooks/use-voice-conversation';
 import { VoiceProfileMenu } from '@/components/chat/voice-profile-menu';
@@ -90,6 +97,16 @@ export function ChatPanel() {
   const [ttsVoice, setTtsVoice] = useTtsVoicePreference();
 
   const lastAssistant = [...messages].reverse().find((msg) => msg.role === 'assistant' && msg.content.trim());
+
+  // ── Message action menu ───────────────────────────────
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [menuMessageIndex, setMenuMessageIndex] = useState<number | null>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedPartSlug, setSelectedPartSlug] = useState('');
+  const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [findingTitle, setFindingTitle] = useState('');
+  const [findingTitleDialogOpen, setFindingTitleDialogOpen] = useState(false);
+  const reviewParts = listReviewParts();
 
   // Prefill from ?prompt= (e.g. when arriving from a task's "Ask AI" button).
   useEffect(() => {
@@ -251,6 +268,110 @@ export function ChatPanel() {
     setStatus('Transcript downloaded.');
   };
 
+  // ── Message action handlers ────────────────────────────
+  const handleUpdateReview = useCallback(() => {
+    setMenuAnchor(null);
+    setSelectedPartSlug('');
+    setActionStatus(null);
+    setReviewDialogOpen(true);
+  }, []);
+
+  const handleConfirmUpdateReview = useCallback(async () => {
+    if (menuMessageIndex === null || !selectedPartSlug) return;
+    const msg = messages[menuMessageIndex];
+    if (!msg || msg.role !== 'assistant') return;
+
+    setActionStatus('Updating...');
+    try {
+      const res = await fetch('/api/chat/update-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'assistant', content: msg.content }],
+          summary: `Update ${selectedPartSlug} with findings from AI chat.`,
+        }),
+      });
+      const payload = await res.json();
+      if (payload.success) {
+        setActionStatus(`✅ Review section updated.`);
+      } else {
+        setActionStatus(`❌ ${payload.error ?? 'Update failed'}`);
+      }
+    } catch {
+      setActionStatus('❌ Network error');
+    }
+  }, [menuMessageIndex, selectedPartSlug, messages]);
+
+  const handleUpdateExecutiveSummary = useCallback(() => {
+    setMenuAnchor(null);
+    setMenuMessageIndex(null);
+    setActionStatus('Updating Executive Summary...');
+
+    const msg = menuMessageIndex !== null ? messages[menuMessageIndex] : null;
+    if (!msg || msg.role !== 'assistant') {
+      setActionStatus('❌ No assistant message selected.');
+      return;
+    }
+
+    fetch('/api/chat/update-review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'assistant', content: msg.content }],
+        summary: 'Update Executive Summary with findings from AI chat.',
+        target: 'executive_summary',
+      }),
+    })
+      .then((r) => r.json())
+      .then((payload) => {
+        if (payload.success) {
+          setActionStatus('✅ Executive Summary updated.');
+        } else {
+          setActionStatus(`❌ ${payload.error ?? 'Update failed'}`);
+        }
+      })
+      .catch(() => setActionStatus('❌ Network error'));
+  }, [menuMessageIndex, messages]);
+
+  const handleAddToDashboard = useCallback(() => {
+    if (menuMessageIndex === null) return;
+    const msg = messages[menuMessageIndex];
+    if (!msg || msg.role !== 'assistant') return;
+
+    setMenuAnchor(null);
+    setMenuMessageIndex(null);
+
+    // Extract first line as default title
+    const firstLine = msg.content.split('\n')[0]?.replace(/^#{1,3}\s+/, '').replace(/^\*\*|\*\*$/g, '').trim() ?? '';
+    setFindingTitle(firstLine.slice(0, 80));
+    setFindingTitleDialogOpen(true);
+  }, [menuMessageIndex, messages]);
+
+  const handleConfirmAddToDashboard = useCallback(async () => {
+    if (menuMessageIndex === null) return;
+    const msg = messages[menuMessageIndex];
+    if (!msg || msg.role !== 'assistant') return;
+
+    setFindingTitleDialogOpen(false);
+    setActionStatus('Saving...');
+
+    try {
+      const res = await fetch('/api/chat/ai-findings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: msg.content, title: findingTitle || undefined }),
+      });
+      const payload = await res.json();
+      if (payload.success) {
+        setActionStatus('✅ Added to Dashboard as AI Findings.');
+      } else {
+        setActionStatus(`❌ ${payload.error ?? 'Save failed'}`);
+      }
+    } catch {
+      setActionStatus('❌ Network error');
+    }
+  }, [menuMessageIndex, messages, findingTitle]);
+
   const displayStatus = voiceStatus ?? status;
   const voicePhaseLabel = voiceMode ? VOICE_PHASE_LABEL[voicePhase] : null;
 
@@ -292,51 +413,73 @@ export function ChatPanel() {
                     mb: 1.5,
                   }}
                 >
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      maxWidth: '82%',
-                      p: 1.5,
-                      bgcolor: msg.role === 'user' ? 'primary.main' : 'rgba(255,255,255,0.06)',
-                      color: msg.role === 'user' ? 'primary.contrastText' : 'text.primary',
-                      whiteSpace: 'pre-wrap',
-                    }}
-                  >
-                    <Typography variant="body2">{msg.content || (isStreaming ? '...' : '')}</Typography>
-                    {msg.attachments?.length ? (
-                      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mt: 1, gap: 1 }}>
-                        {msg.attachments.map((attachment) => {
-                          const dataUrl = attachment.kind === 'image' ? attachmentDataUrl(attachment) : null;
-                          if (dataUrl) {
+                  <Box sx={{ maxWidth: '82%', position: 'relative' }}>
+                    {msg.role === 'assistant' ? (
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          setMenuAnchor(e.currentTarget);
+                          setMenuMessageIndex(index);
+                        }}
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          right: 0,
+                          zIndex: 1,
+                          color: 'text.disabled',
+                          '&:hover': { color: 'text.primary' },
+                        }}
+                        aria-label="Message actions"
+                      >
+                        <MoreVertIcon fontSize="small" />
+                      </IconButton>
+                    ) : null}
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 1.5,
+                        pt: msg.role === 'assistant' ? 3 : 1.5,
+                        bgcolor: msg.role === 'user' ? 'primary.main' : 'rgba(255,255,255,0.06)',
+                        color: msg.role === 'user' ? 'primary.contrastText' : 'text.primary',
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      <Typography variant="body2">{msg.content || (isStreaming ? '...' : '')}</Typography>
+                      {msg.attachments?.length ? (
+                        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mt: 1, gap: 1 }}>
+                          {msg.attachments.map((attachment) => {
+                            const dataUrl = attachment.kind === 'image' ? attachmentDataUrl(attachment) : null;
+                            if (dataUrl) {
+                              return (
+                                <Box
+                                  key={`${attachment.name}-${attachment.size}`}
+                                  component="img"
+                                  src={dataUrl}
+                                  alt={attachment.name}
+                                  sx={{
+                                    maxWidth: 160,
+                                    maxHeight: 160,
+                                    borderRadius: 1,
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    objectFit: 'cover',
+                                  }}
+                                />
+                              );
+                            }
                             return (
-                              <Box
+                              <Chip
                                 key={`${attachment.name}-${attachment.size}`}
-                                component="img"
-                                src={dataUrl}
-                                alt={attachment.name}
-                                sx={{
-                                  maxWidth: 160,
-                                  maxHeight: 160,
-                                  borderRadius: 1,
-                                  border: '1px solid',
-                                  borderColor: 'divider',
-                                  objectFit: 'cover',
-                                }}
+                                label={`${attachment.name} (${formatFileSize(attachment.size)})`}
+                                size="small"
+                                variant="outlined"
                               />
                             );
-                          }
-                          return (
-                            <Chip
-                              key={`${attachment.name}-${attachment.size}`}
-                              label={`${attachment.name} (${formatFileSize(attachment.size)})`}
-                              size="small"
-                              variant="outlined"
-                            />
-                          );
-                        })}
-                      </Stack>
-                    ) : null}
-                  </Paper>
+                          })}
+                        </Stack>
+                      ) : null}
+                    </Paper>
+                  </Box>
                 </Box>
               )) : (
                 <Typography variant="body2" color="text.secondary" sx={{ py: 8, textAlign: 'center' }}>
@@ -351,6 +494,96 @@ export function ChatPanel() {
                 {displayStatus}
               </Typography>
             ) : null}
+
+            {/* ── Message action menu ───────────────────────── */}
+            <Menu
+              anchorEl={menuAnchor}
+              open={Boolean(menuAnchor)}
+              onClose={() => { setMenuAnchor(null); setMenuMessageIndex(null); }}
+            >
+              <MenuItem onClick={handleUpdateReview}>
+                Update Review Section
+              </MenuItem>
+              <MenuItem onClick={handleUpdateExecutiveSummary}>
+                Update Executive Summary
+              </MenuItem>
+              <MenuItem onClick={handleAddToDashboard}>
+                Add to Dashboard
+              </MenuItem>
+            </Menu>
+
+            {/* ── Review section update dialog ───────────────── */}
+            <Dialog open={reviewDialogOpen} onClose={() => setReviewDialogOpen(false)} maxWidth="xs" fullWidth>
+              <DialogTitle>Update Review Section</DialogTitle>
+              <DialogContent dividers>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Select which review section to update with this message content:
+                </Typography>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Review Section</InputLabel>
+                  <Select
+                    value={selectedPartSlug}
+                    label="Review Section"
+                    onChange={(e) => setSelectedPartSlug(e.target.value)}
+                  >
+                    {reviewParts.map((p) => (
+                      <MenuItem key={p.partSlug} value={p.partSlug}>
+                        {getReviewPartDisplayTitle(p.title)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                {actionStatus ? (
+                  <Typography variant="caption" sx={{ mt: 1, display: 'block', color: actionStatus.includes('✅') ? 'success.main' : 'error.main' }}>
+                    {actionStatus}
+                  </Typography>
+                ) : null}
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setReviewDialogOpen(false)}>Cancel</Button>
+                <Button variant="contained" disabled={!selectedPartSlug} onClick={handleConfirmUpdateReview}>
+                  Update
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* ── Add to Dashboard confirmation dialog ──────── */}
+            <Dialog open={findingTitleDialogOpen} onClose={() => setFindingTitleDialogOpen(false)} maxWidth="xs" fullWidth>
+              <DialogTitle>Add to AI Findings</DialogTitle>
+              <DialogContent dividers>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Give this finding a title:
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Title"
+                  value={findingTitle}
+                  onChange={(e) => setFindingTitle(e.target.value)}
+                  autoFocus
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setFindingTitleDialogOpen(false)}>Cancel</Button>
+                <Button variant="contained" disabled={!findingTitle.trim()} onClick={handleConfirmAddToDashboard}>
+                  Save
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            <Dialog open={actionStatus !== null && !reviewDialogOpen && !findingTitleDialogOpen} onClose={() => setActionStatus(null)} maxWidth="xs" fullWidth>
+              <DialogTitle>AI Findings</DialogTitle>
+              <DialogContent dividers>
+                {actionStatus ? (
+                  <Typography variant="body2" color={actionStatus.includes('✅') ? 'success.main' : 'error.main'}>
+                    {actionStatus}
+                  </Typography>
+                ) : null}
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setActionStatus(null)}>Close</Button>
+              </DialogActions>
+            </Dialog>
 
             <TextField
               label="Message"
