@@ -47,14 +47,16 @@ const FILE_FIELDS: {
   label: string;
   accept: string;
   hint: string;
+  multiple?: boolean;
 }[] = [
   {
     key: 'excel',
     formName: 'excel',
     apiName: CONFIG_UPLOAD_FIELD_NAMES.excel,
-    label: 'Cashflow workbook (XLSX)',
+    label: 'Cashflow workbooks (XLSX)',
     accept: '.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel',
-    hint: 'red-ruby-cashflow.xlsx — uploaded via AI Content Generation tab or Config page',
+    hint: 'Upload one or more workbooks. Multiple workbooks (e.g. different months or departments) are merged.',
+    multiple: true,
   },
   {
     key: 'businessReview',
@@ -77,6 +79,11 @@ const FILE_FIELDS: {
 function fileFromList(list: FileList | null | undefined): File | null {
   if (!list || list.length === 0) return null;
   return list[0] ?? null;
+}
+
+function filesFromList(list: FileList | null | undefined): File[] {
+  if (!list || list.length === 0) return [];
+  return Array.from(list).filter(Boolean);
 }
 
 function formatBytes(bytes: number): string {
@@ -114,7 +121,7 @@ export function SourceUploadForm({ showSummaryOnly }: { showSummaryOnly?: boolea
 
   const selectedFiles = useMemo(
     () => ({
-      excel: fileFromList(watched.excel),
+      excel: filesFromList(watched.excel),
       businessReview: fileFromList(watched.businessReview),
       executiveSummary: fileFromList(watched.executiveSummary),
     }),
@@ -123,7 +130,7 @@ export function SourceUploadForm({ showSummaryOnly }: { showSummaryOnly?: boolea
 
   const onSubmit = async (values: SourceUploadFormValues) => {
     const files = {
-      excel: fileFromList(values.excel),
+      excel: filesFromList(values.excel),
       businessReview: fileFromList(values.businessReview),
       executiveSummary: fileFromList(values.executiveSummary),
     };
@@ -133,7 +140,11 @@ export function SourceUploadForm({ showSummaryOnly }: { showSummaryOnly?: boolea
     }
 
     const formData = new FormData();
-    if (files.excel) formData.append(CONFIG_UPLOAD_FIELD_NAMES.excel, files.excel);
+    if (files.excel.length > 0) {
+      for (const f of files.excel) {
+        formData.append(CONFIG_UPLOAD_FIELD_NAMES.excel, f);
+      }
+    }
     if (files.businessReview) {
       formData.append(CONFIG_UPLOAD_FIELD_NAMES.businessReview, files.businessReview);
     }
@@ -147,9 +158,11 @@ export function SourceUploadForm({ showSummaryOnly }: { showSummaryOnly?: boolea
     setFieldStatus({ excel: null, businessReview: null, executiveSummary: null });
   };
 
-  const updateFieldStatus = (field: FileField, file: File | null) => {
+  const updateFieldStatus = (field: FileField, file: File | string | null) => {
     let message: string | null = null;
-    if (file) {
+    if (typeof file === 'string') {
+      message = file; // e.g. "3 file(s) selected"
+    } else if (file) {
       if (field === 'excel') {
         message = validateExcelUpload(file);
       } else if (field === 'businessReview') {
@@ -211,16 +224,21 @@ export function SourceUploadForm({ showSummaryOnly }: { showSummaryOnly?: boolea
                   fullWidth
                   sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
                 >
-                  {file ? file.name : 'Choose file'}
+                  {file ? (Array.isArray(file) ? `${file.length} file(s)` : file.name) : 'Choose file'}
                   <input
                     type="file"
                     hidden
                     accept={field.accept}
+                    multiple={field.multiple}
                     {...register(field.formName, {
                       onChange: (event) => {
                         const input = event.target as HTMLInputElement;
-                        const chosen = fileFromList(input.files);
-                        updateFieldStatus(field.key, chosen);
+                        if (field.multiple) {
+                          updateFieldStatus(field.key, input.files?.length ? `${input.files.length} file(s) selected` : null);
+                        } else {
+                          const chosen = fileFromList(input.files);
+                          updateFieldStatus(field.key, chosen);
+                        }
                       },
                     })}
                   />

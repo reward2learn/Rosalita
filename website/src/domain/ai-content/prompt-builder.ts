@@ -166,7 +166,7 @@ ${rows.join('\n')}`,
 
 // ── Main prompt builder ─────────────────────────────────
 
-export function buildGenerationPrompt(data: ExcelData): string {
+export function buildGenerationPrompt(data: ExcelData, additionalContext?: string): string {
   const sections: string[] = [
     `# Red Ruby Financial Analysis — AI Content Generation Prompt`,
     ``,
@@ -246,6 +246,16 @@ export function buildGenerationPrompt(data: ExcelData): string {
   sections.push(buildDailySalesSection(data));
   sections.push(buildSummaryPlSection(data));
 
+  // Append additional context from AI Findings (if provided by user selection)
+  if (additionalContext) {
+    sections.push('');
+    sections.push('## Additional Context — AI Findings');
+    sections.push('The following insights were flagged by management during AI chat sessions. Incorporate this information into the review where relevant:');
+    sections.push('');
+    sections.push(additionalContext);
+    sections.push('');
+  }
+
   // Close with final reminder
   sections.push(``);
   sections.push(`## Final Reminder`);
@@ -293,4 +303,44 @@ export function buildDataSummary(data: ExcelData): string {
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Build a prompt for generating structured dashboard data (action plan, targets, levers).
+ * This is called as a third AI phase after the Business Review and Executive Summary.
+ */
+export function buildDashboardPrompt(data: ExcelData, additionalContext?: string): string {
+  const sections: string[] = [
+    `# Red Ruby Dashboard Data Generation`,
+    ``,
+    `You are a financial analyst for Red Ruby Club & Terrace Bar. Based on the financial data below, generate structured JSON data for the dashboard.`,
+    ``,
+    `Return ONLY a JSON object with exactly three keys: "actionPhases", "targetRows", and "levers".`,
+    ``,
+    `### actionPhases — Array of objects with: id, title, period, impact, actions (string array)`,
+    `Create 2-3 action phases with specific, actionable steps based on the financial data.`,
+    ``,
+    `### targetRows — Array of objects with: metric, may, conservative, realistic, aspirational, bold (optional boolean)`,
+    `Create 5 target rows: Monthly Revenue, Monthly EBITDA, EBITDA Margin, Guests/Month, Avg Spend/Guest.`,
+    `Use actual data from the BEP/P&L for "may" values and realistic projections for the other columns.`,
+    ``,
+    `### levers — Array of objects with: num, title, summary, details (string array)`,
+    `Create 5 interconnected strategic levers based on the financial analysis.`,
+    ``,
+    `## SOURCE DATA`,
+    ``,
+    buildCompanyInfoSection(data),
+    buildProfitAndLossSection(data.profitAndLoss),
+    buildBepSection(data.bepMonthly),
+    buildMonthOnMonthSection(data.monthOnMonth),
+    buildMonthlyVarianceSection(data),
+  ];
+
+  if (additionalContext) {
+    sections.push('');
+    sections.push('## Additional Context — AI Findings');
+    sections.push(additionalContext);
+  }
+
+  return sections.join('\n');
 }

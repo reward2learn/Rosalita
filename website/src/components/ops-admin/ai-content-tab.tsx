@@ -125,6 +125,24 @@ export function AiContentTab() {
   const [clearError, setClearError] = useState<string | null>(null);
   const [clearResult, setClearResult] = useState<Record<string, number> | null>(null);
 
+  // ── Additional context from AI Findings ───────────────
+  const [additionalContext, setAdditionalContext] = useState<string | null>(null);
+
+  // ── Generate confirm dialog ────────────────────────────
+  const [generateConfirmOpen, setGenerateConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    const ctx = sessionStorage.getItem('ai_findings_generation_context');
+    if (ctx) {
+      setAdditionalContext(ctx);
+      sessionStorage.removeItem('ai_findings_generation_context');
+    }
+  }, []);
+
+  const clearAdditionalContext = useCallback(() => {
+    setAdditionalContext(null);
+  }, []);
+
   // ── Fetch initial status ──────────────────────────────
 
   const fetchStatus = useCallback(async () => {
@@ -155,19 +173,12 @@ export function AiContentTab() {
 
   // ── SSE generation handler ────────────────────────────
 
-  const handleGenerate = useCallback(async () => {
-    if (
-      !globalThis.window.confirm(
-        'Generate Business Review and Executive Summary from the Excel workbook?\n\n' +
-          'This will:\n' +
-          '1. Read the June 2026 Excel workbook\n' +
-          '2. Build a comprehensive AI prompt from the data\n' +
-          '3. Call OpenAI to generate both documents\n' +
-          '4. Save to the database (overwriting existing content)\n\n' +
-          'Continue?',
-      )
-    )
-      return;
+  const openGenerateConfirm = useCallback(() => {
+    setGenerateConfirmOpen(true);
+  }, []);
+
+  const runGeneration = useCallback(async () => {
+    setGenerateConfirmOpen(false);
 
     // Reset state
     setGenerating(true);
@@ -185,7 +196,9 @@ export function AiContentTab() {
           'Content-Type': 'application/json',
           Accept: 'text/event-stream',
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          additionalContext: additionalContext || undefined,
+        }),
         signal: controller.signal,
       });
 
@@ -687,6 +700,56 @@ export function AiContentTab() {
         </AccordionDetails>
       </Accordion>
 
+      {/* ── AI Findings context (if provided) ────────── */}
+      {additionalContext ? (
+        <Accordion
+          defaultExpanded
+          elevation={0}
+          sx={{
+            border: '1px solid',
+            borderColor: 'primary.main',
+            bgcolor: 'rgba(235, 61, 40, 0.06)',
+            '&:before': { display: 'none' },
+          }}
+        >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Typography sx={{ fontWeight: 700, color: 'primary.main' }}>
+                📋 AI Findings Context
+              </Typography>
+              <Chip label={`${additionalContext.length.toLocaleString()} chars`} size="small" variant="outlined" color="primary" />
+              <Button
+                size="small"
+                variant="text"
+                color="inherit"
+                onClick={(e) => { e.stopPropagation(); clearAdditionalContext(); }}
+                sx={{ minWidth: 0, p: 0.5, color: 'text.disabled' }}
+              >
+                ✕ Remove
+              </Button>
+            </Stack>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography
+              variant="body2"
+              component="pre"
+              sx={{
+                whiteSpace: 'pre-wrap',
+                fontFamily: 'monospace',
+                fontSize: '0.75rem',
+                bgcolor: 'rgba(0,0,0,0.3)',
+                p: 2,
+                borderRadius: 1,
+                maxHeight: 300,
+                overflow: 'auto',
+              }}
+            >
+              {additionalContext}
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
+      ) : null}
+
       {/* ── Prompt preview accordion ────────────────── */}
       <Accordion
         expanded={showFullPrompt}
@@ -738,7 +801,7 @@ export function AiContentTab() {
           variant="contained"
           size="large"
           disabled={generating}
-          onClick={handleGenerate}
+          onClick={openGenerateConfirm}
           startIcon={
             generating ? (
               <CircularProgress size={20} color="inherit" />
@@ -835,6 +898,47 @@ export function AiContentTab() {
           ) : null}
         </Stack>
       </Paper>
+
+      {/* ── Generate confirm dialog ──────────────────────── */}
+      <Dialog open={generateConfirmOpen} onClose={() => setGenerateConfirmOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AutoFixHighIcon color="primary" />
+          Generate Business Review, Executive Summary &amp; Dashboard
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <Typography variant="body2" color="text.secondary">
+              This will generate the Business Review, Executive Summary, and Dashboard content
+              {additionalContext ? ' incorporating your selected AI Findings.' : '.'}
+            </Typography>
+            <Box sx={{ pl: 1 }}>
+              <Typography variant="body2" component="div" sx={{ '& li': { mb: 0.5 } }}>
+                <ol style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                  <li>Read the June 2026 Excel workbook data seeded</li>
+                  {additionalContext ? <li>Add the AI findings to the data to generate response</li> : null}
+                  <li>Build a comprehensive AI prompt from the data and instructions</li>
+                  <li>Call OpenAI to generate all documents</li>
+                  <li>Save to the database: Executive Summary, Detailed Review, and Dashboard content (overwriting existing content)</li>
+                </ol>
+              </Typography>
+            </Box>
+            {additionalContext ? (
+              <Alert severity="info" icon={<AutoFixHighIcon />}>
+                AI Findings context ({additionalContext.length.toLocaleString()} chars) will be included in the generation.
+              </Alert>
+            ) : null}
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+              Existing content will be overwritten. This cannot be undone.
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setGenerateConfirmOpen(false)} color="inherit">Cancel</Button>
+          <Button variant="contained" onClick={runGeneration} startIcon={<AutoFixHighIcon />}>
+            Generate
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ── Confirmation dialog ─────────────────────────── */}
       <Dialog open={clearConfirmOpen} onClose={() => { if (!clearing) { setClearConfirmOpen(false); setClearConfirmText(''); } }} maxWidth="sm" fullWidth>

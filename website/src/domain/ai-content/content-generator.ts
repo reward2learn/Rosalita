@@ -16,7 +16,7 @@
  */
 
 import { extractExcelData } from '@/domain/excel/excel-extractor';
-import { buildGenerationPrompt } from '@/domain/ai-content/prompt-builder';
+import { buildGenerationPrompt, buildDashboardPrompt } from '@/domain/ai-content/prompt-builder';
 import { resolveOpenAiKey } from '@/lib/openai';
 import type { DbClient } from '@/lib/db';
 import { parseReviewParts } from '@/domain/ai-content/parse-review-parts';
@@ -77,11 +77,11 @@ export interface SavedResult {
 async function callOpenAiForDocument(
   prompt: string,
   apiKey: string,
-  documentType: 'businessReview' | 'executiveSummary',
+  documentType: 'businessReview' | 'executiveSummary' | 'dashboardData',
   model = 'gpt-4o',
   onProgress?: ProgressCallback,
 ): Promise<string> {
-  const docLabel = documentType === 'businessReview' ? 'Business Review' : 'Executive Summary';
+  const docLabel = documentType === 'businessReview' ? 'Business Review' : documentType === 'executiveSummary' ? 'Executive Summary' : 'Dashboard Data';
 
   onProgress?.({
     step: 'openai',
@@ -231,6 +231,7 @@ export async function generateAndSave(
   onProgress?: ProgressCallback,
   source?: string | Buffer,
   model?: string,
+  additionalContext?: string,
 ): Promise<GenerationResult & { saved?: SavedResult; prompt?: string }> {
   try {
     // ── 1. Extract Excel data ───────────────────────────
@@ -255,7 +256,7 @@ export async function generateAndSave(
       pct: 20,
     });
 
-    const prompt = buildGenerationPrompt(data);
+    const prompt = buildGenerationPrompt(data, additionalContext);
     const promptKb = (prompt.length / 1000).toFixed(0);
 
     onProgress?.({
@@ -315,10 +316,50 @@ export async function generateAndSave(
       model: model ?? 'gpt-4o',
     };
 
+    // Phase 3: Generate Dashboard Data (action plan, targets, levers)
+    onProgress?.({
+      step: 'openai',
+      message: 'Generating Dashboard data from financial analysis (phase 3 of 3)...',
+      pct: 65,
+    });
+
+    let dashboardData: Record<string, unknown> | null = null;
+    try {
+      const dashboardPrompt = buildDashboardPrompt(data, additionalContext);
+      const dashResult = await callOpenAiForDocument(
+        dashboardPrompt, apiKey, 'dashboardData', model, onProgress,
+      );
+      if (dashResult) {
+        try {
+          const parsed = JSON.parse(dashResult);
+          if (parsed.actionPhases && parsed.targetRows && parsed.levers) {
+            dashboardData = parsed;
+            // Save to knowledge_snippets so the dashboard blocks can read it
+            await db.knowledgeSnippet.upsert({
+              where: { key: 'dashboard_data' },
+              create: {
+                key: 'dashboard_data',
+                category: 'document',
+                content: JSON.stringify(parsed),
+              },
+              update: {
+                content: JSON.stringify(parsed),
+                category: 'document',
+              },
+            });
+          }
+        } catch {
+          // non-critical — dashboard just shows hardcoded fallbacks
+        }
+      }
+    } catch {
+      // non-critical
+    }
+
     onProgress?.({
       step: 'parsing',
       message: 'AI responses received — parsing into Business Review sections and Executive Summary...',
-      pct: 65,
+      pct: 70,
     });
 
     // ── 6. Parse into parts ─────────────────────────────

@@ -191,6 +191,15 @@ export function ChatPanel() {
     }
   }, [searchParams]);
 
+  // Prefill from AI Findings context (stored by AiFindingsBlock "Use in Chat").
+  useEffect(() => {
+    const context = sessionStorage.getItem('ai_findings_context');
+    if (context && !input) {
+      setInput(context);
+      sessionStorage.removeItem('ai_findings_context');
+    }
+  }, []);
+
   const sendMessage = useCallback(async (message: string) => {
     const trimmed = message.trim();
     if (!trimmed) return;
@@ -304,6 +313,32 @@ export function ChatPanel() {
     }).unwrap();
     setStatus('Conversation saved.');
   };
+
+  const handleStartNewChat = useCallback(async () => {
+    // Stop rate limit countdown
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    countdownRef.current = null;
+    setRateLimitCountdown(null);
+    setLastFailedMessage(null);
+
+    // Save current conversation before clearing
+    if (messages.length > 0) {
+      try {
+        const firstUser = messages.find((msg) => msg.role === 'user')?.content ?? 'Chat Conversation';
+        await saveConversation({
+          title: firstUser.slice(0, 80),
+          messages,
+        }).unwrap();
+      } catch {
+        // non-critical — proceed with clear anyway
+      }
+    }
+
+    dispatch(clearMessages());
+    setInput('');
+    if (voiceMode) resetVoiceTranscript();
+    setStatus('Started new chat.');
+  }, [messages, saveConversation, dispatch, voiceMode, resetVoiceTranscript]);
 
   const handleSpeakReply = async () => {
     if (!lastAssistant) return;
@@ -590,7 +625,7 @@ export function ChatPanel() {
                         size="small"
                         variant="contained"
                         color="error"
-                        onClick={() => dispatch(clearMessages())}
+                        onClick={() => void handleStartNewChat()}
                       >
                         Start New Chat
                       </Button>
@@ -599,7 +634,7 @@ export function ChatPanel() {
                       size="small"
                       variant="outlined"
                       color={rateLimitCountdown !== null ? 'error' : 'inherit'}
-                      onClick={() => dispatch(clearMessages())}
+                      onClick={() => void handleStartNewChat()}
                     >
                       New Chat
                     </Button>
@@ -789,7 +824,7 @@ export function ChatPanel() {
               <Tooltip title="Clear">
                 <span>
                   <IconButton
-                    onClick={() => dispatch(clearMessages())}
+                    onClick={() => void handleStartNewChat()}
                     disabled={isStreaming || !messages.length}
                     aria-label="Clear"
                     sx={ICON_BUTTON_SX}

@@ -123,6 +123,31 @@ function periodFromDateStr(s: string): string {
   return s ? s.slice(0, 7) : '';
 }
 
+/**
+ * Detect the header row index from a worksheet.
+ * - If freeze panes are set (!freeze.ySplit), the frozen row count is the header row.
+ * - Otherwise, searches for "DESCRIPTION" or known labels in column B (index 1).
+ * - Falls back to row 0 if nothing is found.
+ */
+function detectHeaderRow(ws: XLSX.WorkSheet, searchLabels = ['DESCRIPTION']): number {
+  // Check freeze panes first
+  if (ws['!freeze'] && typeof ws['!freeze'].ySplit === 'number') {
+    return ws['!freeze'].ySplit - 1; // 0-indexed
+  }
+
+  // Search for known labels in column B
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const r = rows[i] as unknown as unknown[];
+    const val = String(r[1] ?? '').trim().toUpperCase();
+    if (searchLabels.some((label) => val === label)) {
+      return i;
+    }
+  }
+
+  return 0;
+}
+
 // ── Sheet extractors ────────────────────────────────────
 
 function extractPl(ws: XLSX.WorkSheet): PlLine[] {
@@ -163,10 +188,11 @@ function extractPl(ws: XLSX.WorkSheet): PlLine[] {
 function extractBs(ws: XLSX.WorkSheet): { description: string; amount: number }[] {
   const items: { description: string; amount: number }[] = [];
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
-  for (const row of rows) {
-    const cells = row as unknown as unknown[];
-    const c = String(cells[2] ?? '').trim();
-    const d = cells[3];
+  const headerRow = detectHeaderRow(ws, ['DESCRIPTION']);
+  for (let i = headerRow + 1; i < rows.length; i++) {
+    const row = rows[i] as unknown as unknown[];
+    const c = String(row[2] ?? '').trim();
+    const d = row[3];
     if (c && d) {
       const amount = toNumber(d);
       if (amount !== 0) {
@@ -335,8 +361,9 @@ function extractDailySales(ws: XLSX.WorkSheet): ExcelData['dailySales'] {
 function extractMonthOnMonth(ws: XLSX.WorkSheet): MonthOnMonthLine[] {
   const lines: MonthOnMonthLine[] = [];
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
-  for (const row of rows) {
-    const r = row as unknown as unknown[];
+  const headerRow = detectHeaderRow(ws, ['DESCRIPTION']);
+  for (let i = headerRow + 1; i < rows.length; i++) {
+    const r = rows[i] as unknown as unknown[];
     const c = String(r[2] ?? '').trim();
     if (!c || c === 'DESCRIPTION') continue;
     const prev = toNumber(r[3]);
@@ -470,4 +497,47 @@ export function extractExcelData(source?: string | Buffer): ExcelData {
   }
 
   return data;
+}
+
+/**
+ * Extract and merge data from multiple workbook buffers.
+ * Each workbook is extracted independently, then the data is merged:
+ * - P&L lines are combined (deduplicated by accountCode)
+ * - Balance sheet entries are combined
+ * - BEP monthly rows are merged (sorted by period)
+ * - Other arrays are concatenated
+ */
+export function extractExcelDataFromBuffers(sources: Buffer[]): ExcelData {
+  const all: ExcelData[] = sources.map((buf) => extractExcelData(buf));
+
+  if (all.length === 0) {
+    return extractExcelData();
+  }
+  if (all.length === 1) return all[0];
+
+  const merged: ExcelData = {
+    workbookName: `${all.length} workbooks merged`,
+    period: all[0].period,
+    company: all[0].company,
+    dailySales: {
+      terraceRevenue: all.flatMap((d) => d.dailySales.terraceRevenue),
+      clubRevenue: all.flatMap((d) => d.dailySales.clubRevenue),
+      totals: Object.assign({}, ...all.map((d) => d.dailySales.totals)),
+      spendPerGuest: Object.assign({}, ...all.map((d) => d.dailySales.spendPerGuest)),
+    },
+    profitAndLoss: (() => {
+      const seen = new Map<string, PlLine>();
+      for (const pl of all.map((d) => d.profitAndLoss).flat()) {
+        if (pl.accountCode) seen.set(pl.accountCode, pl);
+      }
+      return Array.from(seen.values());
+    })(),
+    balanceSheet: all.flatMap((d) => d.balanceSheet),
+    monthOnMonth: all.flatMap((d) => d.monthOnMonth),
+    bepMonthly: all.flatMap((d) => d.bepMonthly).sort((a, b) => a.period.localeCompare(b.period)),
+    monthlyVariance: all.flatMap((d) => d.monthlyVariance),
+    summaryPl: all.flatMap((d) => d.summaryPl),
+  };
+
+  return merged;
 }

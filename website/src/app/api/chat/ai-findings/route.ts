@@ -122,3 +122,62 @@ export async function GET(request: Request): Promise<NextResponse> {
     return jsonError(`Read failed: ${err instanceof Error ? err.message : String(err)}`, 500);
   }
 }
+
+/**
+ * DELETE /api/chat/ai-findings?ids=id1,id2
+ * Deletes specified findings by ID. If no ids param provided, deletes ALL findings.
+ */
+export async function DELETE(request: Request): Promise<NextResponse> {
+  const guard = await requireWriteAuth(request);
+  if (!guard.ok) return guard.response;
+
+  const url = new URL(request.url);
+  const idsParam = url.searchParams.get('ids');
+
+  const db = createClient({
+    tier: guard.session.tier as 'public' | 'pin' | 'google',
+    sub: guard.session.sub,
+  });
+
+  try {
+    const snippet = await db.knowledgeSnippet.findUnique({
+      where: { key: 'ai_findings' },
+    });
+
+    let findings: AiFinding[] = [];
+    if (snippet?.content) {
+      try {
+        findings = JSON.parse(snippet.content);
+        if (!Array.isArray(findings)) findings = [];
+      } catch {
+        findings = [];
+      }
+    }
+
+    if (idsParam) {
+      // Delete specific findings by ID
+      const idsToDelete = idsParam.split(',').map((id) => id.trim()).filter(Boolean);
+      findings = findings.filter((f) => !idsToDelete.includes(f.id));
+    } else {
+      // Delete ALL findings
+      findings = [];
+    }
+
+    await db.knowledgeSnippet.upsert({
+      where: { key: 'ai_findings' },
+      create: {
+        key: 'ai_findings',
+        category: 'document',
+        content: JSON.stringify(findings),
+      },
+      update: {
+        content: JSON.stringify(findings),
+        category: 'document',
+      },
+    });
+
+    return jsonOk({ deleted: true, remaining: findings.length });
+  } catch (err) {
+    return jsonError(`Delete failed: ${err instanceof Error ? err.message : String(err)}`, 500);
+  }
+}

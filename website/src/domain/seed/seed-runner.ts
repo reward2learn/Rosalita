@@ -64,7 +64,8 @@ export interface SeedCounts {
 }
 
 export interface SeedSourceOverrides {
-  excel?: Buffer;
+  /** Single or multiple workbook buffers (uploaded XLSX files). */
+  excel?: Buffer | Buffer[];
   businessReview?: string;
   executiveSummary?: string;
 }
@@ -589,7 +590,7 @@ async function upsertFinancialProjectionRaw(
 }
 
 interface ResolvedSources {
-  excel?: Buffer;
+  excel?: Buffer | Buffer[];
   businessReview?: string;
   executiveSummary?: string;
   filesUsed: Record<SourceFileKey, 'upload' | 'disk'>;
@@ -609,7 +610,11 @@ function resolveSources(options: SeedOptions): ResolvedSources {
     filesUsed.excel = 'upload';
     if (options.persistOverrides) {
       try {
-        writeSourceFile('excel', overrides.excel, sourceDir);
+        // If multiple buffers, concatenate for file storage
+        const buf = Array.isArray(overrides.excel)
+          ? Buffer.concat(overrides.excel)
+          : overrides.excel;
+        writeSourceFile('excel', buf, sourceDir);
       } catch (err) {
         console.warn('[seed] Could not persist excel to disk (read-only filesystem?):', err instanceof Error ? err.message : err);
       }
@@ -672,12 +677,16 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
 
   const { excel, businessReview, executiveSummary, filesUsed } = resolveSources(options);
 
+  // Normalize excel: if multiple buffers, use first for legacy operations
+  const excelBuffer: Buffer | undefined = Array.isArray(excel) ? excel[0] : excel;
+  const excelBuffers: Buffer[] = Array.isArray(excel) ? excel : (excel ? [excel] : []);
+
   // Parse projections from Excel if it's available — otherwise skip.
   // Gracefully handles workbooks that don't match the expected RedRuby/2027/2029/2030 sheet layout.
   let projections: FinancialProjectionRow[] | null = null;
-  if (excel) {
+  if (excelBuffer) {
     try {
-      projections = parseFinancialProjectionsFromBuffer(excel);
+      projections = parseFinancialProjectionsFromBuffer(excelBuffer);
     } catch (err) {
       console.warn('[seed] Could not parse financial projections from workbook (wrong format?):', err instanceof Error ? err.message : err);
       projections = null;
@@ -687,9 +696,9 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
   // ── Workbook analysis (derive sheet metadata, dynamic pages, use cases) ──
   let workbookAnalysisMd = '';
   const sheetSnippets: { key: string; category: string; content: string }[] = [];
-  if (excel) {
+  if (excelBuffer) {
     try {
-      const analysis = analyzeWorkbook(excel, filesUsed.excel === 'upload' ? 'uploaded workbook' : undefined);
+      const analysis = analyzeWorkbook(excelBuffer, filesUsed.excel === 'upload' ? 'uploaded workbook' : undefined);
       workbookAnalysisMd = generateAnalysisMarkdown(analysis);
 
       // Register dynamic pages for each sheet
@@ -770,11 +779,11 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
   // Cache the workbook as a base64 knowledge snippet so the AI Content
   // Generation endpoint can read it on serverless runtimes where the
   // filesystem is read-only.
-  if (excel) {
+  if (excelBuffer) {
     knowledgeSnippets.push({
       key: 'workbook_data',
       category: 'cache',
-      content: excel.toString('base64'),
+      content: excelBuffer.toString('base64'),
     });
   }
   const actionItems = buildActionItems();

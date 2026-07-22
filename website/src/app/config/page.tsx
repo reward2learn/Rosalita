@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
@@ -14,8 +15,17 @@ import { OpenAiKeyForm } from '@/components/config/openai-key-form';
 import { SourceUploadForm } from '@/components/config/source-upload-form';
 import { DataViewTab } from '@/components/config/data-view-tab';
 
-export default function ConfigPage() {
-  const [tab, setTab] = useState(0);
+function ConfigPageInner() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const [tab, setTab] = useState(initialTab ? Math.min(Math.max(parseInt(initialTab, 10) || 0, 0), 3) : 0);
+
+  useEffect(() => {
+    const t = searchParams.get('tab');
+    if (t) {
+      setTab(Math.min(Math.max(parseInt(t, 10) || 0, 0), 3));
+    }
+  }, [searchParams]);
 
   return (
     <AuthGate requiredTier="pin" fallback={<SignInPanelGate requiredTier="pin" />}>
@@ -47,5 +57,13 @@ export default function ConfigPage() {
         </Stack>
       </Box>
     </AuthGate>
+  );
+}
+
+export default function ConfigPage() {
+  return (
+    <Suspense fallback={null}>
+      <ConfigPageInner />
+    </Suspense>
   );
 }

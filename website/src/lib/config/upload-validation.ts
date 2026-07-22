@@ -44,13 +44,14 @@ export function validateMarkdownUpload(
 
 export function hasAnyUpload(
   files: {
-    excel?: File | null;
+    excel?: File | File[] | null;
     businessReview?: File | null;
     executiveSummary?: File | null;
   },
 ): boolean {
+  const excelOk = Array.isArray(files.excel) ? files.excel.some((f) => f.size > 0) : Boolean(files.excel && files.excel.size > 0);
   return Boolean(
-    (files.excel && files.excel.size > 0) ||
+    excelOk ||
       (files.businessReview && files.businessReview.size > 0) ||
       (files.executiveSummary && files.executiveSummary.size > 0),
   );

@@ -10,9 +10,11 @@ import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
 
-interface SeedCounts { actionItems?: number; levers?: number; monthlyTargets?: number; }
+interface Phase {
+  id: string; title: string; period: string; impact: string; actions: string[];
+}
 
-const PHASES = [
+const FALLBACK_PHASES: Phase[] = [
   {
     id: 'P1',
     title: 'Phase 1: Stabilize — Stop the Bleeding',
@@ -20,62 +22,56 @@ const PHASES = [
     impact: 'Target: IDR 150-235M/mo EBITDA · BEP Coverage 1.1x → 1.35x',
     actions: [
       'Build IDR 500M+ cash reserve from Jun-Sep surpluses to cover Jan-Mar low season',
-      'Reduce staff from 80 → 75 FTE (Host/Waiter 14→12, Marketing 15→12, Security 12→10) — saving IDR 60M/month',
-      'Cut entertainment costs 10%: negotiate DJ/performer 3-month residencies vs per-night fees (saves IDR 20-25M/month)',
-      'Implement beverage inventory tracking to reduce wastage 10% (saves IDR 40M/month)',
+      'Reduce staff from 80 → 75 FTE — saving IDR 60M/month',
+      'Cut entertainment costs 10%: negotiate DJ/performer 3-month residencies',
+      'Implement beverage inventory tracking to reduce wastage 10%',
       'Track daily BEP coverage — trigger cost containment if below 0.9x',
-      'Flex seasonal staffing template for Jan-Mar low season (revenue drops 36% from Jan peak to Feb trough)',
     ],
   },
   {
     id: 'P2',
     title: 'Phase 2: Growth — Build Revenue Momentum',
     period: 'October 2026 – June 2027',
-    impact: 'Target: IDR 2.7-3.2B/mo Revenue · EBITDA IDR 200-600M/mo · Margin 8% → 15%',
+    impact: 'Target: IDR 2.7-3.2B/mo Revenue · EBITDA IDR 200-600M/mo',
     actions: [
-      'Launch Club tiered ticket pricing (early bird, standard, VIP) to increase yield 15-20% (adds IDR 30-40M/month)',
-      'VIP table service: target 5-10 tables/night at IDR 3M-10M each (adds IDR 50-100M/month)',
-      'Optimize promoter/influencer spend — track cost-per-guest and cut underperforming channels',
-      'Hotel concierge partnerships: secure 5+ referral agreements within Petitenget/Seminyak (target 20-30 guests/night)',
-      'Expand Terrace 24h marketing as only all-night venue in area — target 65→85 guests/night',
-      'Launch StarWORLD membership drive across all 5 tiers (Blue through Black/VVIP) — target 10,000 members',
-      'Negotiate bulk spirits purchasing for top 5 moving brands (reduces beverage COS from 26% to 24%)',
+      'Launch Club tiered ticket pricing to increase yield 15-20%',
+      'VIP table service: target 5-10 tables/night at IDR 3M-10M each',
+      'Optimize promoter/influencer spend — track cost-per-guest',
+      'Expand Terrace 24h marketing as only all-night venue in area',
+      'Launch StarWORLD membership drive across all 5 tiers',
     ],
   },
-
 ];
 
 export function ActionChecklistBlock({ config }: { config: Record<string, unknown> }) {
   parseBlockConfig('action_checklist', config);
   const [expanded, setExpanded] = useState<string | false>('P1');
-  const [hasData, setHasData] = useState<boolean | null>(null);
+  const [phases, setPhases] = useState<Phase[] | null>(null);
 
   useEffect(() => {
-    fetch('/api/config/seed-details')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { counts?: SeedCounts } | null) => {
-        setHasData((data?.counts?.actionItems ?? 0) > 0);
+    fetch('/api/dashboard-data')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.data?.actionPhases?.length) {
+          setPhases(data.data.actionPhases);
+        } else {
+          setPhases(FALLBACK_PHASES);
+        }
       })
-      .catch(() => setHasData(false));
+      .catch(() => setPhases(FALLBACK_PHASES));
   }, []);
 
-  // Don't render until we know; hide if no seeded data
-  if (hasData === null) return null;
-  if (!hasData) return null;
+  if (!phases) return null;
 
   return (
-    <Box component="section" sx={{   mx: 'auto', px: 3, py: 4 }}>
+    <Box component="section" sx={{ mx: 'auto', px: 3, py: 4 }}>
       <Typography variant="h5" component="h2" sx={{ fontWeight: 800, textAlign: 'center', mb: 1 }}>
         Step-by-Step Action Plan
       </Typography>
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ textAlign: 'center', mb: 3, maxWidth: 520, mx: 'auto' }}
-      >
+      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 3, maxWidth: 520, mx: 'auto' }}>
         Three phases from survival to sustainable profitability. Click each phase to expand.
       </Typography>
-      {PHASES.map((phase) => (
+      {phases.map((phase) => (
         <Accordion
           key={phase.id}
           expanded={expanded === phase.id}

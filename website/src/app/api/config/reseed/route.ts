@@ -25,6 +25,17 @@ function fileFromForm(formData: FormData, key: string): File | null {
   return value;
 }
 
+function filesFromForm(formData: FormData, key: string): File[] {
+  const files: File[] = [];
+  // FormData.getAll returns all entries with the same key
+  if (typeof formData.getAll === 'function') {
+    for (const value of formData.getAll(key)) {
+      if (value instanceof File && value.size > 0) files.push(value);
+    }
+  }
+  return files;
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
@@ -39,7 +50,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return jsonError('Expected multipart/form-data', 400);
   }
 
-  const excelFile = fileFromForm(formData, CONFIG_UPLOAD_FIELD_NAMES.excel);
+  const excelFiles = filesFromForm(formData, CONFIG_UPLOAD_FIELD_NAMES.excel);
   const businessReviewFile = fileFromForm(formData, CONFIG_UPLOAD_FIELD_NAMES.businessReview);
   const executiveSummaryFile = fileFromForm(
     formData,
@@ -47,7 +58,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   );
 
   const validationErrors = [
-    validateExcelUpload(excelFile),
+    ...excelFiles.map((f) => validateExcelUpload(f)),
     validateMarkdownUpload(businessReviewFile, 'Business Review'),
     validateMarkdownUpload(executiveSummaryFile, 'Executive Summary'),
   ].filter((e): e is string => e != null);
@@ -56,24 +67,28 @@ export async function POST(request: Request): Promise<NextResponse> {
     return jsonError(validationErrors.join('; '), 400);
   }
 
-  if (!excelFile && !businessReviewFile && !executiveSummaryFile) {
+  if (excelFiles.length === 0 && !businessReviewFile && !executiveSummaryFile) {
     return jsonError('Select at least one source file to upload', 400);
   }
 
   try {
     const overrides: {
-      excel?: Buffer;
+      excel?: Buffer[];
       businessReview?: string;
       executiveSummary?: string;
     } = {};
 
     const uploaded: SourceFileKey[] = [];
 
-    if (excelFile) {
-      if (excelFile.size > MAX_EXCEL_BYTES) {
-        return jsonError('Cashflow workbook exceeds size limit', 400);
+    if (excelFiles.length > 0) {
+      for (const f of excelFiles) {
+        if (f.size > MAX_EXCEL_BYTES) {
+          return jsonError(`Workbook "${f.name}" exceeds size limit`, 400);
+        }
       }
-      overrides.excel = Buffer.from(await excelFile.arrayBuffer());
+      overrides.excel = await Promise.all(
+        excelFiles.map((f) => f.arrayBuffer().then((buf) => Buffer.from(buf))),
+      );
       uploaded.push('excel');
     }
 

@@ -1,11 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
@@ -14,6 +17,9 @@ import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SendIcon from '@mui/icons-material/Send';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { MarkdownBody } from '@/components/blocks/markdown-body';
 
 interface AiFinding {
@@ -36,14 +42,18 @@ function formatDate(iso: string): string {
 function FindingAccordion({
   finding,
   expanded,
+  selected,
   onToggle,
+  onToggleSelect,
   onCopy,
   onSummarize,
   isSummarizing,
 }: {
   finding: AiFinding;
   expanded: boolean;
+  selected: boolean;
   onToggle: () => void;
+  onToggleSelect: () => void;
   onCopy: () => void;
   onSummarize: () => void;
   isSummarizing: boolean;
@@ -55,13 +65,20 @@ function FindingAccordion({
       elevation={0}
       sx={{
         border: '1px solid',
-        borderColor: 'divider',
+        borderColor: selected ? 'primary.main' : 'divider',
         '&:before': { display: 'none' },
-        bgcolor: 'rgba(235, 61, 40, 0.03)',
+        bgcolor: selected ? 'rgba(235, 61, 40, 0.06)' : 'rgba(235, 61, 40, 0.03)',
       }}
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'primary.main' }} />}>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', width: '100%', pr: 2 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', width: '100%', pr: 2 }}>
+          <Checkbox
+            size="small"
+            checked={selected}
+            onChange={(e) => { e.stopPropagation(); onToggleSelect(); }}
+            onClick={(e) => e.stopPropagation()}
+            sx={{ p: 0.25 }}
+          />
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {finding.title}
@@ -97,20 +114,31 @@ function FindingAccordion({
 }
 
 export function AiFindingsBlock() {
+  const router = useRouter();
   const [findings, setFindings] = useState<AiFinding[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [summarizingId, setSummarizingId] = useState<string | null>(null);
+  const [summarizingAll, setSummarizingAll] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [, forceUpdate] = useState(0);
 
-  useEffect(() => {
-    fetch('/api/chat/ai-findings')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
+  const loadFindings = useCallback(async () => {
+    try {
+      const res = await fetch('/api/chat/ai-findings');
+      if (res.ok) {
+        const data = await res.json();
         setFindings(data?.data?.findings ?? []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      }
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { void loadFindings(); }, [loadFindings]);
 
   const toggleExpand = useCallback((id: string) => {
     setExpandedIds((prev) => {
@@ -128,11 +156,26 @@ export function AiFindingsBlock() {
     setExpandedIds(new Set());
   }, []);
 
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(findings.map((f) => f.id)));
+  }, [findings]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
   const copyToClipboard = useCallback(async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
     } catch {
-      // fallback
       const ta = document.createElement('textarea');
       ta.value = content;
       document.body.appendChild(ta);
@@ -141,6 +184,12 @@ export function AiFindingsBlock() {
       document.body.removeChild(ta);
     }
   }, []);
+
+  const copyAll = useCallback(async () => {
+    const text = findings.map((f) => `## ${f.title}\n\n${f.content}`).join('\n\n---\n\n');
+    await copyToClipboard(text);
+    forceUpdate((n) => n + 1);
+  }, [findings, copyToClipboard]);
 
   const summarize = useCallback(async (finding: AiFinding) => {
     setSummarizingId(finding.id);
@@ -152,18 +201,13 @@ export function AiFindingsBlock() {
       });
       const payload = await res.json();
       if (payload.success && payload.data?.summary) {
-        // Prepend summary to finding content
         const updated = `**AI Summary:** ${payload.data.summary}\n\n---\n\n${finding.content}`;
-        // Save back
         await fetch('/api/chat/ai-findings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: updated, title: finding.title }),
         });
-        // Refresh
-        const refresh = await fetch('/api/chat/ai-findings');
-        const data = await refresh.json();
-        setFindings(data?.data?.findings ?? []);
+        await loadFindings();
         setExpandedIds((prev) => new Set(prev).add(finding.id));
       }
     } catch {
@@ -171,7 +215,100 @@ export function AiFindingsBlock() {
     } finally {
       setSummarizingId(null);
     }
-  }, []);
+  }, [loadFindings]);
+
+  const summarizeAll = useCallback(async () => {
+    setSummarizingAll(true);
+    try {
+      // Combine selected (or all) findings into one text
+      const targetFindings = selectedIds.size > 0
+        ? findings.filter((f) => selectedIds.has(f.id))
+        : findings;
+      if (targetFindings.length === 0) { setSummarizingAll(false); return; }
+
+      const combinedText = targetFindings
+        .map((f) => `## ${f.title}\n\n${f.content}`)
+        .join('\n\n---\n\n');
+
+      const res = await fetch('/api/chat/summarize-finding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: combinedText }),
+      });
+      const payload = await res.json();
+
+      if (payload.success && payload.data?.summary) {
+        // Remove the original findings that were summarized
+        const idsToRemove = new Set(targetFindings.map((f) => f.id));
+        const remaining = findings.filter((f) => !idsToRemove.has(f.id));
+
+        // Add one combined summary finding at the top
+        const summaryFinding = {
+          id: `find-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          title: `AI Summary — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+          content: `**Combined AI Summary:** ${payload.data.summary}\n\n---\n\n${combinedText}`,
+          createdAt: new Date().toISOString(),
+        };
+        remaining.unshift(summaryFinding);
+
+        // Save via batch endpoint
+        const saveRes = await fetch('/api/chat/ai-findings/save-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ findings: remaining }),
+        });
+        if (saveRes.ok) {
+          setFindings(remaining);
+        } else {
+          // Fallback: reload from API
+          const refresh = await fetch('/api/chat/ai-findings');
+          const data = await refresh.json();
+          setFindings(data?.data?.findings ?? []);
+        }
+        setSelectedIds(new Set());
+        setExpandedIds(new Set([summaryFinding.id]));
+      }
+    } catch {
+      // silent
+    } finally {
+      setSummarizingAll(false);
+    }
+  }, [findings, selectedIds]);
+
+  const deleteSelected = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setSaving(true);
+    try {
+      const ids = Array.from(selectedIds);
+      await fetch(`/api/chat/ai-findings?ids=${ids.map(encodeURIComponent).join(',')}`, {
+        method: 'DELETE',
+      });
+      setSelectedIds(new Set());
+      await loadFindings();
+    } catch {
+      // silent
+    } finally {
+      setSaving(false);
+    }
+  }, [selectedIds, loadFindings]);
+
+  const useInChat = useCallback(() => {
+    const selected = findings.filter((f) => selectedIds.has(f.id));
+    const text = selected.length > 0
+      ? selected.map((f) => `## ${f.title}\n\n${f.content}`).join('\n\n---\n\n')
+      : findings.map((f) => `## ${f.title}\n\n${f.content}`).join('\n\n---\n\n');
+    sessionStorage.setItem('ai_findings_context', text.slice(0, 5000));
+    router.push('/ops-chat' as Route);
+  }, [findings, selectedIds, router]);
+
+  const generateReviewWithSelected = useCallback(() => {
+    const selected = findings.filter((f) => selectedIds.has(f.id));
+    const text = selected.length > 0
+      ? selected.map((f) => `## ${f.title}\n\n${f.content}`).join('\n\n---\n\n')
+      : findings.map((f) => `## ${f.title}\n\n${f.content}`).join('\n\n---\n\n');
+    sessionStorage.setItem('ai_findings_generation_context', text.slice(0, 10000));
+    router.push('/config?tab=3' as Route);
+  }, [findings, selectedIds, router]);
 
   if (loading) {
     return (
@@ -184,6 +321,7 @@ export function AiFindingsBlock() {
   if (!findings.length) return null;
 
   const allExpanded = expandedIds.size === findings.length;
+  const allSelected = selectedIds.size === findings.length;
 
   return (
     <Box component="section" sx={{ mx: 'auto', px: 3, py: 4 }}>
@@ -201,19 +339,49 @@ export function AiFindingsBlock() {
             <Typography variant="h5" component="h2" sx={{ fontWeight: 800, color: 'primary.main' }}>
               AI Findings ({findings.length})
             </Typography>
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
               <Button size="small" variant="outlined" onClick={allExpanded ? collapseAll : expandAll}>
                 {allExpanded ? 'Collapse All' : 'Expand All'}
               </Button>
             </Stack>
           </Stack>
 
+          {/* Batch action toolbar */}
+          {selectedIds.size > 0 || findings.length > 0 ? (
+            <Paper variant="outlined" sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap', bgcolor: 'action.selected' }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, mr: 0.5 }}>
+                {selectedIds.size > 0 ? `${selectedIds.size} selected` : `${findings.length} findings`}
+              </Typography>
+              <Button size="small" variant="text" onClick={copyAll} startIcon={<ContentCopyIcon />}>
+                Copy All
+              </Button>
+              <Button size="small" variant="text" onClick={summarizeAll} disabled={summarizingAll} startIcon={summarizingAll ? <CircularProgress size={14} /> : <AutoFixHighIcon />}>
+                {summarizingAll ? 'Summarizing...' : 'Summarize All'}
+              </Button>
+              <Button size="small" variant="text" color="error" onClick={deleteSelected} disabled={selectedIds.size === 0 || saving} startIcon={<DeleteIcon />}>
+                Delete{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
+              </Button>
+              <Button size="small" variant="text" onClick={useInChat} startIcon={<SendIcon />}>
+                Use in Chat
+              </Button>
+              <Button size="small" variant="text" onClick={generateReviewWithSelected} startIcon={<AutoAwesomeIcon />}>
+                Generate Review
+              </Button>
+              <Box sx={{ flex: 1 }} />
+              <Button size="small" onClick={allSelected ? clearSelection : selectAll}>
+                {allSelected ? 'Clear' : 'Select All'}
+              </Button>
+            </Paper>
+          ) : null}
+
           {findings.map((finding) => (
             <FindingAccordion
               key={finding.id}
               finding={finding}
               expanded={expandedIds.has(finding.id)}
+              selected={selectedIds.has(finding.id)}
               onToggle={() => toggleExpand(finding.id)}
+              onToggleSelect={() => toggleSelect(finding.id)}
               onCopy={() => copyToClipboard(finding.content)}
               onSummarize={() => summarize(finding)}
               isSummarizing={summarizingId === finding.id}
