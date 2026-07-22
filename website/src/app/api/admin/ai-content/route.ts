@@ -28,6 +28,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/db';
+import type { DbSession } from '@/lib/db';
 import { requireWriteAuth } from '@/lib/auth/guards';
 import { sessionIsPlatformAdmin } from '@/lib/auth/jwt';
 import { jsonError } from '@/lib/api/response';
@@ -223,6 +224,9 @@ export async function POST(request: Request): Promise<Response> {
 
   const { filePath, model } = parsed.data;
 
+  // Build a DbSession from the authenticated request (needed for ZenStack policy)
+  const dbSession: DbSession = { tier: guard.session.tier as 'public' | 'pin' | 'google', sub: guard.session.sub };
+
   // Resolve the workbook source — try explicit filePath, then auto-detect, then DB cache.
   // In-memory Buffer is preferred on serverless runtimes where the filesystem is read-only.
   let source: string | Buffer | undefined;
@@ -236,7 +240,7 @@ export async function POST(request: Request): Promise<Response> {
     } catch {
       // Not on disk — resolve via DB cache (uploaded during reseed)
       try {
-        const db = createClient();
+        const db = createClient(dbSession);
         const cached = await db.knowledgeSnippet.findUnique({
           where: { key: 'workbook_data' },
         });
@@ -256,7 +260,7 @@ export async function POST(request: Request): Promise<Response> {
 
   if (wantsStream) {
     const stream = sseStream(async (emit) => {
-      const db = createClient();
+      const db = createClient(dbSession);
       await generateAndSave(db, emit, source, model);
     });
 
@@ -271,7 +275,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── Blocking (legacy) mode ────────────────────────────
   try {
-    const db = createClient();
+    const db = createClient(dbSession);
     const result = await generateAndSave(db, undefined, source, model);
 
     if (!result.success) {

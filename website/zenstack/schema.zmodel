@@ -116,7 +116,8 @@ model BusinessReviewPart {
   authTier  AuthTier @default(google) @map("auth_tier")
   markdown  String   @db.Text
 
-  // Server /api/content reads (page AuthGate enforces tier in UI)
+  // Platform admins (pin/google tier) can generate content; everyone can read
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
   @@allow('read', true)
   @@map("business_review_parts")
 }
