@@ -696,43 +696,62 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
   // ── Workbook analysis (derive sheet metadata, dynamic pages, use cases) ──
   let workbookAnalysisMd = '';
   const sheetSnippets: { key: string; category: string; content: string }[] = [];
-  if (excelBuffer) {
+  const allAnalyses: import('@/domain/excel/workbook-analyzer').WorkbookAnalysis[] = [];
+
+  // Analyze each uploaded workbook and combine results
+  for (let wi = 0; wi < excelBuffers.length; wi++) {
+    const buf = excelBuffers[wi];
+    const label = excelBuffers.length > 1 ? `workbook ${wi + 1}` : 'uploaded workbook';
     try {
-      const analysis = analyzeWorkbook(excelBuffer, filesUsed.excel === 'upload' ? 'uploaded workbook' : undefined);
-      workbookAnalysisMd = generateAnalysisMarkdown(analysis);
+      const analysis = analyzeWorkbook(buf, filesUsed.excel === 'upload' ? label : undefined);
+      allAnalyses.push(analysis);
 
-      // Register dynamic pages for each sheet
-      const dynamicPages = generatePagesFromAnalysis(analysis);
-      setDynamicPages(dynamicPages);
-      console.log(`[seed] Generated ${dynamicPages.length} dynamic page(s) from workbook analysis`);
+      // Register dynamic pages for each sheet (only from the primary workbook)
+      if (wi === 0) {
+        const dynamicPages = generatePagesFromAnalysis(analysis);
+        setDynamicPages(dynamicPages);
+        console.log(`[seed] Generated ${dynamicPages.length} dynamic page(s) from workbook analysis`);
+      }
 
-      // Log analysis summary and create per-sheet knowledge snippets
-      // so the content API can serve doc_markdown blocks for each sheet page.
+      // Create per-sheet knowledge snippets
       for (const sheet of analysis.sheets) {
-        console.log(`[seed]   Sheet "${sheet.tabName}": ${sheet.columns.length} columns, ${sheet.rowCount} rows — ${sheet.title}`);
-        // Key must match what resolveSource() produces from "sheet-{slug}" source:
-        // source="sheet-month-on-month" → resolveSource replaces [.-] with _
-        //   → key = "sheet_month_on_month"
-        // So the slug hyphens must be replaced with underscores.
-        const snippetKey = `sheet_${sheet.slug.replace(/-/g, '_')}`;
+        if (sheet.columns.length < 2) continue;
+        const snippetKey = `sheet_${sheet.slug.replace(/-/g, '_')}${wi > 0 ? `_${wi}` : ''}`;
         sheetSnippets.push({
           key: snippetKey,
           category: 'sheet',
           content: generateSheetMarkdown(sheet),
         });
       }
-
-      // Also create the workbook overview snippet used by the /workbook page.
-      // source="workbook-summary" → resolveSource → key="workbook_summary"
-      sheetSnippets.push({
-        key: 'workbook_summary',
-        category: 'document',
-        content: workbookAnalysisMd,
-      });
-
     } catch (err) {
-      console.warn('[seed] Workbook analysis failed (non-critical):', err instanceof Error ? err.message : err);
+      console.warn(`[seed] Workbook ${wi + 1} analysis failed (non-critical):`, err instanceof Error ? err.message : err);
     }
+  }
+
+  // Build combined workbook overview from all analyses
+  if (allAnalyses.length === 1) {
+    workbookAnalysisMd = generateAnalysisMarkdown(allAnalyses[0]);
+  } else if (allAnalyses.length > 1) {
+    // Merge analyses into a single combined overview
+    const combined = {
+      fileName: `${allAnalyses.length} workbooks merged`,
+      company: allAnalyses[0].company,
+      period: allAnalyses[0].period,
+      sheetCount: allAnalyses.reduce((n, a) => n + a.sheetCount, 0),
+      sheets: allAnalyses.flatMap((a) => a.sheets),
+      categoriesFound: Array.from(new Set(allAnalyses.flatMap((a) => a.categoriesFound))),
+      summary: allAnalyses.map((a) => a.summary).join('\n'),
+    };
+    workbookAnalysisMd = generateAnalysisMarkdown(combined as import('@/domain/excel/workbook-analyzer').WorkbookAnalysis);
+  }
+
+  // Create the workbook overview snippet
+  if (workbookAnalysisMd) {
+    sheetSnippets.push({
+      key: 'workbook_summary',
+      category: 'document',
+      content: workbookAnalysisMd,
+    });
   }
 
   const reviewParts = businessReview !== undefined ? parseBusinessReviewParts(businessReview) : [];

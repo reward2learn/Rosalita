@@ -231,7 +231,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // Resolve the workbook source — try explicit filePath, then auto-detect, then DB cache.
   // In-memory Buffer is preferred on serverless runtimes where the filesystem is read-only.
-  let source: string | Buffer | undefined;
+  let source: string | Buffer | Buffer[] | undefined;
   if (filePath) {
     source = filePath;
   } else {
@@ -243,11 +243,24 @@ export async function POST(request: Request): Promise<Response> {
       // Not on disk — resolve via DB cache (uploaded during reseed)
       try {
         const db = createClient(dbSession);
+        // Read primary cached workbook
         const cached = await db.knowledgeSnippet.findUnique({
           where: { key: 'workbook_data' },
         });
         if (cached?.content) {
-          source = Buffer.from(cached.content, 'base64');
+          const buffers: Buffer[] = [Buffer.from(cached.content, 'base64')];
+          // Read additional cached workbooks
+          for (let i = 1; i < 10; i++) {
+            const extra = await db.knowledgeSnippet.findUnique({
+              where: { key: `workbook_data_${i}` },
+            });
+            if (extra?.content) {
+              buffers.push(Buffer.from(extra.content, 'base64'));
+            } else {
+              break;
+            }
+          }
+          source = buffers;
         }
       } catch {
         // DB unavailable

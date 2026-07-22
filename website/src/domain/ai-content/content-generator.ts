@@ -15,7 +15,7 @@
  * This eliminates the need for manual Markdown file uploads.
  */
 
-import { extractExcelData } from '@/domain/excel/excel-extractor';
+import { extractExcelData, extractExcelDataFromBuffers } from '@/domain/excel/excel-extractor';
 import { buildGenerationPrompt, buildDashboardPrompt } from '@/domain/ai-content/prompt-builder';
 import { resolveOpenAiKey } from '@/lib/openai';
 import type { DbClient } from '@/lib/db';
@@ -229,7 +229,7 @@ async function saveBusinessReviewParts(
 export async function generateAndSave(
   db: DbClient,
   onProgress?: ProgressCallback,
-  source?: string | Buffer,
+  source?: string | Buffer | Buffer[],
   model?: string,
   additionalContext?: string,
 ): Promise<GenerationResult & { saved?: SavedResult; prompt?: string }> {
@@ -241,7 +241,9 @@ export async function generateAndSave(
       pct: 5,
     });
 
-    const data = extractExcelData(source);
+    const data = Array.isArray(source)
+      ? extractExcelDataFromBuffers(source)
+      : extractExcelData(source);
 
     onProgress?.({
       step: 'extracting',
