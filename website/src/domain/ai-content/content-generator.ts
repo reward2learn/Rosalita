@@ -398,6 +398,19 @@ export async function generateAndSave(
 
     const savedParts = await saveBusinessReviewParts(db, parts, onProgress);
 
+    // Register saved parts in the in-memory catalog so /review/part-* routes resolve immediately
+    if (savedParts.length > 0) {
+      const { setDynamicReviewParts } = await import('@/lib/page-catalog');
+      setDynamicReviewParts(
+        parts.map((p) => ({
+          partSlug: p.slug,
+          partKey: p.partKey,
+          title: p.title,
+          authTier: 'google' as const,
+        })),
+      );
+    }
+
     onProgress?.({
       step: 'saving_exec',
       message: 'Saving Executive Summary to database...',

@@ -8,6 +8,7 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { AuthGate } from '@/components/auth/auth-gate';
 import { SignInPanelGate } from '@/components/auth/sign-in-panel';
+import { AiContentTab } from '@/components/ops-admin/ai-content-tab';
 import { ChatSettingsForm } from '@/components/config/chat-settings-form';
 import { OpenAiKeyForm } from '@/components/config/openai-key-form';
 import { SourceUploadForm } from '@/components/config/source-upload-form';
@@ -28,6 +29,7 @@ export default function ConfigPage() {
             <Tab label="AI Chat" />
             <Tab label="Source" />
             <Tab label="Data View" />
+            <Tab label="AI Content Generation" />
           </Tabs>
 
           {tab === 0 ? (
@@ -40,6 +42,8 @@ export default function ConfigPage() {
           {tab === 1 ? <SourceUploadForm /> : null}
 
           {tab === 2 ? <DataViewTab /> : null}
+
+          {tab === 3 ? <AiContentTab /> : null}
         </Stack>
       </Box>
     </AuthGate>
