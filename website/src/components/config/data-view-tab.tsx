@@ -46,6 +46,7 @@ interface SeedDetails {
   targetDetails: { month: string; targetRevenue: number; targetEbitda: number; targetGuests: number }[];
   leverDetails: { num: number; name: string; impact: string }[];
   actionItemDetails: { priority: string; label: string; completed: boolean }[];
+  zReportDetails: Record<string, unknown>[];
   executiveSummary: string | null;
   seedStatus?: { ok: boolean; warnings: string[]; totalTables: number; totalRows: number };
 }
@@ -77,6 +78,7 @@ const TABLE_META: Record<string, { label: string; icon: string }> = {
   daily_metrics: { label: 'Daily Metrics', icon: '📅' },
   monthly_actual_departments: { label: 'Monthly Actuals (Dept)', icon: '📁' },
   monthly_actual_inputs: { label: 'Monthly Actual Inputs', icon: '📥' },
+  daily_z_reports: { label: 'Z-Reports', icon: '📋' },
 };
 
 function formatCount(n: number): string {
@@ -209,6 +211,22 @@ export function DataViewTab() {
       key: 'financial_projections', table: 'financial_projections', label: 'Financial Projections', icon: '📊',
       count: details.counts.financialProjections ?? 0, detail: [],
       renderDetail: () => <Typography variant="body2" color="text.secondary">Financial projections: {details.counts.financialProjections ?? 0} rows.</Typography>,
+    },
+    {
+      key: 'z_reports', table: 'daily_z_reports', label: 'Z-Reports', icon: '📋',
+      count: details.zReportDetails.length, detail: details.zReportDetails,
+      renderDetail: () => details.zReportDetails.length > 0 ? (
+        <Box>
+          <Table size="small"><TableHead><TableRow><TableCell>Date</TableCell><TableCell>Dept</TableCell><TableCell>Total Sales</TableCell><TableCell>Nett Sales</TableCell><TableCell>Covers</TableCell><TableCell>Bills</TableCell><TableCell>Cash</TableCell><TableCell>Card</TableCell><TableCell>Operator</TableCell></TableRow></TableHead><TableBody>
+            {details.zReportDetails.map((z: Record<string, unknown>) => (
+              <TableRow key={String(z.id)}><TableCell>{String(z.report_date ?? '')}</TableCell><TableCell>{String(z.department ?? '')}</TableCell><TableCell>{String(z.total_sales ?? '')}</TableCell><TableCell>{String(z.nett_sales ?? '')}</TableCell><TableCell>{String(z.total_covers ?? '')}</TableCell><TableCell>{String(z.total_bills ?? '')}</TableCell><TableCell>{String(z.cash_amount ?? '')}</TableCell><TableCell>{String(z.total_card_amount ?? '')}</TableCell><TableCell>{String(z.operator ?? '')}</TableCell></TableRow>
+            ))}
+          </TableBody></Table>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            Full data with all {details.zReportDetails.length} row(s) and 70+ fields available via the <strong>JSON</strong> export button above.
+          </Typography>
+        </Box>
+      ) : <Typography variant="body2" color="text.secondary">No Z-reports found.</Typography>,
     },
   ] : [];
 

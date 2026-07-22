@@ -11,6 +11,7 @@
  *   - Monthly targets
  *   - Levers
  *   - Action items
+ *   - Daily Z-reports
  *
  *   Uses a direct PrismaClient (not the enhanced ZenStack client) so that
  *   policy-restricted models (e.g. Lever, ActionItem, KnowledgeSnippet)
@@ -130,6 +131,90 @@ export async function GET(): Promise<NextResponse> {
       completed: a.completed,
     }));
 
+    // ── Daily Z-reports ───────────────────────────────────
+    const zReports = await prisma.dailyZReport.findMany({
+      orderBy: { reportDate: 'desc' },
+      take: 200,
+    });
+
+    const zReportDetails = zReports.map((z) => ({
+      id: z.id,
+      report_date: z.reportDate.toISOString().slice(0, 10),
+      department: z.department,
+      report_time: z.reportTime?.toISOString().slice(0, 16) ?? null,
+      operator: z.operator,
+      report_no: z.reportNo,
+      pos_group: z.posGroup,
+      period_start: z.periodStart?.toISOString().slice(0, 16) ?? null,
+      period_end: z.periodEnd?.toISOString().slice(0, 16) ?? null,
+      item_sales_qty: z.itemSalesQty,
+      item_sales_amount: z.itemSalesAmount.toString(),
+      item_discount_qty: z.itemDiscountQty,
+      item_discount_amount: z.itemDiscountAmount.toString(),
+      bill_discount_qty: z.billDiscountQty,
+      bill_discount_amount: z.billDiscountAmount.toString(),
+      foc_items_qty: z.focItemsQty,
+      foc_items_amount: z.focItemsAmount.toString(),
+      foc_bill_qty: z.focBillQty,
+      foc_bill_amount: z.focBillAmount.toString(),
+      total_sales: z.totalSales.toString(),
+      estimated_sales: z.estimatedSales.toString(),
+      cash_qty: z.cashQty,
+      cash_amount: z.cashAmount.toString(),
+      bca_qty: z.bcaQty,
+      bca_amount: z.bcaAmount.toString(),
+      gojek_pay_qty: z.gojekPayQty,
+      gojek_pay_amount: z.gojekPayAmount.toString(),
+      mandiri_qty: z.mandiriQty,
+      mandiri_amount: z.mandiriAmount.toString(),
+      total_card_qty: z.totalCardQty,
+      total_card_amount: z.totalCardAmount.toString(),
+      total_cash_qty: z.totalCashQty,
+      total_cash_amount: z.totalCashAmount.toString(),
+      refund_qty: z.refundQty,
+      refund_amount: z.refundAmount.toString(),
+      pre_send_void_qty: z.preSendVoidQty,
+      pre_send_void_amount: z.preSendVoidAmount.toString(),
+      post_send_void_qty: z.postSendVoidQty,
+      post_send_void_amount: z.postSendVoidAmount.toString(),
+      tot_collection_qty: z.totCollectionQty,
+      tot_collection_amount: z.totCollectionAmount.toString(),
+      tax_10_amount: z.tax10Amount.toString(),
+      service_7_amount: z.service7Amount.toString(),
+      nett_sales: z.nettSales.toString(),
+      bills_pending_qty: z.billsPendingQty,
+      bills_pending_amount: z.billsPendingAmount.toString(),
+      total_bills: z.totalBills,
+      avg_bills: z.avgBills.toString(),
+      total_covers: z.totalCovers,
+      avg_covers: z.avgCovers.toString(),
+      begin_receipt_no: z.beginReceiptNo,
+      end_receipt_no: z.endReceiptNo,
+      group_beverage_qty: z.groupBeverageQty,
+      group_beverage_amount: z.groupBeverageAmount.toString(),
+      group_food_qty: z.groupFoodQty,
+      group_food_amount: z.groupFoodAmount.toString(),
+      group_total_qty: z.groupTotalQty,
+      group_total_amount: z.groupTotalAmount.toString(),
+      group_foc_beverage_qty: z.groupFocBeverageQty,
+      group_foc_beverage_amount: z.groupFocBeverageAmount.toString(),
+      group_foc_food_qty: z.groupFocFoodQty,
+      group_foc_food_amount: z.groupFocFoodAmount.toString(),
+      dine_in_qty: z.dineInQty,
+      dine_in_amount: z.dineInAmount.toString(),
+      gofood_qty: z.gofoodQty,
+      gofood_amount: z.gofoodAmount.toString(),
+      total_ctgry_qty: z.totalCtgryQty,
+      total_ctgry_amount: z.totalCtgryAmount.toString(),
+      bill_disc_20_qty: z.billDisc20Qty,
+      bill_disc_20_amount: z.billDisc20Amount.toString(),
+      total_item_discount_qty: z.totalItemDiscountQty,
+      total_item_discount_amount: z.totalItemDiscountAmount.toString(),
+      raw_text: z.rawText,
+      entry_source: z.entrySource,
+      receipt_images: z.receiptImages,
+    }));
+
     // ── Counts ────────────────────────────────────────────
     const counts: Record<string, number> = {
       appPages: appPages.length,
@@ -141,6 +226,7 @@ export async function GET(): Promise<NextResponse> {
       monthlyTargets: targets.length,
       levers: leverRecords.length,
       actionItems: actionItemRecords.length,
+      dailyZReports: zReports.length,
     };
 
     // ── Executive Summary from knowledge snippets ────────
@@ -169,6 +255,7 @@ export async function GET(): Promise<NextResponse> {
       targetDetails,
       leverDetails,
       actionItemDetails,
+      zReportDetails,
       executiveSummary: execSummarySnippet?.content ?? null,
       seedStatus: {
         ok: warnings.length === 0,

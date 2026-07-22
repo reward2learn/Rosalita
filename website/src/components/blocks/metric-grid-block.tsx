@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
@@ -10,6 +11,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
+
+interface SeedCounts { monthlyTargets?: number; }
 
 const TARGET_ROWS = [
   {
@@ -52,6 +55,20 @@ const TARGET_ROWS = [
 
 export function MetricGridBlock({ config }: { config: Record<string, unknown> }) {
   parseBlockConfig('metric_grid', config);
+  const [hasData, setHasData] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch('/api/config/seed-details')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { counts?: SeedCounts } | null) => {
+        setHasData((data?.counts?.monthlyTargets ?? 0) > 0);
+      })
+      .catch(() => setHasData(false));
+  }, []);
+
+  // Don't render until we know; hide if no seeded data
+  if (hasData === null) return null;
+  if (!hasData) return null;
 
   return (
     <Box component="section" sx={{   mx: 'auto', px: 3, py: 4 }}>

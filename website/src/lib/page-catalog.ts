@@ -106,6 +106,16 @@ export function setDynamicReviewParts(parts: ReviewPartDefinition[]): void {
   );
 }
 
+/**
+ * Dynamic getter that merges static + any runtime-registered parts.
+ * Use instead of REVIEW_PART_CATALOG so that setDynamicReviewParts() calls
+ * are reflected immediately.
+ */
+export function getReviewPartCatalog(): Record<string, ReviewPartDefinition> {
+  return { ...STATIC_PARTS, ...DYNAMIC_PARTS };
+}
+
+/** @deprecated Use getReviewPartCatalog() — this const is frozen at module load time. */
 export const REVIEW_PART_CATALOG: Record<string, ReviewPartDefinition> = {
   ...STATIC_PARTS,
   ...DYNAMIC_PARTS,
@@ -274,11 +284,11 @@ export function resolvePage(slug: string): PageDefinition | null {
 }
 
 export function resolveReviewPart(partSlug: string): ReviewPartDefinition | null {
-  return REVIEW_PART_CATALOG[partSlug] ?? null;
+  return getReviewPartCatalog()[partSlug] ?? null;
 }
 
 export function listReviewParts(): ReviewPartDefinition[] {
-  return Object.values(REVIEW_PART_CATALOG).sort((a, b) =>
+  return Object.values(getReviewPartCatalog()).sort((a, b) =>
     a.partKey.localeCompare(b.partKey),
   );
 }

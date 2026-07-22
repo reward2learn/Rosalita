@@ -43,6 +43,8 @@ const tableNames = [
   'business_review_parts',
   'knowledge_snippets',
   'financial_projections',
+  'navigation_items',
+  'daily_z_reports',
 ] as const;
 
 const clearSchema = z.discriminatedUnion('mode', [
@@ -98,9 +100,11 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
     }
 
-    if (parsed.data.mode === 'all') {
-      const { setDynamicPages } = await import('@/lib/page-catalog');
+    // Clear in-memory catalogs so nav and review reflect the empty DB
+    {
+      const { setDynamicPages, setDynamicReviewParts } = await import('@/lib/page-catalog');
       setDynamicPages([]);
+      setDynamicReviewParts([]);
     }
 
     console.log('[clear-seed] Cleared:', JSON.stringify(deleted));

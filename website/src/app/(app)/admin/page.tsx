@@ -52,34 +52,75 @@ import { FUNCTIONAL_ROLES } from '@/domain/security/functional-roles';
 import { PERSONS } from '@/domain/security/persons';
 import { CAPABILITY_AREAS, capability } from '@/domain/security/capabilities';
 
+/** Roles that persist regardless of seeded data state. */
+const PERSISTENT_ROLES: { code: string; name: string; isPlatformAdmin: boolean; email: string | null }[] = [
+  { code: 'platform-admin', name: 'Platform Admin', isPlatformAdmin: true, email: null },
+  { code: 'admin', name: 'Admin', isPlatformAdmin: true, email: null },
+];
+
 function RoleManager() {
+  const { data, isLoading, isError } = useListRoleConfigsQuery();
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Combine persistent roles with any DB-seeded roles (after clearing, only persistent remain)
+  const dbRoles = data?.data?.roles ?? [];
+  const hasDbData = dbRoles.length > 0;
+
+  // Show persistent + any additional roles from the DB
+  const displayRoles = hasDbData
+    ? dbRoles
+    : PERSISTENT_ROLES;
+
   return (
     <Paper variant="outlined" sx={{ p: 3 }}>
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
         Functional Role Catalog
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Each functional role is assigned to one person. Manage PINs in the User Accounts tab.
+        {hasDbData
+          ? 'Each functional role is assigned to one person. Manage PINs in the User Accounts tab.'
+          : 'No seeded roles — showing persistent defaults (Platform Admin, Admin). Seed data to restore all functional roles.'}
       </Typography>
+      {isError ? (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Could not load roles from database. Showing persistent defaults.
+        </Alert>
+      ) : null}
       <Table size="small">
         <TableHead>
           <TableRow>
             <TableCell>Role</TableCell>
             <TableCell>Person</TableCell>
             <TableCell>Email</TableCell>
+            <TableCell>PIN</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {FUNCTIONAL_ROLES.map((fr) => {
-            const person = PERSONS.find((p) => p.roleCode === fr.code);
-            return (
-              <TableRow key={fr.code}>
-                <TableCell sx={{ fontWeight: 600 }}>{fr.name}</TableCell>
-                <TableCell>{person?.name ?? '—'}</TableCell>
-                <TableCell>{person?.email ?? '—'}</TableCell>
-              </TableRow>
-            );
-          })}
+          {displayRoles.map((r) => (
+            <TableRow key={r.code}>
+              <TableCell sx={{ fontWeight: 600 }}>{r.name}</TableCell>
+              <TableCell>{r.code === 'admin' ? 'Admin' : r.code === 'platform-admin' ? 'Platform Admin' : '—'}</TableCell>
+              <TableCell>{r.email ?? '—'}</TableCell>
+              <TableCell>
+                {'pinConfigured' in r ? (
+                  (r as { pinConfigured: boolean }).pinConfigured ? (
+                    <Chip label="configured" size="small" color="success" variant="outlined" />
+                  ) : (
+                    <Chip label="not set" size="small" color="warning" variant="outlined" />
+                  )
+                ) : (
+                  <Chip label="—" size="small" variant="outlined" />
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </Paper>

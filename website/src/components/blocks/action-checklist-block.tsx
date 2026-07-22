@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -9,6 +9,8 @@ import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
+
+interface SeedCounts { actionItems?: number; levers?: number; monthlyTargets?: number; }
 
 const PHASES = [
   {
@@ -46,6 +48,20 @@ const PHASES = [
 export function ActionChecklistBlock({ config }: { config: Record<string, unknown> }) {
   parseBlockConfig('action_checklist', config);
   const [expanded, setExpanded] = useState<string | false>('P1');
+  const [hasData, setHasData] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch('/api/config/seed-details')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { counts?: SeedCounts } | null) => {
+        setHasData((data?.counts?.actionItems ?? 0) > 0);
+      })
+      .catch(() => setHasData(false));
+  }, []);
+
+  // Don't render until we know; hide if no seeded data
+  if (hasData === null) return null;
+  if (!hasData) return null;
 
   return (
     <Box component="section" sx={{   mx: 'auto', px: 3, py: 4 }}>

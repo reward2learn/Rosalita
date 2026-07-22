@@ -111,26 +111,28 @@ export async function GET(request: Request): Promise<NextResponse> {
         where: { slug: resolved.slug },
       });
       if (!row) {
-        return NextResponse.json({ error: 'Content not found', source }, { status: 404 });
+        return NextResponse.json({ source, markdown: '', title: '', contentType: 'markdown', found: false });
       }
       return NextResponse.json({
         source,
         title: row.title,
         markdown: row.markdown,
         contentType: 'markdown',
+        found: true,
       });
     }
 
     if (resolved.type === 'file') {
       const html = readBundledHtml(resolved.filename);
       if (!html) {
-        return NextResponse.json({ error: 'Content not found', source }, { status: 404 });
+        return NextResponse.json({ source, markdown: '', title: '', contentType: 'markdown', found: false });
       }
       return NextResponse.json({
         source,
         title: resolved.filename.replace(/\.html$/, '').replace(/-/g, ' '),
         markdown: htmlToMarkdownish(html),
         contentType: 'markdown',
+        found: true,
       });
     }
 
@@ -139,13 +141,14 @@ export async function GET(request: Request): Promise<NextResponse> {
       where: { key: resolved.key },
     });
     if (!row) {
-      return NextResponse.json({ error: 'Content not found', source }, { status: 404 });
+      return NextResponse.json({ source, markdown: '', title: '', contentType: 'markdown', found: false });
     }
     return NextResponse.json({
       source,
       title: row.key,
       markdown: row.content,
       contentType: row.category === 'document' ? 'markdown' : 'text',
+      found: true,
     });
   } catch (err) {
     console.error('[content]', source, err);

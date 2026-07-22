@@ -91,6 +91,18 @@ function buildTree(items: FlatItem[]): NavItem[] {
   return roots;
 }
 
+/** Collect all descendant IDs of a given parent (recursive). */
+function collectDescendantIds(items: (FlatItem & { depth: number })[], parentId: string): string[] {
+  const ids: string[] = [];
+  for (const item of items) {
+    if (item.parentId === parentId) {
+      ids.push(item.id);
+      ids.push(...collectDescendantIds(items, item.id));
+    }
+  }
+  return ids;
+}
+
 // ── Component ──────────────────────────────────────────
 
 export function NavigationManager() {
@@ -101,10 +113,20 @@ export function NavigationManager() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [editingItem, setEditingItem] = useState<FlatItem | null>(null);
+  const [originalEditingItem, setOriginalEditingItem] = useState<FlatItem | null>(null);
+  const [applyRecursive, setApplyRecursive] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+
+  // ── Multi-select ──────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [batchDialogMode, setBatchDialogMode] = useState<'delete' | 'parent' | 'tier' | 'groups' | null>(null);
+  const [batchParentId, setBatchParentId] = useState<string>('');
+  const [batchTier, setBatchTier] = useState<'public' | 'pin' | 'google'>('public');
+  const [batchGroups, setBatchGroups] = useState<string[]>([]);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -195,6 +217,8 @@ export function NavigationManager() {
   // ── Edit ──────────────────────────────────────────────
   const openEdit = useCallback((item: FlatItem) => {
     setEditingItem({ ...item });
+    setOriginalEditingItem({ ...item });
+    setApplyRecursive(false);
     setEditDialogOpen(true);
   }, []);
 
@@ -203,15 +227,38 @@ export function NavigationManager() {
     setSaving(true);
     setError(null);
     try {
+      const itemsToSave: FlatItem[] = [editingItem];
+
+      // When "Apply to children" is checked, cascade changed properties to all descendants
+      if (applyRecursive && originalEditingItem) {
+        const descIds = collectDescendantIds(flatItems, editingItem.id);
+        const changedProps: Record<string, unknown> = {};
+        for (const key of ['authTier', 'requiredGroups', 'isVisible', 'icon'] as const) {
+          if (editingItem[key] !== originalEditingItem[key]) {
+            changedProps[key] = editingItem[key];
+          }
+        }
+        if (Object.keys(changedProps).length > 0) {
+          for (const id of descIds) {
+            const original = flatItems.find((i) => i.id === id);
+            if (original) {
+              itemsToSave.push({ ...original, ...changedProps });
+            }
+          }
+        }
+      }
+
       const res = await fetch('/api/admin/navigation', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: [editingItem] }),
+        body: JSON.stringify({ items: itemsToSave }),
       });
       const payload = await res.json();
       if (payload.success) {
         setEditDialogOpen(false);
         setEditingItem(null);
+        setOriginalEditingItem(null);
+        setApplyRecursive(false);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 2000);
         void fetchItems();
@@ -223,7 +270,7 @@ export function NavigationManager() {
     } finally {
       setSaving(false);
     }
-  }, [editingItem, fetchItems]);
+  }, [editingItem, originalEditingItem, applyRecursive, flatItems, fetchItems]);
 
   // ── Set as default route ──────────────────────────────
   const handleSetDefault = useCallback(async (item: FlatItem) => {
@@ -266,6 +313,88 @@ export function NavigationManager() {
       setError(err instanceof Error ? err.message : String(err));
     }
   }, [fetchItems]);
+
+  // ── Multi-select helpers ─────────────────────────────
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+  const selectAll = useCallback(() => setSelectedIds(new Set(flatItems.map((i) => i.id))), [flatItems]);
+
+  const openBatchDialog = useCallback((mode: 'delete' | 'parent' | 'tier' | 'groups') => {
+    setBatchDialogMode(mode);
+    setBatchParentId('');
+    setBatchTier('public');
+    setBatchGroups([]);
+    setBatchDialogOpen(true);
+  }, []);
+
+  const handleBatchDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const ids = Array.from(selectedIds);
+      const res = await fetch(`/api/admin/navigation?ids=${ids.map(encodeURIComponent).join(',')}`, { method: 'DELETE' });
+      const payload = await res.json();
+      if (payload.success) {
+        setBatchDialogOpen(false);
+        setSelectedIds(new Set());
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 2000);
+        void fetchItems();
+      } else {
+        throw new Error(payload.error ?? 'Batch delete failed');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }, [selectedIds, fetchItems]);
+
+  const handleBatchAssign = useCallback(async () => {
+    if (selectedIds.size === 0 || !batchDialogMode) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const ids = Array.from(selectedIds);
+      const updates: FlatItem[] = ids.map((id) => {
+        const orig = flatItems.find((i) => i.id === id);
+        if (!orig) return null as unknown as FlatItem;
+        const patch: Partial<FlatItem> = {};
+        if (batchDialogMode === 'parent') patch.parentId = batchParentId || null;
+        if (batchDialogMode === 'tier') patch.authTier = batchTier;
+        if (batchDialogMode === 'groups') patch.requiredGroups = batchGroups.join(',');
+        return { ...orig, ...patch };
+      }).filter(Boolean);
+
+      const res = await fetch('/api/admin/navigation', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: updates }),
+      });
+      const payload = await res.json();
+      if (payload.success) {
+        setBatchDialogOpen(false);
+        setSelectedIds(new Set());
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 2000);
+        void fetchItems();
+      } else {
+        throw new Error(payload.error ?? 'Batch update failed');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }, [selectedIds, batchDialogMode, batchParentId, batchTier, batchGroups, flatItems, fetchItems]);
 
   // ── Drag-to-reorder helpers ──────────────────────────
   const moveItem = useCallback((fromIdx: number, toIdx: number) => {
@@ -340,6 +469,13 @@ export function NavigationManager() {
           '&:hover': { bgcolor: 'action.hover' },
         }}
       >
+        <Checkbox
+          size="small"
+          checked={selectedIds.has(item.id)}
+          onChange={() => toggleSelect(item.id)}
+          onClick={(e) => e.stopPropagation()}
+          sx={{ p: 0.25 }}
+        />
         <DragIndicatorIcon fontSize="small" color="disabled" sx={{ cursor: 'grab', flexShrink: 0 }} />
         <Box sx={{ flexShrink: 0, color: 'text.secondary', display: 'flex', alignItems: 'center' }}>
           {item.icon ? (
@@ -404,6 +540,30 @@ export function NavigationManager() {
 
         {error ? <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert> : null}
         {success ? <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mb: 2 }}>Saved.</Alert> : null}
+
+        {/* Batch action toolbar */}
+        {selectedIds.size > 0 ? (
+          <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', bgcolor: 'action.selected' }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, mr: 1 }}>
+              {selectedIds.size} selected
+            </Typography>
+            <Button size="small" variant="outlined" color="error" onClick={() => openBatchDialog('delete')}>
+              Delete
+            </Button>
+            <Button size="small" variant="outlined" onClick={() => openBatchDialog('parent')}>
+              Assign Parent
+            </Button>
+            <Button size="small" variant="outlined" onClick={() => openBatchDialog('tier')}>
+              Assign Auth Tier
+            </Button>
+            <Button size="small" variant="outlined" onClick={() => openBatchDialog('groups')}>
+              Assign Groups
+            </Button>
+            <Box sx={{ flex: 1 }} />
+            <Button size="small" onClick={selectAll}>Select All</Button>
+            <Button size="small" onClick={clearSelection}>Clear</Button>
+          </Paper>
+        ) : null}
 
         {flatItems.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
@@ -636,6 +796,19 @@ export function NavigationManager() {
                   })}
                 </Select>
               </FormControl>
+              {/* Apply changes recursively to all children */}
+              {editingItem && flatItems.some((i) => i.parentId === editingItem.id) ? (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={applyRecursive}
+                      onChange={(e) => setApplyRecursive(e.target.checked)}
+                    />
+                  }
+                  label="Apply to all children recursively"
+                />
+              ) : null}
+
               <FormControlLabel control={<Switch checked={editingItem.isVisible} onChange={(e) => setEditingItem((p) => p ? { ...p, isVisible: e.target.checked } : p)} />} label="Visible in navigation" />
               <FormControlLabel control={<Switch checked={editingItem.isDynamic} onChange={(e) => setEditingItem((p) => p ? { ...p, isDynamic: e.target.checked } : p)} />} label="Dynamic route /[slug]" />
             </Stack>
@@ -645,6 +818,86 @@ export function NavigationManager() {
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
           <Button variant="contained" disabled={saving} onClick={handleEditSave} startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}>
             Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Batch action dialog ────────────────────────── */}
+      <Dialog open={batchDialogOpen} onClose={() => setBatchDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {batchDialogMode === 'delete' ? `Delete ${selectedIds.size} item(s)?` :
+           batchDialogMode === 'parent' ? `Assign parent to ${selectedIds.size} item(s)` :
+           batchDialogMode === 'tier' ? `Assign auth tier to ${selectedIds.size} item(s)` :
+           batchDialogMode === 'groups' ? `Assign groups to ${selectedIds.size} item(s)` : ''}
+        </DialogTitle>
+        <DialogContent dividers>
+          {batchDialogMode === 'delete' ? (
+            <Typography variant="body2" color="text.secondary">
+              This will delete {selectedIds.size} navigation item(s). Children of deleted items will be moved to root level.
+            </Typography>
+          ) : null}
+
+          {batchDialogMode === 'parent' ? (
+            <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+              <InputLabel>Parent Item</InputLabel>
+              <Select value={batchParentId} label="Parent Item" onChange={(e) => setBatchParentId(e.target.value)}>
+                <MenuItem value="">— Root level —</MenuItem>
+                {flatItems
+                  .filter((i) => !selectedIds.has(i.id))
+                  .map((item) => (
+                    <MenuItem key={item.id} value={item.id}>{'  '.repeat(item.depth)}{item.title}</MenuItem>
+                  ))
+                }
+              </Select>
+            </FormControl>
+          ) : null}
+
+          {batchDialogMode === 'tier' ? (
+            <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+              <InputLabel>Auth Tier</InputLabel>
+              <Select value={batchTier} label="Auth Tier" onChange={(e) => setBatchTier(e.target.value as 'public' | 'pin' | 'google')}>
+                <MenuItem value="public">Public</MenuItem>
+                <MenuItem value="pin">PIN</MenuItem>
+                <MenuItem value="google">Google</MenuItem>
+              </Select>
+            </FormControl>
+          ) : null}
+
+          {batchDialogMode === 'groups' ? (
+            <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+              <InputLabel id="batch-groups-label">Required Groups</InputLabel>
+              <Select
+                labelId="batch-groups-label"
+                label="Required Groups"
+                multiple
+                value={batchGroups}
+                onChange={(e) => setBatchGroups(e.target.value as string[])}
+                renderValue={(selected) =>
+                  (selected as string[]).length === 0
+                    ? '— None —'
+                    : (selected as string[]).map((c) => allSecurityGroups.find((g) => g.code === c)?.name ?? c).join(', ')
+                }
+              >
+                {allSecurityGroups.map((g) => (
+                  <MenuItem key={g.code} value={g.code}>
+                    <Checkbox checked={batchGroups.includes(g.code)} size="small" />
+                    <ListItemText primary={g.name} secondary={g.code} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBatchDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color={batchDialogMode === 'delete' ? 'error' : 'primary'}
+            disabled={saving}
+            onClick={batchDialogMode === 'delete' ? handleBatchDelete : handleBatchAssign}
+            startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
+          >
+            {saving ? 'Saving...' : batchDialogMode === 'delete' ? 'Delete' : 'Apply'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -6,12 +6,7 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
 import { MarkdownBody } from '@/components/blocks/markdown-body';
-import { EXECUTIVE_SUMMARY_FALLBACK } from '@/domain/knowledge/knowledge-seed';
 import { useGetDocumentQuery } from '@/store/apis/content-api';
-
-const DOCUMENT_FALLBACKS: Record<string, string> = {
-  'executive-summary': EXECUTIVE_SUMMARY_FALLBACK,
-};
 
 export interface DocMarkdownBlockProps {
   config: Record<string, unknown>;
@@ -26,7 +21,7 @@ export function DocMarkdownBlock({ config, initialMarkdown }: DocMarkdownBlockPr
   });
 
   const body =
-    initialMarkdown ?? data?.markdown ?? DOCUMENT_FALLBACKS[source] ?? '';
+    initialMarkdown ?? data?.markdown ?? '';
 
   return (
     <Box component="section" sx={{  mx: 'auto', px: 3, py: 5 }}>
@@ -58,9 +53,13 @@ export function DocMarkdownBlock({ config, initialMarkdown }: DocMarkdownBlockPr
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress size={28} />
           </Box>
-        ) : isError && !body ? (
+        ) : isError ? (
           <Typography variant="body1" color="text.secondary">
             Document content unavailable.
+          </Typography>
+        ) : !body ? (
+          <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+            No content available. Seed the database or generate content via the AI Content Generation tab.
           </Typography>
         ) : (
           <MarkdownBody markdown={body} />

@@ -1,30 +1,35 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import type { Route } from 'next';
 import AppBar from '@mui/material/AppBar';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
+import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import TextField from '@mui/material/TextField';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import MenuIcon from '@mui/icons-material/Menu';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FolderIcon from '@mui/icons-material/Folder';
 import type { ReactNode } from 'react';
 import { SavedConversationsMenu } from '@/components/chat/saved-conversations-menu';
-import { listNavPages } from '@/lib/page-catalog';
+import { getReviewPartDisplayTitle, listNavPages, resolvePage, resolveReviewPart } from '@/lib/page-catalog';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDrawerOpen } from '@/store/ui-slice';
 import { useListPagesQuery } from '@/store/apis/content-api';
@@ -105,6 +110,59 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const isActive = (href: string) =>
     pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+
+  /** Resolve breadcrumb trail from the current pathname. */
+  const getBreadcrumbs = useCallback((p: string) => {
+    const segments = p.split('/').filter(Boolean);
+    const crumbs: { label: string; href: string }[] = [];
+    let accumulated = '';
+    for (const segment of segments) {
+      accumulated += '/' + segment;
+      const page = resolvePage(segment);
+      if (page) {
+        crumbs.push({ label: page.title, href: accumulated });
+      } else {
+        const part = resolveReviewPart(segment);
+        if (part) {
+          crumbs.push({ label: getReviewPartDisplayTitle(part.title), href: accumulated });
+        } else {
+          crumbs.push({
+            label: segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' '),
+            href: accumulated,
+          });
+        }
+      }
+    }
+    return crumbs;
+  }, []);
+
+  const breadcrumbs = useMemo(() => getBreadcrumbs(pathname), [pathname, getBreadcrumbs]);
+
+  /** Search query for filtering nav items inside the drawer. */
+  const [searchQuery, setSearchQuery] = useState('');
+
+  /** Recursively filter nav items by search query (match title, keep parent if any child matches). */
+  const filterNavItems = useCallback(
+    (items: (DbNavItem | (DbNavItem & { _isCatalog?: boolean }))[], query: string): (DbNavItem | (DbNavItem & { _isCatalog?: boolean }))[] => {
+      if (!query) return items;
+      const lower = query.toLowerCase();
+      return items.reduce<(DbNavItem | (DbNavItem & { _isCatalog?: boolean }))[]>((acc, item) => {
+        const matches = item.title.toLowerCase().includes(lower);
+        const children = 'children' in item ? (item as DbNavItem).children ?? [] : [];
+        const filteredChildren = children.length > 0 ? filterNavItems(children, query) : [];
+        if (matches || filteredChildren.length > 0) {
+          acc.push({ ...item, children: filteredChildren } as DbNavItem & { _isCatalog?: boolean });
+        }
+        return acc;
+      }, []);
+    },
+    [],
+  );
+
+  const filteredNavItems = useMemo(
+    () => filterNavItems(navItems, searchQuery),
+    [navItems, searchQuery, filterNavItems],
+  );
 
   /** Track which nav items have their children expanded (keyed by item id). */
   const [expandedNav, setExpandedNav] = useState<Record<string, boolean>>({});
@@ -208,42 +266,84 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <AppBar position="sticky" elevation={0} color="transparent">
-        <Toolbar sx={{ justifyContent: 'space-between', minHeight: 52 }}>
-          <Link href="/dashboard" style={linkSx}>
-            {brandLogoUrl ? (
+        <Toolbar sx={{ minHeight: 52 }}>
+          {/* Hamburger toggle — left aligned */}
+          <IconButton
+            aria-label="Open navigation"
+            onClick={toggleDrawer}
+            sx={{ color: 'text.secondary', mr: 1 }}
+          >
+            <MenuIcon />
+          </IconButton>
+
+          {/* Logo image + brand text always visible side by side */}
+          <Link href="/dashboard" style={{ ...linkSx, alignItems: 'center', gap: 1 }}>
+            {brandLogoUrl && (
               <Box
                 component="img"
                 src={brandLogoUrl}
                 alt={brandText}
-                sx={{ height: 32, width: 'auto', maxWidth: 180, objectFit: 'contain', display: 'block' }}
+                sx={{ height: 28, width: 'auto', maxWidth: 120, objectFit: 'contain', display: 'block' }}
               />
-            ) : (
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 800,
-                  color: 'text.primary',
-                }}
-              >
-                {brandText}
-              </Typography>
             )}
+            <Typography
+              variant="subtitle1"
+              sx={{ pl: 1, fontWeight: 800, color: 'text.primary', whiteSpace: 'nowrap' }}
+            >
+              {brandText}
+            </Typography>
           </Link>
+
+          {/* Breadcrumbs trail */}
+          {breadcrumbs.length > 0 && (
+            <Breadcrumbs
+              separator={<NavigateNextIcon fontSize="small" sx={{ color: 'text.disabled' }} />}
+              sx={{ ml: 2, '& .MuiBreadcrumbs-ol': { flexWrap: 'nowrap' } }}
+            >
+              {breadcrumbs.map((crumb, idx) => {
+                const isLast = idx === breadcrumbs.length - 1;
+                return isLast ? (
+                  <Typography
+                    key={crumb.href}
+                    variant="caption"
+                    sx={{ color: 'text.secondary', fontWeight: 500, whiteSpace: 'nowrap' }}
+                  >
+                    {crumb.label}
+                  </Typography>
+                ) : (
+                  <Link
+                    key={crumb.href}
+                    href={crumb.href as Route}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.disabled',
+                        '&:hover': { color: 'text.primary' },
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {crumb.label}
+                    </Typography>
+                  </Link>
+                );
+              })}
+            </Breadcrumbs>
+          )}
+
+          {/* Spacer */}
+          <Box sx={{ flex: 1 }} />
+
+          {/* Right-aligned controls */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <SavedConversationsMenu />
-            <IconButton
-              aria-label="Open navigation"
-              onClick={toggleDrawer}
-              sx={{ color: 'text.secondary' }}
-            >
-              <MenuIcon />
-            </IconButton>
           </Box>
         </Toolbar>
       </AppBar>
 
       <Drawer
-        anchor="right"
+        anchor="left"
         open={drawerOpen}
         onClose={closeDrawer}
         slotProps={{ paper: { sx: { width: DRAWER_WIDTH, maxWidth: '80vw' } } }}
@@ -265,9 +365,33 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Box>
         </Box>
         <Divider />
+        <Box sx={{ px: 2, py: 1 }}>
+          <TextField
+            placeholder="Search pages..."
+            variant="outlined"
+            size="small"
+            fullWidth
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchOutlined fontSize="small" sx={{ color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                bgcolor: 'rgba(255,255,255,0.04)',
+              },
+            }}
+          />
+        </Box>
         <List sx={{ flex: 1, py: 1 }}>
-          {renderNavItems(navItems, pathname, closeDrawer, isActive, linkSx, 0)}
-
+          {renderNavItems(filteredNavItems, pathname, closeDrawer, isActive, linkSx, 0)}
         </List>
         <Divider />
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>

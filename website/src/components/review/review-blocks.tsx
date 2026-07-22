@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -9,13 +10,14 @@ import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { MarkdownBody } from '@/components/blocks/markdown-body';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
-import { getReviewPartDisplayTitle, listReviewParts } from '@/lib/page-catalog';
+import { getReviewPartDisplayTitle, listReviewParts, setDynamicReviewParts } from '@/lib/page-catalog';
+import type { ReviewPartDefinition } from '@/lib/page-catalog';
 import { useGetReviewPartQuery } from '@/store/apis/content-api';
+import { useEffect, useMemo, useState } from 'react';
 
 const reviewCardSx = {
   border: '1px solid',
@@ -36,6 +38,7 @@ function excerpt(markdown: string | undefined): string {
 }
 
 function ReviewPartBlock({ partSlug }: { partSlug: string }) {
+  const router = useRouter();
   const { data, isLoading } = useGetReviewPartQuery(partSlug);
   const href = `/review/${partSlug}` as Route;
 
@@ -43,6 +46,11 @@ function ReviewPartBlock({ partSlug }: { partSlug: string }) {
     <Paper
       id={partSlug}
       elevation={0}
+      onClick={() => router.push(href)}
+      onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(href); } }}
+      tabIndex={0}
+      role="button"
+      aria-label={`Open ${data?.title ?? partSlug}`}
       sx={{
         ...reviewCardSx,
         display: 'flex',
@@ -51,6 +59,17 @@ function ReviewPartBlock({ partSlug }: { partSlug: string }) {
         height: '100%',
         maxHeight: { xs: 'min(420px, 70dvh)', md: 360 },
         p: 2.5,
+        cursor: 'pointer',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+        '&:hover': {
+          borderColor: 'primary.main',
+          boxShadow: '0 0 0 1px rgba(235,61,40,0.2)',
+        },
+        '&:focus-visible': {
+          outline: '2px solid',
+          outlineColor: 'primary.main',
+          outlineOffset: 2,
+        },
       }}
     >
       <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0, minWidth: 0 }}>
@@ -71,6 +90,7 @@ function ReviewPartBlock({ partSlug }: { partSlug: string }) {
           href={href}
           variant="outlined"
           sx={{ alignSelf: 'flex-start', flexShrink: 0 }}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
         >
           Open Part
         </Button>
@@ -80,9 +100,43 @@ function ReviewPartBlock({ partSlug }: { partSlug: string }) {
 }
 
 const ANCHOR_SELECT_LABEL = 'Jump to review section';
+const PART_GROUPS = [
+  { range: 'A–D', slugs: ['part-a', 'part-b', 'part-c', 'part-d'], desc: 'current situation, action plan, projections, and risk register' },
+  { range: 'E–H', slugs: ['part-e', 'part-f', 'part-g', 'part-h'], desc: 'menu, timeline, immediate actions, and website review' },
+  { range: 'I–L', slugs: ['part-i', 'part-j', 'part-k', 'part-l'], desc: 'revenue drivers, competitive context, AI automation, and final assessment' },
+  { range: 'M–O', slugs: ['part-m', 'part-n', 'part-o'], desc: 'partnerships, ecosystem strategy, and tax notes' },
+];
 
 export function ReviewBlocks() {
-  const parts = listReviewParts();
+  const [dbState, setDbState] = useState<'loading' | 'empty' | 'populated'>('loading');
+
+  // On mount, fetch all review parts from the DB and register in the catalog
+  useEffect(() => {
+    fetch('/api/config/seed-details')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.reviewPartDetails?.length) {
+          const parts: ReviewPartDefinition[] = data.reviewPartDetails.map(
+            (p: { slug: string; partKey: string; title: string }) => ({
+              partSlug: p.slug,
+              partKey: p.partKey,
+              title: p.title,
+              authTier: 'google' as const,
+            }),
+          );
+          setDynamicReviewParts(parts);
+          setDbState('populated');
+        } else {
+          setDbState('empty');
+        }
+      })
+      .catch(() => setDbState('empty'));
+  }, []);
+
+  const parts = useMemo(() => {
+    if (dbState !== 'populated') return [];
+    return listReviewParts();
+  }, [dbState]);
 
   const scrollToPart = (partSlug: string) => {
     globalThis.document
@@ -90,6 +144,27 @@ export function ReviewBlocks() {
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  // ── Loading state ──────────────────────────────────────
+  if (dbState === 'loading') {
+    return (
+      <Box component="section" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 12 }}>
+        <CircularProgress size={28} />
+      </Box>
+    );
+  }
+
+  // ── Empty state — no seeded content in database ────────
+  if (dbState === 'empty') {
+    return (
+      <Box component="section" sx={{ mx: 'auto', px: 3, py: 4 }}>
+        <Typography variant="h6" color="text.secondary" sx={{ textAlign: 'center', py: 8 }}>
+          No Business Review content available. Seed the database or generate content via the AI Content Generation tab.
+        </Typography>
+      </Box>
+    );
+  }
+
+  // ── Populated — render all review blocks ───────────────
   return (
     <Box component="section" sx={{ mx: 'auto', px: 3, py: 4, minWidth: 0 }}>
       <Stack spacing={3}>
@@ -163,13 +238,51 @@ export function ReviewBlocks() {
             '@media print': { breakInside: 'avoid' },
           }}
         >
-          <MarkdownBody markdown={[
-            '## Review Operating Notes',
-            '- Use Parts A-D for the current situation, action plan, projections, and risk register.',
-            '- Use Parts E-H for menu, timeline, immediate actions, and website review.',
-            '- Use Parts I-L for revenue drivers, competitive context, AI automation, and final assessment.',
-            '- Use Parts M-O for partnerships, ecosystem strategy, and tax notes.',
-          ].join('\n\n')} />
+          <Typography variant="h6" sx={{ fontWeight: 800, mb: 1.5 }}>
+            Review Operating Notes
+          </Typography>
+          <Stack spacing={1}>
+            {PART_GROUPS.map((group) => {
+              // Only show a group when all its slugs are present in the catalog
+              const existingSlugs = group.slugs.filter((slug) =>
+                parts.some((p) => p.partSlug === slug),
+              );
+              if (existingSlugs.length === 0) return null;
+              return (
+                <Typography key={group.range} variant="body2" color="text.secondary">
+                  Use Parts{' '}
+                  {existingSlugs.map((slug, idx) => {
+                    const { title } = parts.find((p) => p.partSlug === slug) ?? {};
+                    const isLast = idx === existingSlugs.length - 1;
+                    const display = title ? getReviewPartDisplayTitle(title) : `Part ${slug.replace('part-', '').toUpperCase()}`;
+                    return (
+                      <span key={slug}>
+                        <Link
+                          href={`/review/${slug}` as Route}
+                          style={{ textDecoration: 'none' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            sx={{
+                              color: 'primary.main',
+                              fontWeight: 600,
+                              '&:hover': { textDecoration: 'underline', color: 'primary.light' },
+                            }}
+                          >
+                            {display}
+                          </Typography>
+                        </Link>
+                        {isLast ? '' : ', '}
+                      </span>
+                    );
+                  })}{' '}
+                  for {group.desc}.
+                </Typography>
+              );
+            })}
+          </Stack>
         </Paper>
       </Stack>
     </Box>

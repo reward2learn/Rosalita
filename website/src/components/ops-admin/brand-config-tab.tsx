@@ -243,7 +243,7 @@ export function BrandConfigTab() {
                     sx={{ height: 28, width: 'auto', maxWidth: 160, objectFit: 'contain' }}
                   />
                 ) : (
-                  <Typography variant="subtitle1" sx={{ fontWeight: 800, color: config.brandPrimaryColor }}>
+                  <Typography variant="subtitle1" sx={{ pl: 1, fontWeight: 800, color: config.brandPrimaryColor }}>
                     {config.brandLogoText || '(no logo text set)'}
                   </Typography>
                 )}

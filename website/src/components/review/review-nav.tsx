@@ -17,10 +17,13 @@ import Typography from '@mui/material/Typography';
 import {
   getReviewPartDisplayTitle,
   listReviewParts,
+  setDynamicReviewParts,
   tierAllowsAccess,
   type AuthTier,
+  type ReviewPartDefinition,
 } from '@/lib/page-catalog';
 import { useAppSelector } from '@/store/hooks';
+import { useEffect, useMemo, useState } from 'react';
 
 const TOUCH_TARGET = { minHeight: 48 };
 const PART_SELECT_LABEL = 'Jump between review sections';
@@ -28,7 +31,34 @@ const PART_SELECT_LABEL = 'Jump between review sections';
 export function ReviewNav({ currentSlug }: { currentSlug: string }) {
   const router = useRouter();
   const tier = useAppSelector((s) => s.auth.tier);
-  const parts = listReviewParts().filter((part) => tierAllowsAccess(tier, part.authTier));
+
+  // Track catalog version so async-loaded DB parts trigger a re-render
+  const [catalogVersion, setCatalogVersion] = useState(0);
+
+  // On mount, fetch all review parts from the DB and register in the catalog
+  useEffect(() => {
+    fetch('/api/config/seed-details')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.reviewPartDetails?.length) {
+          const parts: ReviewPartDefinition[] = data.reviewPartDetails.map(
+            (p: { slug: string; partKey: string; title: string }) => ({
+              partSlug: p.slug,
+              partKey: p.partKey,
+              title: p.title,
+              authTier: 'google' as const,
+            }),
+          );
+          setDynamicReviewParts(parts);
+          setCatalogVersion((v) => v + 1);
+        }
+      })
+      .catch(() => {
+        /* fall back to static catalog A–G */
+      });
+  }, []);
+
+  const parts = useMemo(() => listReviewParts().filter((part) => tierAllowsAccess(tier, part.authTier)), [catalogVersion, tier]);
 
   const handlePartChange = (partSlug: string) => {
     router.push(`/review/${partSlug}` as Route);

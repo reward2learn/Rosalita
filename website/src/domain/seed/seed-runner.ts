@@ -46,7 +46,8 @@ import {
   generateAnalysisMarkdown,
   generateSheetMarkdown,
 } from '@/domain/excel/workbook-analyzer';
-import { setDynamicPages } from '@/lib/page-catalog';
+import { setDynamicPages, setDynamicReviewParts } from '@/lib/page-catalog';
+import type { ReviewPartDefinition } from '@/lib/page-catalog';
 
 export interface SeedCounts {
   financialProjections: number;
@@ -726,6 +727,21 @@ export async function seedFromSources(options: SeedOptions = {}): Promise<SeedRe
   }
 
   const reviewParts = businessReview !== undefined ? parseBusinessReviewParts(businessReview) : [];
+
+  // Register parsed parts in the catalog so listReviewParts() includes H–O
+  if (reviewParts.length > 0) {
+    setDynamicReviewParts(
+      reviewParts.map(
+        (p): ReviewPartDefinition => ({
+          partSlug: p.slug,
+          partKey: p.partKey,
+          title: p.title,
+          authTier: 'google',
+        }),
+      ),
+    );
+  }
+
   let termsMd = '';
   let privacyMd = '';
   try {

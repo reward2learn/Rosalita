@@ -5,8 +5,8 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseBusinessReviewParts } from '../src/lib/parse-business-review.js';
-import { REVIEW_PART_CATALOG } from '../src/lib/page-catalog.js';
+import { parseBusinessReviewParts } from '../src/lib/parse-business-review';
+import { REVIEW_PART_CATALOG } from '../src/lib/page-catalog';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
