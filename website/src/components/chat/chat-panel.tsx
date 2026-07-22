@@ -22,10 +22,14 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import Accordion from '@mui/material/Accordion';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import AccordionSummary from '@mui/material/AccordionSummary';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DownloadIcon from '@mui/icons-material/Download';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
@@ -108,6 +112,76 @@ export function ChatPanel() {
   const [findingTitleDialogOpen, setFindingTitleDialogOpen] = useState(false);
   const [pendingFindingContent, setPendingFindingContent] = useState<string | null>(null);
   const reviewParts = listReviewParts();
+
+  // ── Rate limit countdown ──────────────────────────────
+  const [rateLimitCountdown, setRateLimitCountdown] = useState<number | null>(null);
+  const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (rateLimitCountdown === null || rateLimitCountdown <= 0) {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      countdownRef.current = null;
+      // Auto-retry when countdown expires
+      if (rateLimitCountdown === 0 && lastFailedMessage) {
+        const msg = lastFailedMessage;
+        setLastFailedMessage(null);
+        setRateLimitCountdown(null);
+        dispatch(clearMessages());
+        // Re-send the failed message after a brief delay
+        setTimeout(() => {
+          setInput(msg);
+          // Auto-send after a moment
+          setTimeout(() => {
+            const textarea = document.querySelector('textarea');
+            if (textarea) {
+              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                window.HTMLTextAreaElement.prototype, 'value'
+              )?.set;
+              nativeInputValueSetter?.call(textarea, msg);
+              textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          }, 100);
+        }, 500);
+      }
+      return;
+    }
+    const id = setInterval(() => {
+      setRateLimitCountdown((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
+    countdownRef.current = id;
+    return () => clearInterval(id);
+  }, [rateLimitCountdown, lastFailedMessage, dispatch]);
+
+  // Detect rate limit errors and start countdown
+  useEffect(() => {
+    if (error && /rate limit|too large|TPM|tokens per min|max_tokens/i.test(error)) {
+      setRateLimitCountdown(60);
+      // Save the last user message for auto-retry
+      const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+      if (lastUser) setLastFailedMessage(lastUser.content);
+    }
+  }, [error, messages]);
+
+  const handleUseInChat = useCallback(() => {
+    if (menuMessageIndex === null) return;
+    const msg = messages[menuMessageIndex];
+    if (!msg) return;
+    setMenuAnchor(null);
+    setMenuMessageIndex(null);
+    setInput(msg.content);
+  }, [menuMessageIndex, messages]);
+
+  const handleRetry = useCallback(() => {
+    if (menuMessageIndex === null) return;
+    const msg = messages[menuMessageIndex];
+    if (!msg || msg.role !== 'user') return;
+    setMenuAnchor(null);
+    setMenuMessageIndex(null);
+    setInput(msg.content);
+    // Auto-send after a short delay
+    setTimeout(() => void handleSend(), 100);
+  }, [menuMessageIndex, messages]);
 
   // Prefill from ?prompt= (e.g. when arriving from a task's "Ask AI" button).
   useEffect(() => {
@@ -418,7 +492,7 @@ export function ChatPanel() {
                   }}
                 >
                   <Box sx={{ maxWidth: '82%', position: 'relative' }}>
-                    {msg.role === 'assistant' ? (
+                    {msg.role === 'assistant' || msg.role === 'user' ? (
                       <IconButton
                         size="small"
                         onClick={(e) => {
@@ -492,7 +566,47 @@ export function ChatPanel() {
               )}
             </Box>
 
-            {error ? <Typography role="alert" color="error.main" variant="body2">{error}</Typography> : null}
+            {error ? (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 1.5,
+                  bgcolor: rateLimitCountdown !== null ? 'rgba(235, 61, 40, 0.08)' : 'error.main',
+                  color: rateLimitCountdown !== null ? 'text.primary' : 'error.contrastText',
+                  border: '1px solid',
+                  borderColor: rateLimitCountdown !== null ? 'error.main' : 'transparent',
+                  borderRadius: 1,
+                }}
+              >
+                <Stack spacing={1}>
+                  <Typography variant="body2" role="alert">
+                    {rateLimitCountdown !== null
+                      ? `⏳ Rate limit reached — auto-retry in ${rateLimitCountdown}s`
+                      : error}
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
+                    {rateLimitCountdown !== null ? (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="error"
+                        onClick={() => dispatch(clearMessages())}
+                      >
+                        Start New Chat
+                      </Button>
+                    ) : null}
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color={rateLimitCountdown !== null ? 'error' : 'inherit'}
+                      onClick={() => dispatch(clearMessages())}
+                    >
+                      New Chat
+                    </Button>
+                  </Stack>
+                </Stack>
+              </Paper>
+            ) : null}
             {displayStatus ? (
               <Typography role="status" color={voiceStatus ? 'warning.main' : 'success.main'} variant="body2">
                 {displayStatus}
@@ -505,15 +619,28 @@ export function ChatPanel() {
               open={Boolean(menuAnchor)}
               onClose={() => { setMenuAnchor(null); setMenuMessageIndex(null); }}
             >
-              <MenuItem onClick={handleUpdateReview}>
-                Update Review Section
-              </MenuItem>
-              <MenuItem onClick={handleUpdateExecutiveSummary}>
-                Update Executive Summary
-              </MenuItem>
-              <MenuItem onClick={handleAddToDashboard}>
-                Add to Dashboard
-              </MenuItem>
+              {menuMessageIndex !== null && messages[menuMessageIndex]?.role === 'user' ? (
+                <MenuItem onClick={handleRetry}>
+                  Retry
+                </MenuItem>
+              ) : (
+                <MenuItem onClick={handleUseInChat}>
+                  Use in Chat
+                </MenuItem>
+              )}
+              {menuMessageIndex !== null && messages[menuMessageIndex]?.role === 'assistant' ? (
+                [
+                  <MenuItem key="review" onClick={handleUpdateReview}>
+                    Update Review Section
+                  </MenuItem>,
+                  <MenuItem key="exec" onClick={handleUpdateExecutiveSummary}>
+                    Update Executive Summary
+                  </MenuItem>,
+                  <MenuItem key="dashboard" onClick={handleAddToDashboard}>
+                    Add to Dashboard
+                  </MenuItem>,
+                ]
+              ) : null}
             </Menu>
 
             {/* ── Review section update dialog ───────────────── */}
@@ -608,6 +735,22 @@ export function ChatPanel() {
               }
             />
 
+            {/* ── Collapsible tools section ─────────────────── */}
+            <Accordion
+              elevation={0}
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'transparent',
+                '&:before': { display: 'none' },
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'text.disabled', fontSize: '1rem' }} />} sx={{ minHeight: 36, py: 0, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+                <Typography variant="caption" color="text.disabled" sx={{ fontWeight: 600 }}>
+                  Tools &amp; Options
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 1 }}>
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
               <Tooltip title={isStreaming ? 'Streaming…' : 'Send'}>
                 <span>
@@ -814,6 +957,8 @@ export function ChatPanel() {
                 })}
               </Stack>
             ) : null}
+              </AccordionDetails>
+            </Accordion>
           </Stack>
         </Paper>
       </Box>
