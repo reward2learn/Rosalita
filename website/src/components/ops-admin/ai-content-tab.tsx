@@ -119,6 +119,14 @@ export function AiContentTab() {
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [showFullPrompt, setShowFullPrompt] = useState(false);
   const [showFullDataSummary, setShowFullDataSummary] = useState(false);
+  const [editedPrompt, setEditedPrompt] = useState<string | null>(null);
+
+  // Sync edited prompt when full prompt loads
+  useEffect(() => {
+    if (status?.fullPrompt && editedPrompt === null) {
+      setEditedPrompt(status.fullPrompt);
+    }
+  }, [status?.fullPrompt]);
   const abortRef = useRef<AbortController | null>(null);
 
   // Clear-seed state
@@ -201,6 +209,7 @@ export function AiContentTab() {
         },
         body: JSON.stringify({
           additionalContext: additionalContext || undefined,
+          overridePrompt: (editedPrompt && editedPrompt !== status?.fullPrompt) ? editedPrompt : undefined,
         }),
         signal: controller.signal,
       });
@@ -823,22 +832,26 @@ export function AiContentTab() {
                 Copy Full Prompt
               </Button>
             </Stack>
-            <Typography
-              variant="body2"
-              component="pre"
-              sx={{
-                whiteSpace: 'pre-wrap',
-                fontFamily: 'monospace',
-                fontSize: '0.7rem',
-                bgcolor: 'rgba(0,0,0,0.3)',
-                p: 2,
-                borderRadius: 1,
-                maxHeight: 500,
-                overflow: 'auto',
-              }}
-            >
-              {status?.fullPrompt ?? status?.promptPreview ?? 'Loading...'}
-            </Typography>
+              <TextField
+                fullWidth
+                multiline
+                minRows={10}
+                maxRows={30}
+                value={editedPrompt ?? status?.fullPrompt ?? status?.promptPreview ?? ''}
+                onChange={(e) => setEditedPrompt(e.target.value)}
+                variant="outlined"
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'rgba(0,0,0,0.3)',
+                    fontFamily: 'monospace',
+                    fontSize: '0.7rem',
+                  },
+                  '& textarea': {
+                    whiteSpace: 'pre-wrap !important' as 'pre-wrap',
+                  },
+                }}
+              />
           </Stack>
         </AccordionDetails>
       </Accordion>

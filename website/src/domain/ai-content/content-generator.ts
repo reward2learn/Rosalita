@@ -232,6 +232,7 @@ export async function generateAndSave(
   source?: string | Buffer | Buffer[],
   model?: string,
   additionalContext?: string,
+  overridePrompt?: string,
 ): Promise<GenerationResult & { saved?: SavedResult; prompt?: string }> {
   try {
     // ── 1. Extract Excel data ───────────────────────────
@@ -258,7 +259,7 @@ export async function generateAndSave(
       pct: 20,
     });
 
-    const prompt = buildGenerationPrompt(data, additionalContext);
+    const prompt = overridePrompt ?? buildGenerationPrompt(data, additionalContext);
     const promptKb = (prompt.length / 1000).toFixed(0);
 
     onProgress?.({
@@ -328,30 +329,58 @@ export async function generateAndSave(
     let dashboardData: Record<string, unknown> | null = null;
     try {
       const dashboardPrompt = buildDashboardPrompt(data, additionalContext);
-      const dashResult = await callOpenAiForDocument(
-        dashboardPrompt, apiKey, 'dashboardData', model, onProgress,
-      );
-      if (dashResult) {
-        try {
-          const parsed = JSON.parse(dashResult);
-          if (parsed.actionPhases && parsed.targetRows && parsed.levers) {
-            dashboardData = parsed;
-            // Save to knowledge_snippets so the dashboard blocks can read it
-            await db.knowledgeSnippet.upsert({
-              where: { key: 'dashboard_data' },
-              create: {
-                key: 'dashboard_data',
-                category: 'document',
-                content: JSON.stringify(parsed),
-              },
-              update: {
-                content: JSON.stringify(parsed),
-                category: 'document',
-              },
-            });
+
+      // Call OpenAI directly (not through callOpenAiForDocument) because dashboard
+      // data returns structured JSON, not a markdown string.
+      const dashResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model ?? 'gpt-4o',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a precise financial analyst. You ALWAYS return only valid JSON with exactly the keys requested. Return ONLY a JSON object with keys "actionPhases", "targetRows", and "levers".',
+            },
+            {
+              role: 'user',
+              content: dashboardPrompt,
+            },
+          ],
+          temperature: 0.3,
+          max_tokens: 16384,
+          response_format: { type: 'json_object' },
+        }),
+      });
+
+      if (dashResponse.ok) {
+        const dashResult = await dashResponse.json();
+        const dashReply = dashResult.choices?.[0]?.message?.content ?? '';
+        if (dashReply) {
+          try {
+            const parsed = JSON.parse(dashReply);
+            if (parsed.actionPhases && parsed.targetRows && parsed.levers) {
+              dashboardData = parsed;
+              // Save to knowledge_snippets so the dashboard blocks can read it
+              await db.knowledgeSnippet.upsert({
+                where: { key: 'dashboard_data' },
+                create: {
+                  key: 'dashboard_data',
+                  category: 'document',
+                  content: JSON.stringify(parsed),
+                },
+                update: {
+                  content: JSON.stringify(parsed),
+                  category: 'document',
+                },
+              });
+            }
+          } catch {
+            // non-critical — dashboard just shows hardcoded fallbacks
           }
-        } catch {
-          // non-critical — dashboard just shows hardcoded fallbacks
         }
       }
     } catch {

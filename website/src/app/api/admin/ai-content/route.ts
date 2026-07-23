@@ -45,6 +45,7 @@ const postSchema = z.object({
   filePath: z.string().optional(),
   model: z.string().optional(),
   additionalContext: z.string().optional(),
+  overridePrompt: z.string().optional(),
 });
 
 // ── SSE helpers ─────────────────────────────────────────
@@ -224,7 +225,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const { filePath, model, additionalContext } = parsed.data;
+  const { filePath, model, additionalContext, overridePrompt } = parsed.data;
 
   // Build a DbSession from the authenticated request (needed for ZenStack policy)
   const dbSession: DbSession = { tier: guard.session.tier as 'public' | 'pin' | 'google', sub: guard.session.sub };
@@ -276,7 +277,7 @@ export async function POST(request: Request): Promise<Response> {
   if (wantsStream) {
     const stream = sseStream(async (emit) => {
       const db = createClient(dbSession);
-      await generateAndSave(db, emit, source, model, additionalContext);
+      await generateAndSave(db, emit, source, model, additionalContext, overridePrompt);
     });
 
     return new Response(stream, {
@@ -291,7 +292,7 @@ export async function POST(request: Request): Promise<Response> {
   // ── Blocking (legacy) mode ────────────────────────────
   try {
     const db = createClient(dbSession);
-    const result = await generateAndSave(db, undefined, source, model, additionalContext);
+    const result = await generateAndSave(db, undefined, source, model, additionalContext, overridePrompt);
 
     if (!result.success) {
       return NextResponse.json(
