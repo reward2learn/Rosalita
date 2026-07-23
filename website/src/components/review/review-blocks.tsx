@@ -17,6 +17,7 @@ import Select from '@mui/material/Select';
 import { getReviewPartDisplayTitle, listReviewParts, setDynamicReviewParts } from '@/lib/page-catalog';
 import type { ReviewPartDefinition } from '@/lib/page-catalog';
 import { useGetReviewPartQuery } from '@/store/apis/content-api';
+import { useGetSeedDetailsQuery } from '@/store/apis/config-api';
 import { AiFindingsBlock } from '@/components/blocks/ai-findings-block';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -109,30 +110,28 @@ const PART_GROUPS = [
 ];
 
 export function ReviewBlocks() {
+  const { data: seedData, isLoading: seedLoading } = useGetSeedDetailsQuery();
   const [dbState, setDbState] = useState<'loading' | 'empty' | 'populated'>('loading');
 
-  // On mount, fetch all review parts from the DB and register in the catalog
+  // On mount, register all review parts from the DB in the catalog
   useEffect(() => {
-    fetch('/api/config/seed-details')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.reviewPartDetails?.length) {
-          const parts: ReviewPartDefinition[] = data.reviewPartDetails.map(
-            (p: { slug: string; partKey: string; title: string }) => ({
-              partSlug: p.slug,
-              partKey: p.partKey,
-              title: p.title,
-              authTier: 'google' as const,
-            }),
-          );
-          setDynamicReviewParts(parts);
-          setDbState('populated');
-        } else {
-          setDbState('empty');
-        }
-      })
-      .catch(() => setDbState('empty'));
-  }, []);
+    if (seedLoading) return;
+    const details = seedData?.data?.reviewPartDetails;
+    if (details?.length) {
+      const parts: ReviewPartDefinition[] = details.map(
+        (p: { slug: string; partKey: string; title: string }) => ({
+          partSlug: p.slug,
+          partKey: p.partKey,
+          title: p.title,
+          authTier: 'google' as const,
+        }),
+      );
+      setDynamicReviewParts(parts);
+      setDbState('populated');
+    } else {
+      setDbState('empty');
+    }
+  }, [seedData, seedLoading]);
 
   const parts = useMemo(() => {
     if (dbState !== 'populated') return [];

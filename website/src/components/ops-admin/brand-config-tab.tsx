@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useGetAdminBrandConfigQuery, useUpdateAdminBrandConfigMutation } from '@/store/apis/admin-api';
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
@@ -32,60 +33,42 @@ function isValidHex(c: string): boolean {
 }
 
 export function BrandConfigTab() {
+  const { data: brandData, isLoading } = useGetAdminBrandConfigQuery();
+  const [updateBrandConfig, { isLoading: isSaving }] = useUpdateAdminBrandConfigMutation();
+
   const [config, setConfig] = useState<BrandConfig>({
     brandLogoText: '',
     brandLogoUrl: '',
     brandPrimaryColor: '#eb3d28',
     brandSecondaryColor: '#0af9fe',
   });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  const fetchConfig = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/admin/brand-config');
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(err.error ?? `HTTP ${res.status}`);
-      }
-      const payload = await res.json();
-      if (payload.success) {
-        setConfig(payload.data);
-        setLogoPreview(payload.data.brandLogoUrl || null);
-      } else {
-        throw new Error(payload.error ?? 'Unknown error');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // ── Map RTK Query response into local config state ────
   useEffect(() => {
-    void fetchConfig();
-  }, [fetchConfig]);
+    if (brandData?.success && brandData.data) {
+      const c = brandData.data as BrandConfig;
+      setConfig(c);
+      setLogoPreview(c.brandLogoUrl || null);
+    } else if (brandData?.success === false) {
+      setError(brandData.error ?? 'Failed to load brand config');
+    }
+  }, [brandData]);
 
   const handleSave = useCallback(async () => {
-    setSaving(true);
     setError(null);
     setSuccess(false);
 
     // Validate hex colors
     if (!isValidHex(config.brandPrimaryColor)) {
       setError('Primary color must be a valid hex color (e.g. #eb3d28)');
-      setSaving(false);
       return;
     }
     if (!isValidHex(config.brandSecondaryColor)) {
       setError('Secondary color must be a valid hex color (e.g. #0af9fe)');
-      setSaving(false);
       return;
     }
 
@@ -102,15 +85,8 @@ export function BrandConfigTab() {
         formData.append('brandLogoUrl', config.brandLogoUrl);
       }
 
-      const res = await fetch('/api/admin/brand-config', {
-        method: 'PUT',
-        body: formData,
-      });
-
-      const payload = await res.json();
+      const payload = await updateBrandConfig(formData).unwrap();
       if (payload.success) {
-        setConfig(payload.data);
-        setLogoPreview(payload.data.brandLogoUrl || null);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {
@@ -118,10 +94,8 @@ export function BrandConfigTab() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSaving(false);
     }
-  }, [config.brandLogoText, config.brandPrimaryColor, config.brandSecondaryColor, logoPreview]);
+  }, [config.brandLogoText, config.brandPrimaryColor, config.brandSecondaryColor, logoPreview, updateBrandConfig]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,7 +120,7 @@ export function BrandConfigTab() {
     setConfig((prev) => ({ ...prev, brandLogoUrl: '' }));
   }, []);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
         <CircularProgress />
@@ -431,11 +405,11 @@ export function BrandConfigTab() {
             <Button
               variant="contained"
               onClick={handleSave}
-              disabled={saving}
-              startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
+              disabled={isSaving}
+              startIcon={isSaving ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
               sx={{ py: 1.25 }}
             >
-              {saving ? 'Saving...' : 'Save Brand Configuration'}
+              {isSaving ? 'Saving...' : 'Save Brand Configuration'}
             </Button>
           </Box>
         </Stack>

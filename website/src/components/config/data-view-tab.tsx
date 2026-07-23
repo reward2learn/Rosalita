@@ -34,6 +34,9 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 
+import { useGetSeedDetailsQuery, useImportDataMutation } from '@/store/apis/config-api';
+import { useClearSeedMutation } from '@/store/apis/admin-api';
+
 // ── Types from seed-details API ─────────────────────────
 
 interface SeedDetails {
@@ -87,36 +90,45 @@ function formatCount(n: number): string {
 }
 
 export function DataViewTab() {
+  // ── RTK Query hooks ────────────────────────────────────
+  const {
+    data: seedData,
+    isLoading: seedLoading,
+    error: seedError,
+    refetch: refetchDetails,
+  } = useGetSeedDetailsQuery();
+  const [clearSeed, { isLoading: clearing }] = useClearSeedMutation();
+  const [importData, { isLoading: importing }] = useImportDataMutation();
+
+  // ── Local state ────────────────────────────────────────
   const [details, setDetails] = useState<SeedDetails | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
-  const [clearing, setClearing] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
   const [clearResult, setClearResult] = useState<Record<string, number> | null>(null);
 
-  const fetchDetails = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/config/seed-details');
-      if (res.ok) {
-        const payload = await res.json();
-        if (payload.success) setDetails(payload);
-        else setError(payload.error ?? 'Failed to load');
-      } else {
-        setError(`HTTP ${res.status}`);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
+  // Sync RTK Query seed data into local state
+  useEffect(() => {
+    if (seedData?.success) {
+      setDetails(seedData as unknown as SeedDetails);
+      setError(null);
+    } else if (seedData && !seedData.success) {
+      setError(seedData.error ?? 'Failed to load seed details');
     }
-  }, []);
+  }, [seedData]);
 
-  useEffect(() => { void fetchDetails(); }, [fetchDetails]);
+  useEffect(() => {
+    if (seedError) {
+      const msg = typeof seedError === 'object' && 'message' in seedError
+        ? String((seedError as { message: unknown }).message)
+        : typeof seedError === 'object' && 'error' in seedError
+          ? String((seedError as { error: unknown }).error)
+          : String(seedError);
+      setError(msg);
+    }
+  }, [seedError]);
 
   // ── Derived categories ────────────────────────────────
 
@@ -252,36 +264,24 @@ export function DataViewTab() {
       .filter((c) => selected.has(c.key))
       .map((c) => c.table);
 
-    setClearing(true);
     setClearError(null);
     setClearResult(null);
 
     try {
-      const res = await fetch('/api/admin/clear-seed', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'selected',
-          tables: selectedTables,
-          confirm: 'CLEAR SELECTED',
-        }),
-      });
-      const payload = await res.json();
-      if (payload.success) {
-        setClearResult(payload.data.deleted);
-        setConfirmOpen(false);
-        setConfirmText('');
-        setSelected(new Set());
-        void fetchDetails();
-      } else {
-        setClearError(payload.error ?? 'Clear failed');
-      }
+      const result = await clearSeed({
+        mode: 'selected',
+        tables: selectedTables,
+        confirm: 'CLEAR SELECTED',
+      }).unwrap();
+      setClearResult(result.data.deleted);
+      setConfirmOpen(false);
+      setConfirmText('');
+      setSelected(new Set());
+      void refetchDetails();
     } catch (err) {
       setClearError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setClearing(false);
     }
-  }, [selected, categories, fetchDetails]);
+  }, [selected, categories, clearSeed, refetchDetails]);
 
   // ── Export / Import ──────────────────────────────────
 
@@ -312,7 +312,6 @@ export function DataViewTab() {
     URL.revokeObjectURL(url);
   }, [categories]);
 
-  const [importing, setImporting] = useState(false);
   const [importingCategory, setImportingCategory] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<string | null>(null);
   const [categoryImportResults, setCategoryImportResults] = useState<Record<string, string | null>>({});
@@ -324,7 +323,6 @@ export function DataViewTab() {
     if (!file) return;
     e.target.value = '';
 
-    setImporting(true);
     setImportResult(null);
     try {
       const text = await file.text();
@@ -366,17 +364,8 @@ export function DataViewTab() {
       for (const [table, data] of entries) {
         if (!Array.isArray(data) || data.length === 0) continue;
         try {
-          const res = await fetch('/api/config/import-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ table, data }),
-          });
-          const result = await res.json();
-          if (result.success) {
-            totalImported += result.data.imported;
-          } else {
-            errors.push(`${table}: ${result.error ?? 'Import failed'}`);
-          }
+          const result = await importData({ table, data }).unwrap();
+          totalImported += result.data.imported;
         } catch (err) {
           errors.push(`${table}: ${err instanceof Error ? err.message : 'Request failed'}`);
         }
@@ -387,13 +376,11 @@ export function DataViewTab() {
       } else {
         setImportResult(`Imported ${totalImported} rows successfully.`);
       }
-      void fetchDetails();
+      void refetchDetails();
     } catch (err) {
       setImportResult(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setImporting(false);
     }
-  }, [fetchDetails]);
+  }, [importData, refetchDetails]);
 
   /** Import a file for a specific category only. */
   const handleCategoryImport = useCallback(async (cat: CategoryConfig, file: File) => {
@@ -412,28 +399,19 @@ export function DataViewTab() {
         return;
       }
 
-      const res = await fetch('/api/config/import-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ table, data }),
-      });
-      const result = await res.json();
-      if (result.success) {
-        setCategoryImportResults((prev) => ({ ...prev, [cat.key]: `Imported ${result.data.imported} rows` }));
-        void fetchDetails();
-      } else {
-        setCategoryImportResults((prev) => ({ ...prev, [cat.key]: result.error ?? 'Import failed' }));
-      }
+      const result = await importData({ table, data }).unwrap();
+      setCategoryImportResults((prev) => ({ ...prev, [cat.key]: `Imported ${result.data.imported} rows` }));
+      void refetchDetails();
     } catch (err) {
       setCategoryImportResults((prev) => ({ ...prev, [cat.key]: `Error: ${err instanceof Error ? err.message : String(err)}` }));
     } finally {
       setImportingCategory(null);
     }
-  }, [fetchDetails]);
+  }, [importData, refetchDetails]);
 
   // ── Loading / error ───────────────────────────────────
 
-  if (loading) {
+  if (seedLoading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>;
   }
 
@@ -456,7 +434,7 @@ export function DataViewTab() {
                 : 'Loading...'}
             </Typography>
           </Box>
-          <Button size="small" variant="outlined" onClick={fetchDetails}>Refresh</Button>
+          <Button size="small" variant="outlined" onClick={() => { void refetchDetails(); }}>Refresh</Button>
         </Stack>
       </Paper>
 

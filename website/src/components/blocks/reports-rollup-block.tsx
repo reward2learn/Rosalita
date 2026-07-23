@@ -14,6 +14,7 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { DataGrid, type GridColDef, type GridValidRowModel } from '@mui/x-data-grid';
 import { useGetReportsQuery, type ReportPeriod } from '@/store/apis/financial-api';
+import { useGetSheetDataQuery } from '@/store/apis/sheet-data-api';
 
 // ── Sheet data view (when config.sheet is provided) ────
 
@@ -36,26 +37,12 @@ function isLikelyFinancial(key: string, value: unknown): boolean {
 }
 
 function SheetDataView({ sheet, title }: { sheet: string; title?: string }) {
-  const [data, setData] = useState<SheetDataPayload | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: PER_PAGE });
-
-  const fetchPage = useCallback((page: number) => {
-    setLoading(true);
-    setError(null);
-    const params = new URLSearchParams({ sheet, page: String(page + 1), perPage: String(PER_PAGE) });
-    fetch(`/api/sheet-data?${params}`)
-      .then((r) => r.json())
-      .then((payload) => {
-        if (payload.error) setError(payload.error);
-        else setData(payload);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Request failed'))
-      .finally(() => setLoading(false));
-  }, [sheet]);
-
-  useEffect(() => { fetchPage(paginationModel.page); }, [paginationModel.page, fetchPage]);
+  const { data: payload, isLoading, error: queryError } = useGetSheetDataQuery(
+    { sheet, page: paginationModel.page + 1, perPage: PER_PAGE },
+  );
+  const data = payload?.data as SheetDataPayload | undefined;
+  const error = queryError ? (queryError instanceof Error ? queryError.message : 'Request failed') : null;
 
   const columns: GridColDef[] = useMemo(() => {
     if (!data) return [];
@@ -97,7 +84,7 @@ function SheetDataView({ sheet, title }: { sheet: string; title?: string }) {
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, flexShrink: 0 }}>
         {title ?? `${sheet} — Data`}
       </Typography>
-      {loading ? (
+      {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={24} /></Box>
       ) : error ? (
         <Typography color="error">{error}</Typography>
@@ -106,7 +93,7 @@ function SheetDataView({ sheet, title }: { sheet: string; title?: string }) {
           rows={rows}
           columns={columns}
           getRowId={(row) => row._rowIndex}
-          loading={loading}
+          loading={isLoading}
           rowCount={data.totalRows}
           paginationMode="server"
           paginationModel={paginationModel}

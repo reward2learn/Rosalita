@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -28,7 +28,7 @@ import {
   validateExcelUpload,
   validateMarkdownUpload,
 } from '@/lib/config/upload-validation';
-import { useReseedFromSourcesMutation, useReprocessFromCacheMutation } from '@/store/apis/config-api';
+import { useReseedFromSourcesMutation, useReprocessFromCacheMutation, useGetSeedDetailsQuery } from '@/store/apis/config-api';
 import type { ReseedResponse } from '@/app/api/config/reseed/route';
 import type { ReprocessResponse } from '@/app/api/config/reprocess/route';
 
@@ -367,25 +367,16 @@ const TABLE_LABELS: Record<string, string> = {
 function SeedSummary({ result }: { result: ReseedResponse }) {
   const rows = Object.entries(result.counts) as [string, number][];
   const [details, setDetails] = useState<SeedDetails | null>(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
   const [expandedTable, setExpandedTable] = useState<string | null>(null);
   const [showAiContent, setShowAiContent] = useState(false);
 
-  const fetchDetails = useCallback(async () => {
-    setLoadingDetails(true);
-    try {
-      const res = await fetch('/api/config/seed-details');
-      if (res.ok) {
-        const payload = await res.json();
-        if (payload.success) setDetails(payload);
-        else console.warn('[seed-details] API error:', payload.error);
-      }
-    } catch {
-      // non-critical
-    } finally {
-      setLoadingDetails(false);
+  const { data: seedDetailsData, isLoading: detailsLoading } = useGetSeedDetailsQuery();
+
+  useEffect(() => {
+    if (seedDetailsData?.success) {
+      setDetails(seedDetailsData as unknown as SeedDetails);
     }
-  }, []);
+  }, [seedDetailsData]);
 
   const handleToggle = (table: string) => {
     if (expandedTable === table) {
@@ -393,7 +384,6 @@ function SeedSummary({ result }: { result: ReseedResponse }) {
       return;
     }
     setExpandedTable(table);
-    if (!details) void fetchDetails();
   };
 
   /** Render the detail panel for a given table. */

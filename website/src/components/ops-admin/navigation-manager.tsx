@@ -32,6 +32,13 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import ListItemText from '@mui/material/ListItemText';
 import Checkbox from '@mui/material/Checkbox';
 import { NavIcon, NAV_ICON_NAMES } from '@/components/shared/nav-icon';
+import {
+  useGetNavigationQuery,
+  useCreateNavigationItemMutation,
+  useUpdateNavigationItemsMutation,
+  useDeleteNavigationItemsMutation,
+  useListAdminGroupsQuery,
+} from '@/store/apis/admin-api';
 
 // ── Types ──────────────────────────────────────────────
 
@@ -108,7 +115,6 @@ function collectDescendantIds(items: (FlatItem & { depth: number })[], parentId:
 export function NavigationManager() {
   const [items, setItems] = useState<NavItem[]>([]);
   const [flatItems, setFlatItems] = useState<(FlatItem & { depth: number })[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -128,40 +134,33 @@ export function NavigationManager() {
   const [batchTier, setBatchTier] = useState<'public' | 'pin' | 'google'>('public');
   const [batchGroups, setBatchGroups] = useState<string[]>([]);
 
-  const fetchItems = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/admin/navigation');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const payload = await res.json();
-      if (payload.success) {
-        setItems(payload.data.items ?? []);
-        setFlatItems(flattenTree(payload.data.items ?? []));
-      } else {
-        throw new Error(payload.error ?? 'Failed to load');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // ── RTK Query: navigation ─────────────────────────────
+  const { data: navData, isLoading: navLoading } = useGetNavigationQuery();
 
-  useEffect(() => { void fetchItems(); }, [fetchItems]);
-
-  // ── Security groups list (for Required Groups multi-select) ──
-  const [allSecurityGroups, setAllSecurityGroups] = useState<{ code: string; name: string }[]>([]);
   useEffect(() => {
-    fetch('/api/admin/groups')
-      .then((r) => r.json())
-      .then((payload) => {
-        if (payload.success && Array.isArray(payload.data?.groups)) {
-          setAllSecurityGroups(payload.data.groups);
-        }
-      })
-      .catch(() => { /* non-critical */ });
-  }, []);
+    if (navData?.success) {
+      const navItems = (navData.data as { items?: NavItem[] })?.items ?? [];
+      setItems(navItems);
+      setFlatItems(flattenTree(navItems));
+    }
+  }, [navData]);
+
+  // ── RTK Query: security groups ────────────────────────
+  const { data: groupsData } = useListAdminGroupsQuery();
+  const [allSecurityGroups, setAllSecurityGroups] = useState<{ code: string; name: string }[]>([]);
+
+  useEffect(() => {
+    if (groupsData?.success && groupsData.data?.groups) {
+      setAllSecurityGroups(
+        groupsData.data.groups.map((g) => ({ code: g.code, name: g.name })),
+      );
+    }
+  }, [groupsData]);
+
+  // ── RTK Query: mutations ──────────────────────────────
+  const [createNav] = useCreateNavigationItemMutation();
+  const [updateNav] = useUpdateNavigationItemsMutation();
+  const [deleteNav] = useDeleteNavigationItemsMutation();
 
   // ── Create ────────────────────────────────────────────
   const [newTitle, setNewTitle] = useState('');
@@ -182,20 +181,15 @@ export function NavigationManager() {
       if (newType === 'folder') path = '';
       if (newType === 'page' && !path) path = `/${newTitle.trim().toLowerCase().replace(/\s+/g, '-')}`;
 
-      const res = await fetch('/api/admin/navigation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: newTitle.trim(),
-          path,
-          parentId: newParentId || null,
-          authTier: newTier,
-          icon: newIcon,
-          requiredGroups: newRequiredGroups.join(','),
-        }),
-      });
-      const payload = await res.json();
-      if (payload.success) {
+      const result = await createNav({
+        title: newTitle.trim(),
+        path,
+        parentId: newParentId || null,
+        authTier: newTier,
+        icon: newIcon,
+        requiredGroups: newRequiredGroups.join(','),
+      }).unwrap();
+      if (result.success) {
         setCreateDialogOpen(false);
         setNewTitle('');
         setNewPath('');
@@ -203,16 +197,16 @@ export function NavigationManager() {
         setNewType('page');
         setNewRequiredGroups([]);
         setNewIcon('');
-        void fetchItems();
+        // RTKQ invalidatesTags:['Navigation'] auto-refetches
       } else {
-        throw new Error(payload.error ?? 'Create failed');
+        throw new Error(result.error ?? 'Create failed');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
-  }, [newTitle, newPath, newParentId, newTier, newType, newRequiredGroups, newIcon, fetchItems]);
+  }, [newTitle, newPath, newParentId, newTier, newType, newRequiredGroups, newIcon, createNav]);
 
   // ── Edit ──────────────────────────────────────────────
   const openEdit = useCallback((item: FlatItem) => {
@@ -242,77 +236,66 @@ export function NavigationManager() {
           for (const id of descIds) {
             const original = flatItems.find((i) => i.id === id);
             if (original) {
-              itemsToSave.push({ ...original, ...changedProps });
+              itemsToSave.push({ ...original, ...changedProps } as FlatItem);
             }
           }
         }
       }
 
-      const res = await fetch('/api/admin/navigation', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: itemsToSave }),
-      });
-      const payload = await res.json();
-      if (payload.success) {
+      const result = await updateNav({ items: itemsToSave as unknown as Record<string, unknown>[] }).unwrap();
+      if (result.success) {
         setEditDialogOpen(false);
         setEditingItem(null);
         setOriginalEditingItem(null);
         setApplyRecursive(false);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 2000);
-        void fetchItems();
+        // RTKQ invalidatesTags:['Navigation'] auto-refetches
       } else {
-        throw new Error(payload.error ?? 'Update failed');
+        throw new Error(result.error ?? 'Update failed');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
-  }, [editingItem, originalEditingItem, applyRecursive, flatItems, fetchItems]);
+  }, [editingItem, originalEditingItem, applyRecursive, flatItems, updateNav]);
 
   // ── Set as default route ──────────────────────────────
   const handleSetDefault = useCallback(async (item: FlatItem) => {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/navigation', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: [{ id: item.id, isDefault: true }] }),
-      });
-      const payload = await res.json();
-      if (payload.success) {
+      const result = await updateNav({ items: [{ id: item.id, isDefault: true }] }).unwrap();
+      if (result.success) {
         setSuccess(true);
         setTimeout(() => setSuccess(false), 2000);
-        void fetchItems();
+        // RTKQ invalidatesTags:['Navigation'] auto-refetches
       } else {
-        throw new Error(payload.error ?? 'Failed to set default');
+        throw new Error(result.error ?? 'Failed to set default');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
-  }, [fetchItems]);
+  }, [updateNav]);
 
   // ── Delete ────────────────────────────────────────────
   const handleDelete = useCallback(async (id: string) => {
     if (!globalThis.window.confirm('Delete this nav item? Children will be moved to root level.')) return;
     setError(null);
     try {
-      const res = await fetch(`/api/admin/navigation?ids=${encodeURIComponent(id)}`, { method: 'DELETE' });
-      const payload = await res.json();
-      if (payload.success) {
-        void fetchItems();
+      const result = await deleteNav([id]).unwrap();
+      if (result.success) {
+        // RTKQ invalidatesTags:['Navigation'] auto-refetches
       } else {
-        throw new Error(payload.error ?? 'Delete failed');
+        throw new Error(result.error ?? 'Delete failed');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
-  }, [fetchItems]);
+  }, [deleteNav]);
 
   // ── Multi-select helpers ─────────────────────────────
   const toggleSelect = useCallback((id: string) => {
@@ -340,23 +323,22 @@ export function NavigationManager() {
     setError(null);
     try {
       const ids = Array.from(selectedIds);
-      const res = await fetch(`/api/admin/navigation?ids=${ids.map(encodeURIComponent).join(',')}`, { method: 'DELETE' });
-      const payload = await res.json();
-      if (payload.success) {
+      const result = await deleteNav(ids).unwrap();
+      if (result.success) {
         setBatchDialogOpen(false);
         setSelectedIds(new Set());
         setSuccess(true);
         setTimeout(() => setSuccess(false), 2000);
-        void fetchItems();
+        // RTKQ invalidatesTags:['Navigation'] auto-refetches
       } else {
-        throw new Error(payload.error ?? 'Batch delete failed');
+        throw new Error(result.error ?? 'Batch delete failed');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
-  }, [selectedIds, fetchItems]);
+  }, [selectedIds, deleteNav]);
 
   const handleBatchAssign = useCallback(async () => {
     if (selectedIds.size === 0 || !batchDialogMode) return;
@@ -374,27 +356,22 @@ export function NavigationManager() {
         return { ...orig, ...patch };
       }).filter(Boolean);
 
-      const res = await fetch('/api/admin/navigation', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: updates }),
-      });
-      const payload = await res.json();
-      if (payload.success) {
+      const result = await updateNav({ items: updates as unknown as Record<string, unknown>[] }).unwrap();
+      if (result.success) {
         setBatchDialogOpen(false);
         setSelectedIds(new Set());
         setSuccess(true);
         setTimeout(() => setSuccess(false), 2000);
-        void fetchItems();
+        // RTKQ invalidatesTags:['Navigation'] auto-refetches
       } else {
-        throw new Error(payload.error ?? 'Batch update failed');
+        throw new Error(result.error ?? 'Batch update failed');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
-  }, [selectedIds, batchDialogMode, batchParentId, batchTier, batchGroups, flatItems, fetchItems]);
+  }, [selectedIds, batchDialogMode, batchParentId, batchTier, batchGroups, flatItems, updateNav]);
 
   // ── Drag-to-reorder helpers ──────────────────────────
   const moveItem = useCallback((fromIdx: number, toIdx: number) => {
@@ -418,12 +395,7 @@ export function NavigationManager() {
       const reordered = updated.map((item, i) => ({ ...item, sortOrder: i }));
       const payload = reordered.map(({ depth: _, ...rest }) => rest);
 
-      const res = await fetch('/api/admin/navigation', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: payload }),
-      });
-      const result = await res.json();
+      const result = await updateNav({ items: payload }).unwrap();
       if (result.success) {
         setFlatItems(reordered);
         setSuccess(true);
@@ -438,7 +410,7 @@ export function NavigationManager() {
       setDragIndex(null);
       setDropIndex(null);
     }
-  }, [dragIndex, dropIndex, flatItems]);
+  }, [dragIndex, dropIndex, flatItems, updateNav]);
 
   // ── Render tree row ──────────────────────────────────
   /** Check whether any item in the list has this item as its parent. */
@@ -518,7 +490,7 @@ export function NavigationManager() {
     );
   }
 
-  if (loading) {
+  if (navLoading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>;
   }
 

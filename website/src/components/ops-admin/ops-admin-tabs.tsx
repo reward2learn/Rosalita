@@ -583,7 +583,7 @@ const PosOcrPanel = forwardRef<PosOcrHandle, {
 }, ref) => {
   const [images, setImages] = useState<ReceiptImagePayload[]>([]);
   const [text, setText] = useState('');
-  useScanPosReceiptMutation();
+  const [scanPosReceipt] = useScanPosReceiptMutation();
   const [parse] = useParsePosTextMutation();
   const abortRef = useRef<AbortController | null>(null);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number; status?: string } | null>(null);
@@ -652,22 +652,9 @@ const PosOcrPanel = forwardRef<PosOcrHandle, {
       setScanProgress({ current: i + 1, total: images.length, failed, status: 'scanning' });
 
       try {
-        const controller = new AbortController();
-        abortRef.current = controller;
-        const resp = await fetch('/api/pos?action=scan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ images: [images[i].dataUrl] }),
-          signal: controller.signal,
-          credentials: 'include',
-        });
-        if (resp.ok) {
-          const payload = await resp.json();
-          if (payload.data?.text) results.push(payload.data.text.trim());
-        } else {
-          failed++;
-          setScanProgress({ current: i + 1, total: images.length, failed, status: 'scanning' });
-        }
+        abortRef.current = new AbortController();
+        const result = await scanPosReceipt({ images: [images[i].dataUrl] }).unwrap();
+        if (result.data?.text) results.push(result.data.text.trim());
       } catch (err) {
         if ((err as Error).name === 'AbortError') break;
         failed++;
@@ -1466,7 +1453,7 @@ function ExpenseOcrPanel({
 }) {
   const [images, setImages] = useState<ReceiptImagePayload[]>([]);
   const [text, setText] = useState('');
-  useScanExpenseReceiptMutation();
+  const [scanExpenseReceipt] = useScanExpenseReceiptMutation();
   const [parse, parseState] = useParseExpenseTextMutation();
   const abortRef = useRef<AbortController | null>(null);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number; failed: number; status?: string } | null>(null);
@@ -1517,22 +1504,9 @@ function ExpenseOcrPanel({
       setScanProgress({ current: i + 1, total: images.length, failed, status: 'scanning' });
 
       try {
-        const controller = new AbortController();
-        abortRef.current = controller;
-        const resp = await fetch('/api/pos?action=expense-scan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ images: [images[i].dataUrl] }),
-          signal: controller.signal,
-          credentials: 'include',
-        });
-        if (resp.ok) {
-          const payload = await resp.json();
-          if (payload.data?.text) results.push(payload.data.text.trim());
-        } else {
-          failed++;
-          setScanProgress({ current: i + 1, total: images.length, failed, status: 'scanning' });
-        }
+        abortRef.current = new AbortController();
+        const result = await scanExpenseReceipt({ images: [images[i].dataUrl] }).unwrap();
+        if (result.data?.text) results.push(result.data.text.trim());
       } catch (err) {
         if ((err as Error).name === 'AbortError') break;
         failed++;

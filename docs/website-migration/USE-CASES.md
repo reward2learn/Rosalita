@@ -13,7 +13,7 @@
 | `pin` | `POST /api/auth?action=verify-pin` | Z-reports, imports, monthly actuals, POS | ops-admin, partial dashboard |
 | `google` | Google OAuth | All write APIs | Full app including review, chat, PDF |
 
-**v2 write auth:** JWT in cookie `rosalita.session` — claims include `tier`. **No `x-admin-key` in client.**
+**v2 write auth:** JWT in cookie `redruby.session` — claims include `tier`. **No `x-admin-key` in client.**
 
 ---
 
@@ -117,9 +117,9 @@
 | P2 | Domain services for UC-FIN-* |
 | P3 | UC-AUTH-01–09, UC-FIN-* APIs |
 | P4 | RTK Query + uiSlice + chatStreamSlice + RHF |
-| P6 | UC-DOC-01–04, UC-DASH-* seed data, UC-AI KB snippets |
+| P6 | UC-DOC-01–03, UC-DASH-* seed data, UC-AI KB snippets |
 | P5 | UC-UI-01–03, UC-LEGAL-*, shell |
-| P7 | UC-DASH-*, UC-DOC-03–04, UC-OPS-02 |
+| P7 | UC-DASH-*, UC-DOC-01–03, UC-OPS-02 |
 | P8 | UC-OPS-01, UC-AI-*, UC-DOC-01–02 |
 | P9 | UC-AUTH-*, UC-RPT-*, E2E all tiers |
 

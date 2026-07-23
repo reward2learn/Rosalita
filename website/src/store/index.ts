@@ -13,6 +13,10 @@ import { posApi } from '@/store/apis/pos-api';
 import { configApi } from '@/store/apis/config-api';
 import { tasksApi } from '@/store/apis/tasks-api';
 import { adminApi } from '@/store/apis/admin-api';
+import { dashboardApi } from '@/store/apis/dashboard-api';
+import { sheetDataApi } from '@/store/apis/sheet-data-api';
+import { brandConfigApi } from '@/store/apis/brand-config-api';
+import { navigationApi } from '@/store/apis/navigation-api';
 
 const apiMiddleware = [
   authApi.middleware,
@@ -26,6 +30,10 @@ const apiMiddleware = [
   configApi.middleware,
   tasksApi.middleware,
   adminApi.middleware,
+  dashboardApi.middleware,
+  sheetDataApi.middleware,
+  brandConfigApi.middleware,
+  navigationApi.middleware,
 ] as const;
 
 export function makeStore() {
@@ -45,6 +53,10 @@ export function makeStore() {
       [configApi.reducerPath]: configApi.reducer,
       [tasksApi.reducerPath]: tasksApi.reducer,
       [adminApi.reducerPath]: adminApi.reducer,
+      [dashboardApi.reducerPath]: dashboardApi.reducer,
+      [sheetDataApi.reducerPath]: sheetDataApi.reducer,
+      [brandConfigApi.reducerPath]: brandConfigApi.reducer,
+      [navigationApi.reducerPath]: navigationApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(...apiMiddleware),

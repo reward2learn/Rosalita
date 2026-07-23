@@ -43,8 +43,10 @@ import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import {
   chatApi,
+  useCreateAiFindingMutation,
   useSaveConversationMutation,
   useSynthesizeVoiceMutation,
+  useUpdateReviewMutation,
 } from '@/store/apis/chat-api';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
@@ -99,6 +101,8 @@ export function ChatPanel() {
   const [saveConversation, { isLoading: isSaving }] = useSaveConversationMutation();
   const [synthesizeVoiceMutation] = useSynthesizeVoiceMutation();
   const [ttsVoice, setTtsVoice] = useTtsVoicePreference();
+  const [updateReview] = useUpdateReviewMutation();
+  const [createFinding] = useCreateAiFindingMutation();
 
   const lastAssistant = [...messages].reverse().find((msg) => msg.role === 'assistant' && msg.content.trim());
 
@@ -393,26 +397,17 @@ export function ChatPanel() {
 
     setActionStatus('Updating...');
     try {
-      const res = await fetch('/api/chat/update-review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'assistant', content: msg.content }],
-          summary: `Update ${selectedPartSlug} with findings from AI chat.`,
-        }),
-      });
-      const payload = await res.json();
-      if (payload.success) {
-        setActionStatus(`✅ Review section updated.`);
-      } else {
-        setActionStatus(`❌ ${payload.error ?? 'Update failed'}`);
-      }
+      await updateReview({
+        messages: [{ role: 'assistant', content: msg.content }],
+        summary: `Update ${selectedPartSlug} with findings from AI chat.`,
+      }).unwrap();
+      setActionStatus(`✅ Review section updated.`);
     } catch {
-      setActionStatus('❌ Network error');
+      setActionStatus('❌ Update failed');
     }
-  }, [menuMessageIndex, selectedPartSlug, messages]);
+  }, [menuMessageIndex, selectedPartSlug, messages, updateReview]);
 
-  const handleUpdateExecutiveSummary = useCallback(() => {
+  const handleUpdateExecutiveSummary = useCallback(async () => {
     setMenuAnchor(null);
     setMenuMessageIndex(null);
     setActionStatus('Updating Executive Summary...');
@@ -423,25 +418,17 @@ export function ChatPanel() {
       return;
     }
 
-    fetch('/api/chat/update-review', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      await updateReview({
         messages: [{ role: 'assistant', content: msg.content }],
         summary: 'Update Executive Summary with findings from AI chat.',
         target: 'executive_summary',
-      }),
-    })
-      .then((r) => r.json())
-      .then((payload) => {
-        if (payload.success) {
-          setActionStatus('✅ Executive Summary updated.');
-        } else {
-          setActionStatus(`❌ ${payload.error ?? 'Update failed'}`);
-        }
-      })
-      .catch(() => setActionStatus('❌ Network error'));
-  }, [menuMessageIndex, messages]);
+      }).unwrap();
+      setActionStatus('✅ Executive Summary updated.');
+    } catch {
+      setActionStatus('❌ Update failed');
+    }
+  }, [menuMessageIndex, messages, updateReview]);
 
   const handleAddToDashboard = useCallback(() => {
     if (menuMessageIndex === null) return;
@@ -467,23 +454,17 @@ export function ChatPanel() {
     setActionStatus('Saving...');
 
     try {
-      const res = await fetch('/api/chat/ai-findings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: pendingFindingContent, title: findingTitle || undefined }),
-      });
-      const payload = await res.json();
-      if (payload.success) {
-        setActionStatus('✅ Added to Dashboard as AI Findings.');
-      } else {
-        setActionStatus(`❌ ${payload.error ?? 'Save failed'}`);
-      }
+      await createFinding({
+        content: pendingFindingContent,
+        title: findingTitle || undefined,
+      }).unwrap();
+      setActionStatus('✅ Added to Dashboard as AI Findings.');
     } catch {
-      setActionStatus('❌ Network error');
+      setActionStatus('❌ Save failed');
     } finally {
       setPendingFindingContent(null);
     }
-  }, [pendingFindingContent, findingTitle]);
+  }, [pendingFindingContent, findingTitle, createFinding]);
 
   const displayStatus = voiceStatus ?? status;
   const voicePhaseLabel = voiceMode ? VOICE_PHASE_LABEL[voicePhase] : null;

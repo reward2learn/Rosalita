@@ -23,6 +23,7 @@ import {
   type ReviewPartDefinition,
 } from '@/lib/page-catalog';
 import { useAppSelector } from '@/store/hooks';
+import { useGetSeedDetailsQuery } from '@/store/apis/config-api';
 import { useEffect, useMemo, useState } from 'react';
 
 const TOUCH_TARGET = { minHeight: 48 };
@@ -34,29 +35,25 @@ export function ReviewNav({ currentSlug }: { currentSlug: string }) {
 
   // Track catalog version so async-loaded DB parts trigger a re-render
   const [catalogVersion, setCatalogVersion] = useState(0);
+  const { data: seedData } = useGetSeedDetailsQuery();
 
   // On mount, fetch all review parts from the DB and register in the catalog
   useEffect(() => {
-    fetch('/api/config/seed-details')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.reviewPartDetails?.length) {
-          const parts: ReviewPartDefinition[] = data.reviewPartDetails.map(
-            (p: { slug: string; partKey: string; title: string }) => ({
-              partSlug: p.slug,
-              partKey: p.partKey,
-              title: p.title,
-              authTier: 'google' as const,
-            }),
-          );
-          setDynamicReviewParts(parts);
-          setCatalogVersion((v) => v + 1);
-        }
-      })
-      .catch(() => {
-        /* fall back to static catalog A–G */
-      });
-  }, []);
+    if (!seedData) return;
+    const details = seedData.data?.reviewPartDetails;
+    if (details?.length) {
+      const parts: ReviewPartDefinition[] = details.map(
+        (p: { slug: string; partKey: string; title: string }) => ({
+          partSlug: p.slug,
+          partKey: p.partKey,
+          title: p.title,
+          authTier: 'google' as const,
+        }),
+      );
+      setDynamicReviewParts(parts);
+      setCatalogVersion((v) => v + 1);
+    }
+  }, [seedData]);
 
   const parts = useMemo(() => listReviewParts().filter((part) => tierAllowsAccess(tier, part.authTier)), [catalogVersion, tier]);
 

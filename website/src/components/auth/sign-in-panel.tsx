@@ -16,37 +16,28 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import type { AuthTier } from '@/lib/page-catalog';
 import { PERSONS } from '@/domain/security/persons';
-import { useGetSessionQuery, useVerifyPinMutation } from '@/store/apis/auth-api';
+import { useGetSessionQuery, useVerifyPinMutation, useListPinUsersQuery } from '@/store/apis/auth-api';
 
 export interface SignInPanelProps {
   requiredTier: AuthTier;
 }
 
-/** Options derived from the live PIN-users endpoint, falling back to PERSONS. */
+/** Options derived from the live PIN-users RTK Query endpoint, falling back to PERSONS. */
 function usePinUsers(): { value: string; sub: string }[] {
-  const [users, setUsers] = useState<{ value: string; sub: string }[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const { data, isLoading } = useListPinUsersQuery();
 
-  useEffect(() => {
-    fetch('/api/auth?action=list-pin-users')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.success && Array.isArray(data.data?.users)) {
-          const active = data.data.users
-            .filter((u: { hasPin: boolean }) => u.hasPin)
-            .map((u: { name: string; sub: string }) => ({ value: u.name, sub: u.sub }));
-          setUsers(active.length > 0 ? active : PERSONS.map((p) => ({ value: p.name, sub: p.sub })));
-        }
-      })
-      .catch(() => {
-        // Fallback: show all known persons if the fetch fails.
-        setUsers(PERSONS.map((p) => ({ value: p.name, sub: p.sub })));
-      })
-      .finally(() => setLoaded(true));
-  }, []);
+  if (isLoading || !data) {
+    return PERSONS.map((p) => ({ value: p.name, sub: p.sub }));
+  }
 
-  if (!loaded) return PERSONS.map((p) => ({ value: p.name, sub: p.sub }));
-  return users;
+  if (data?.success && Array.isArray(data.data?.users)) {
+    const active = data.data.users
+      .filter((u) => (u as { pinConfigured?: boolean }).pinConfigured)
+      .map((u) => ({ value: u.name, sub: u.sub }));
+    return active.length > 0 ? active : PERSONS.map((p) => ({ value: p.name, sub: p.sub }));
+  }
+
+  return PERSONS.map((p) => ({ value: p.name, sub: p.sub }));
 }
 
 export function SignInPanel({ requiredTier }: SignInPanelProps) {

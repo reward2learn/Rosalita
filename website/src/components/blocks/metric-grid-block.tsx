@@ -11,6 +11,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
+import { useGetDashboardDataQuery } from '@/store/apis/dashboard-api';
 
 interface TargetRow {
   metric: string; may: string; conservative: string;
@@ -27,20 +28,11 @@ const FALLBACK_ROWS: TargetRow[] = [
 
 export function MetricGridBlock({ config }: { config: Record<string, unknown> }) {
   parseBlockConfig('metric_grid', config);
-  const [rows, setRows] = useState<TargetRow[] | null>(null);
+  const { data, isLoading } = useGetDashboardDataQuery();
 
-  useEffect(() => {
-    fetch('/api/dashboard-data')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.data?.targetRows?.length) {
-          setRows(data.data.targetRows);
-        } else {
-          setRows(FALLBACK_ROWS);
-        }
-      })
-      .catch(() => setRows(FALLBACK_ROWS));
-  }, []);
+  const rows = !isLoading && data?.data?.targetRows?.length
+    ? data.data.targetRows
+    : (!isLoading ? FALLBACK_ROWS : null);
 
   if (!rows) return null;
 

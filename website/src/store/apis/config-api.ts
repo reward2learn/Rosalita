@@ -14,10 +14,31 @@ export interface ChatSettings {
   updatedAt: string;
 }
 
+export interface ReviewPartDetail {
+  slug: string;
+  title: string;
+  partKey: string;
+  markdownLength: number;
+  markdownPreview: string;
+}
+
+export interface SeedDetailsResponse {
+  appPages: unknown[];
+  pageSections: unknown[];
+  reviewPartDetails: ReviewPartDetail[];
+  knowledgeSnippets: unknown[];
+  tasks: unknown[];
+  roles: unknown[];
+  monthlyTargets: unknown[];
+  levers: unknown[];
+  actionItems: unknown[];
+  dailyZReports: unknown[];
+}
+
 export const configApi = createApi({
   reducerPath: 'configApi',
   baseQuery,
-  tagTypes: ['OpenAiKey', 'ChatSettings'],
+  tagTypes: ['OpenAiKey', 'ChatSettings', 'SeedDetails'],
   endpoints: (builder) => ({
     reseedFromSources: builder.mutation<ApiEnvelope<ReseedResponse>, FormData>({
       query: (body) => ({
@@ -63,6 +84,19 @@ export const configApi = createApi({
       }),
       invalidatesTags: ['ChatSettings'],
     }),
+    /** GET /api/config/seed-details — returns full seed inventory */
+    getSeedDetails: builder.query<ApiEnvelope<SeedDetailsResponse>, void>({
+      query: () => 'config/seed-details',
+      providesTags: ['SeedDetails'],
+    }),
+    /** POST /api/config/import-data — bulk JSON import into seed tables */
+    importData: builder.mutation<ApiEnvelope<{ imported: number }>, { table: string; data: unknown[] }>({
+      query: (body) => ({
+        url: 'config/import-data',
+        method: 'POST',
+        body,
+      }),
+    }),
   }),
 });
 
@@ -74,4 +108,6 @@ export const {
   useClearOpenAiKeyMutation,
   useGetChatSettingsQuery,
   useUpdateChatSettingsMutation,
+  useGetSeedDetailsQuery,
+  useImportDataMutation,
 } = configApi;

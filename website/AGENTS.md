@@ -9,7 +9,7 @@ Development guide for the Red Ruby Bali website migration (plan v2).
 | Framework | Next.js 16 App Router |
 | Language | TypeScript strict |
 | Schema / ORM | **ZenStack** — `zenstack/schema.zmodel` is SSoT |
-| UI | MUI v7 |
+| UI | MUI v9 |
 | State | **Hybrid:** RTK Query + `uiSlice` + `chatStreamSlice` + React Hook Form — **no Zustand** |
 | Pages (MVP) | **Code-first** `src/lib/page-catalog.ts` (DB `AppPage` seeded P6; catalog wins at runtime) |
 | Auth | JWT cookie `redruby.session` — write APIs use tier claims (`pin` \| `google`) |

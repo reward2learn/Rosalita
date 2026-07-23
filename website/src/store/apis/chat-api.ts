@@ -12,7 +12,7 @@ export interface ChatMessage {
 export const chatApi = createApi({
   reducerPath: 'chatApi',
   baseQuery,
-  tagTypes: ['Conversations'],
+  tagTypes: ['Conversations', 'AiFindings'],
   endpoints: (builder) => ({
     sendMessage: builder.mutation<
       ApiEnvelope<{ reply: string }>,
@@ -69,6 +69,53 @@ export const chatApi = createApi({
       }),
       invalidatesTags: ['Conversations'],
     }),
+    /** GET /api/chat/ai-findings — list AI findings */
+    getAiFindings: builder.query<ApiEnvelope<unknown[]>, void>({
+      query: () => 'chat/ai-findings',
+      providesTags: ['AiFindings'],
+    }),
+    /** POST /api/chat/ai-findings — create AI finding */
+    createAiFinding: builder.mutation<ApiEnvelope<unknown>, { content: string; title?: string }>({
+      query: (body) => ({
+        url: 'chat/ai-findings',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['AiFindings'],
+    }),
+    /** DELETE /api/chat/ai-findings — delete by IDs */
+    deleteAiFindings: builder.mutation<ApiEnvelope<void>, string[]>({
+      query: (ids) => ({
+        url: `chat/ai-findings?ids=${ids.map(encodeURIComponent).join(',')}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['AiFindings'],
+    }),
+    /** POST /api/chat/ai-findings/save-batch — replace all findings */
+    saveAiFindingsBatch: builder.mutation<ApiEnvelope<void>, { findings: unknown[] }>({
+      query: (body) => ({
+        url: 'chat/ai-findings/save-batch',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['AiFindings'],
+    }),
+    /** POST /api/chat/summarize-finding — summarize a finding */
+    summarizeFinding: builder.mutation<ApiEnvelope<{ summary: string }>, { content: string }>({
+      query: (body) => ({
+        url: 'chat/summarize-finding',
+        method: 'POST',
+        body,
+      }),
+    }),
+    /** POST /api/chat/update-review — update review content via AI */
+    updateReview: builder.mutation<ApiEnvelope<unknown>, { messages: ChatMessage[]; summary: string; target?: string }>({
+      query: (body) => ({
+        url: 'chat/update-review',
+        method: 'POST',
+        body,
+      }),
+    }),
   }),
 });
 
@@ -80,4 +127,10 @@ export const {
   useLazyGetConversationQuery,
   useSaveConversationMutation,
   useArchiveConversationMutation,
+  useGetAiFindingsQuery,
+  useCreateAiFindingMutation,
+  useDeleteAiFindingsMutation,
+  useSaveAiFindingsBatchMutation,
+  useSummarizeFindingMutation,
+  useUpdateReviewMutation,
 } = chatApi;

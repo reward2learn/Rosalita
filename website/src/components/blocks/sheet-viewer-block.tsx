@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import { DataGrid, type GridColDef, type GridValidRowModel } from '@mui/x-data-grid';
+import { useGetSheetDataQuery } from '@/store/apis/sheet-data-api';
 
 interface SheetViewerConfig {
   sheet?: string;
@@ -46,34 +47,16 @@ function formatCellValue(key: string, value: unknown): string | number {
 
 export function SheetViewerBlock({ config }: { config: Record<string, unknown> }) {
   const { sheet, title } = config as SheetViewerConfig;
-  const [data, setData] = useState<SheetDataPayload | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: PER_PAGE });
-
-  const fetchPage = useCallback((page: number) => {
-    if (!sheet) { setLoading(false); return; }
-    setLoading(true);
-    setError(null);
-    const params = new URLSearchParams({ sheet, page: String(page + 1), perPage: String(PER_PAGE) });
-    fetch(`/api/sheet-data?${params}`)
-      .then((r) => r.json())
-      .then((payload) => {
-        if (payload.error) setError(payload.error);
-        else setData(payload);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Request failed'))
-      .finally(() => setLoading(false));
-  }, [sheet]);
-
-  useEffect(() => {
-    if (sheet) fetchPage(paginationModel.page);
-    else setLoading(false);
-  }, [paginationModel.page, sheet, fetchPage]);
+  const { data: payload, isLoading, error: queryError } = useGetSheetDataQuery(
+    { sheet: sheet ?? '', page: paginationModel.page + 1, perPage: PER_PAGE },
+    { skip: !sheet },
+  );
 
   const columns: GridColDef[] = useMemo(() => {
-    if (!data) return [];
-    return data.columns.map((col) => ({
+    const sd = payload?.data;
+    if (!sd) return [];
+    return sd.columns.map((col) => ({
       field: col,
       headerName: col,
       flex: 1,
@@ -95,16 +78,18 @@ export function SheetViewerBlock({ config }: { config: Record<string, unknown> }
         return value ?? '';
       },
     }));
-  }, [data]);
+  }, [payload]);
 
   const rows = useMemo(() => {
-    if (!data) return [];
-    return data.rows.map((row, idx) => ({
+    const sd = payload?.data;
+    if (!sd) return [];
+    return sd.rows.map((row, idx) => ({
       ...row,
-      _rowIndex: (data.page - 1) * data.perPage + idx + 1,
+      _rowIndex: (sd.page - 1) * sd.perPage + idx + 1,
     }));
-  }, [data]);
+  }, [payload]);
 
+  const data = payload?.data;
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 130px)', minHeight: 400, width: '100%' }}>
       {title ? (
@@ -115,16 +100,16 @@ export function SheetViewerBlock({ config }: { config: Record<string, unknown> }
 
       {!sheet ? (
         <Typography color="text.secondary">No sheet configured.</Typography>
-      ) : loading ? (
+      ) : isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={24} /></Box>
-      ) : error ? (
-        <Typography color="error">{error}</Typography>
+      ) : queryError ? (
+        <Typography color="error">{String(queryError)}</Typography>
       ) : data ? (
         <DataGrid
           rows={rows}
           columns={columns}
           getRowId={(row) => row._rowIndex}
-          loading={loading}
+          loading={isLoading}
           rowCount={data.totalRows}
           paginationMode="server"
           paginationModel={paginationModel}

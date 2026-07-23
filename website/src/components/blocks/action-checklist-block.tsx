@@ -9,6 +9,7 @@ import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
+import { useGetDashboardDataQuery } from '@/store/apis/dashboard-api';
 
 interface Phase {
   id: string; title: string; period: string; impact: string; actions: string[];
@@ -45,21 +46,12 @@ const FALLBACK_PHASES: Phase[] = [
 
 export function ActionChecklistBlock({ config }: { config: Record<string, unknown> }) {
   parseBlockConfig('action_checklist', config);
+  const { data, isLoading } = useGetDashboardDataQuery();
   const [expanded, setExpanded] = useState<string | false>('P1');
-  const [phases, setPhases] = useState<Phase[] | null>(null);
 
-  useEffect(() => {
-    fetch('/api/dashboard-data')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.data?.actionPhases?.length) {
-          setPhases(data.data.actionPhases);
-        } else {
-          setPhases(FALLBACK_PHASES);
-        }
-      })
-      .catch(() => setPhases(FALLBACK_PHASES));
-  }, []);
+  const phases = !isLoading && data?.data?.actionPhases?.length
+    ? data.data.actionPhases
+    : (!isLoading ? FALLBACK_PHASES : null);
 
   if (!phases) return null;
 

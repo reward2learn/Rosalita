@@ -10,9 +10,9 @@ Plan v2: legacy static HTML + `api/*.js` → **Next.js 16 App Router** with ZenS
 | Runtime | Node 22 (`AWS_LAMBDA_JS_RUNTIME=nodejs22.x`) |
 | Language | TypeScript strict |
 | Schema / ORM | **ZenStack** — `website/zenstack/schema.zmodel` is SSoT |
-| UI | MUI v7 |
-| State | RTK Query + `uiSlice` + `chatStreamSlice` + `authSlice` + React Hook Form — **no Zustand** |
-| Auth | JWT cookie `rosalita.session` (`jose`, `ENCRYPTION_KEY`) |
+| UI | MUI v9 |
+| State | RTK Query + `uiSlice` + `chatStreamSlice` + React Hook Form — **no Zustand** |
+| Auth | JWT cookie `redruby.session` (`jose`, `ENCRYPTION_KEY`) |
 | Database | Neon Postgres via ZenStack `createClient` |
 | PDF | Puppeteer + `@sparticuz/chromium` (server-only) |
 | Testing | Vitest + RTL |
@@ -33,7 +33,7 @@ P0 → P1 → P2 → P3 → P4 (hard gate) → P6 seed → P5 dynamic UI → P7 
 
 | Store path | Role |
 |------------|------|
-| `authSlice` | Client session tier, sign-in UI state |
+| `authSlice` (from `authApi`) | Client session tier (`getSession`), sign-in UI state |
 | `uiSlice` | Shell nav, drawers, transient UI |
 | `chatStreamSlice` | SSE chat streaming (`sendStreamingMessage`, token accumulation) |
 | `authApi` | `/api/auth` — me, logout, verify-pin, google-config |

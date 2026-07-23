@@ -33,6 +33,8 @@ import { getReviewPartDisplayTitle, listNavPages, resolvePage, resolveReviewPart
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDrawerOpen } from '@/store/ui-slice';
 import { useListPagesQuery } from '@/store/apis/content-api';
+import { useGetBrandConfigQuery } from '@/store/apis/brand-config-api';
+import { useGetNavigationQuery } from '@/store/apis/navigation-api';
 import { NavIcon } from '@/components/shared/nav-icon';
 
 const DRAWER_WIDTH = 280;
@@ -62,33 +64,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { tier, user, groups } = useAppSelector((s) => s.auth);
   useListPagesQuery();
 
-  // Brand config (loaded on mount — public endpoint, no auth needed)
-  const [brandText, setBrandText] = useState('Red Ruby');
-  const [brandLogoUrl, setBrandLogoUrl] = useState('');
-  useEffect(() => {
-    fetch('/api/brand-config')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.brandLogoUrl) setBrandLogoUrl(d.brandLogoUrl);
-        if (d.brandLogoText) setBrandText(d.brandLogoText);
-      })
-      .catch(() => {
-        // defaults — never break the UI for a missing config
-      });
-  }, []);
+  // Brand config via RTK Query
+  const { data: brandData } = useGetBrandConfigQuery();
+  const brandText = brandData?.data?.brandLogoText ?? 'Red Ruby';
+  const brandLogoUrl = brandData?.data?.brandLogoUrl ?? '';
 
-  // DB-driven navigation (fallback: static catalog via listNavPages)
-  const [dbNavItems, setDbNavItems] = useState<DbNavItem[] | null>(null);
-  useEffect(() => {
-    const groupsParam = encodeURIComponent((groups ?? []).join(','));
-    fetch(`/api/navigation?tier=${tier}&groups=${groupsParam}`)
-      .then((r) => r.json())
-      .then((d) => { if (d.items) setDbNavItems(d.items); })
-      .catch(() => { /* fallback to static catalog */ });
-  }, [tier, groups]);
+  // DB-driven navigation via RTK Query (fallback: static catalog via listNavPages)
+  const groupsParam = encodeURIComponent((groups ?? []).join(','));
+  const { data: navData } = useGetNavigationQuery({ tier, groups: groupsParam });
+
+  const dbNavItems: DbNavItem[] | undefined = navData?.data?.items as DbNavItem[] | undefined;
 
   // Use DB nav if loaded, otherwise fall back to static catalog
-  const navItems = dbNavItems ?? listNavPages(tier, groups ?? []).map((p) => ({
+  const navItems = ((dbNavItems as DbNavItem[]) ?? listNavPages(tier, groups ?? []).map((p) => ({
     id: `static-${p.slug}`,
     parentId: null,
     sortOrder: 0,
@@ -101,7 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     isDynamic: false,
     isDefault: false,
     children: [] as DbNavItem[],
-  })) as (DbNavItem | (DbNavItem & { _isCatalog?: boolean }))[];
+  }))) as (DbNavItem | (DbNavItem & { _isCatalog?: boolean }))[];
 
 
 

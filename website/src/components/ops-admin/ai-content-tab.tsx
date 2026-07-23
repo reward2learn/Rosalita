@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useGetAiContentQuery, useGenerateAiContentMutation, useClearSeedMutation } from '@/store/apis/admin-api';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -109,11 +110,6 @@ function stepLabel(step: string): string {
 
 export function AiContentTab() {
   const [status, setStatus] = useState<AiContentStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-
-  // Generation state
-  const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState<ProgressEvent | null>(null);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -121,18 +117,45 @@ export function AiContentTab() {
   const [showFullDataSummary, setShowFullDataSummary] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState<string | null>(null);
 
+  // RTK Query: GET /api/admin/ai-content — auto-fetches status on mount
+  const {
+    data: aiContentData,
+    isLoading: loading,
+    isError: fetchError,
+    error: queryError,
+    refetch: fetchStatus,
+  } = useGetAiContentQuery();
+
+  // RTK Query: POST /api/admin/ai-content — blocking JSON mode (non-SSE)
+  const [generateContent, { isLoading: generating }] = useGenerateAiContentMutation();
+
+  // RTK Query: POST /api/admin/clear-seed
+  const [clearSeed, { isLoading: clearing }] = useClearSeedMutation();
+
+  // Derive a human-readable fetch error message
+  const fetchErrorMsg = useMemo(() => {
+    if (!queryError) return null;
+    if ('status' in queryError) return `HTTP ${queryError.status}`;
+    return queryError.message || 'Failed to load';
+  }, [queryError]);
+
+  // Sync RTK Query data → local status state
+  useEffect(() => {
+    if (aiContentData?.data) {
+      setStatus(aiContentData.data as AiContentStatus);
+    }
+  }, [aiContentData]);
+
   // Sync edited prompt when full prompt loads
   useEffect(() => {
     if (status?.fullPrompt && editedPrompt === null) {
       setEditedPrompt(status.fullPrompt);
     }
   }, [status?.fullPrompt]);
-  const abortRef = useRef<AbortController | null>(null);
 
   // Clear-seed state
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const [clearConfirmText, setClearConfirmText] = useState('');
-  const [clearing, setClearing] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
   const [clearResult, setClearResult] = useState<Record<string, number> | null>(null);
 
@@ -154,35 +177,7 @@ export function AiContentTab() {
     setAdditionalContext(null);
   }, []);
 
-  // ── Fetch initial status ──────────────────────────────
-
-  const fetchStatus = useCallback(async () => {
-    setLoading(true);
-    setFetchError(null);
-    try {
-      const res = await fetch('/api/admin/ai-content');
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(err.error ?? `HTTP ${res.status}`);
-      }
-      const payload = await res.json();
-      if (payload.success) {
-        setStatus(payload.data);
-      } else {
-        throw new Error(payload.error ?? 'Unknown error');
-      }
-    } catch (err) {
-      setFetchError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchStatus();
-  }, [fetchStatus]);
-
-  // ── SSE generation handler ────────────────────────────
+  // ── Generation handler ────────────────────────────────
 
   const openGenerateConfirm = useCallback(() => {
     setGenerateConfirmOpen(true);
@@ -192,165 +187,62 @@ export function AiContentTab() {
     setGenerateConfirmOpen(false);
 
     // Reset state
-    setGenerating(true);
     setGenerateError(null);
     setResult(null);
-    setProgress({ step: 'extracting', message: 'Starting generation...', pct: 0 });
-
-    const controller = new AbortController();
-    abortRef.current = controller;
+    setProgress({ step: 'openai', message: 'Starting generation...', pct: 25 });
 
     try {
-      const res = await fetch('/api/admin/ai-content', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-        },
-        body: JSON.stringify({
-          additionalContext: additionalContext || undefined,
-          overridePrompt: (editedPrompt && editedPrompt !== status?.fullPrompt) ? editedPrompt : undefined,
-        }),
-        signal: controller.signal,
+      const body: { additionalContext?: string; overridePrompt?: string } = {};
+      if (additionalContext) body.additionalContext = additionalContext;
+      if (editedPrompt && editedPrompt !== status?.fullPrompt) body.overridePrompt = editedPrompt;
+
+      const response = await generateContent(body).unwrap();
+      const data = response.data as {
+        promptLength?: number;
+        contentLengths?: { businessReview: number; executiveSummary: number };
+        saved?: { businessReviewParts: { slug: string; title: string }[]; executiveSummarySaved: boolean };
+        model?: string;
+      };
+
+      setProgress({ step: 'complete', message: 'Generation complete.', pct: 100, detail: data });
+      setResult({
+        saved: data.saved ?? { businessReviewParts: [], executiveSummarySaved: false },
+        contentLengths: data.contentLengths ?? { businessReview: 0, executiveSummary: 0 },
+        model: data.model,
       });
-
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(errBody.error ?? `HTTP ${res.status}`);
-      }
-
-      if (!res.body) {
-        throw new Error('Response has no body stream');
-      }
-
-      // Read the SSE stream
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        // Parse SSE messages from buffer
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? ''; // keep incomplete line in buffer
-
-        let currentEvent = '';
-        let currentData = '';
-
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            currentEvent = line.slice(7).trim();
-          } else if (line.startsWith('data: ')) {
-            currentData = line.slice(6).trim();
-          } else if (line === '') {
-            // Empty line = end of event
-            if (currentData) {
-              try {
-                const parsed = JSON.parse(currentData) as ProgressEvent;
-                handleSseEvent(parsed);
-              } catch {
-                // ignore malformed JSON
-              }
-            }
-            currentEvent = '';
-            currentData = '';
-          }
-        }
-      }
     } catch (err) {
-      if ((err as Error).name === 'AbortError') {
-        setProgress({
-          step: 'error',
-          message: 'Generation cancelled by user.',
-          pct: 0,
-        });
-        setGenerateError('Cancelled');
-      } else {
-        const msg = err instanceof Error ? err.message : String(err);
-        setProgress({
-          step: 'error',
-          message: msg,
-          pct: 0,
-        });
-        setGenerateError(msg);
-      }
+      const msg = err instanceof Error ? err.message : String(err);
+      setProgress({
+        step: 'error',
+        message: msg,
+        pct: 0,
+      });
+      setGenerateError(msg);
     } finally {
-      setGenerating(false);
-      abortRef.current = null;
       // Refresh status after generation completes or fails
       void fetchStatus();
     }
-  }, [fetchStatus]);
-
-  /** Process a single SSE progress event */
-  const handleSseEvent = useCallback((event: ProgressEvent) => {
-    setProgress(event);
-
-    if (event.step === 'complete') {
-      const detail = event.detail as
-        | {
-            businessReviewParts?: { slug: string; title: string }[];
-            executiveSummarySaved?: boolean;
-            contentLengths?: { businessReview: number; executiveSummary: number };
-            model?: string;
-          }
-        | undefined;
-      setResult({
-        saved: {
-          businessReviewParts: detail?.businessReviewParts ?? [],
-          executiveSummarySaved: detail?.executiveSummarySaved ?? false,
-        },
-        contentLengths: detail?.contentLengths ?? {
-          businessReview: 0,
-          executiveSummary: 0,
-        },
-        model: detail?.model,
-      });
-    }
-
-    if (event.step === 'error') {
-      setGenerateError(event.message);
-    }
-  }, []);
-
-  const handleCancel = useCallback(() => {
-    abortRef.current?.abort();
-  }, []);
+  }, [generateContent, fetchStatus, additionalContext, editedPrompt, status?.fullPrompt]);
 
   // ── Clear seeded data ────────────────────────────────
 
   const handleClearSeed = useCallback(async () => {
-    setClearing(true);
     setClearError(null);
     setClearResult(null);
 
     try {
-      const res = await fetch('/api/admin/clear-seed', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirm: 'CLEAR ALL SEEDED DATA' }),
-      });
-
-      const payload = await res.json();
-      if (payload.success) {
-        setClearResult(payload.data.deleted);
-        setClearConfirmOpen(false);
-        setClearConfirmText('');
-        // Refresh status after clearing
-        void fetchStatus();
-      } else {
-        setClearError(payload.error ?? 'Clear failed');
-      }
+      const response = await clearSeed({ mode: 'all', confirm: clearConfirmText }).unwrap();
+      const deleted = response.data as unknown as Record<string, number>;
+      setClearResult(deleted);
+      setClearConfirmOpen(false);
+      setClearConfirmText('');
+      // Refresh status after clearing
+      void fetchStatus();
     } catch (err) {
-      setClearError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setClearing(false);
+      const msg = err instanceof Error ? err.message : String(err);
+      setClearError(msg);
     }
-  }, [fetchStatus]);
+  }, [clearSeed, clearConfirmText, fetchStatus]);
 
   // ── Helpers ───────────────────────────────────────────
 
@@ -386,9 +278,9 @@ export function AiContentTab() {
     return (
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
-          {fetchError}
+          {fetchErrorMsg}
         </Alert>
-        <Button variant="outlined" onClick={fetchStatus}>
+        <Button variant="outlined" onClick={() => { void fetchStatus(); }}>
           Retry
         </Button>
       </Paper>
@@ -876,19 +768,9 @@ export function AiContentTab() {
             ? 'Generating...'
             : 'Generate Business Review & Executive Summary'}
         </Button>
-        {generating ? (
-          <Button
-            variant="outlined"
-            color="warning"
-            onClick={handleCancel}
-            sx={{ py: 1.5 }}
-          >
-            Cancel
-          </Button>
-        ) : null}
         <Button
           variant="outlined"
-          onClick={fetchStatus}
+          onClick={() => { void fetchStatus(); }}
           disabled={generating}
           startIcon={<TableChartIcon />}
         >

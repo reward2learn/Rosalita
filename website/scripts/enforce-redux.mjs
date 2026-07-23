@@ -41,9 +41,15 @@ function walk(dir) {
       walk(full);
     } else if (['.tsx', '.ts'].includes(extname(name)) && !name.endsWith('.test.ts') && !name.endsWith('.test.tsx')) {
       const rel = full.replace(ROOT + '/', '');
+      // Skip API route handlers (server-side, fetch() is valid for proxy/chaining)
       if (rel.startsWith('app/api/')) continue;
       const text = readFileSync(full, 'utf8');
+      // Server Components in app/ use fetch() for data fetching — skip DIRECT_FETCH check
+      const isClientComponent = text.includes("'use client'") || text.includes('"use client"');
+      const isAppDir = rel.startsWith('app/');
       for (const rule of CLIENT_SCAN_RULES) {
+        // Skip DIRECT_FETCH check for server components (Next.js server-side data fetching)
+        if (rule.name === 'DIRECT_FETCH_IN_COMPONENT' && isAppDir && !isClientComponent) continue;
         if (rule.pattern.test(text)) {
           violations.push(`${rel}: ${rule.name}`);
         }
@@ -64,6 +70,14 @@ const requiredApis = [
   'contentApi',
   'chatApi',
   'pdfApi',
+  'posApi',
+  'configApi',
+  'tasksApi',
+  'adminApi',
+  'dashboardApi',
+  'sheetDataApi',
+  'brandConfigApi',
+  'navigationApi',
 ];
 
 if (!existsSync(STORE_INDEX)) {

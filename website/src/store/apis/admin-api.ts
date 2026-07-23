@@ -9,7 +9,7 @@ import type { AdminGroupView } from '@/app/api/admin/groups/route';
 export const adminApi = createApi({
   reducerPath: 'adminApi',
   baseQuery,
-  tagTypes: ['RoleConfig', 'AdminConversations', 'AdminUsers', 'AdminGroups'],
+  tagTypes: ['RoleConfig', 'AdminConversations', 'AdminUsers', 'AdminGroups', 'SeedData', 'AiContent', 'BrandConfig', 'Navigation'],
   endpoints: (builder) => ({
     listRoleConfigs: builder.query<ApiEnvelope<{ roles: RoleConfigView[] }>, void>({
       query: () => 'admin/roles',
@@ -98,6 +98,74 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ['AdminGroups'],
     }),
+    /** POST /api/admin/clear-seed — clear all or selected seed tables */
+    clearSeed: builder.mutation<ApiEnvelope<{ deleted: Record<string, number>; message: string }>, { mode: 'all'; confirm: string } | { mode: 'selected'; tables: string[]; confirm: string }>({
+      query: (body) => ({
+        url: 'admin/clear-seed',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['SeedData'],
+    }),
+    /** GET /api/admin/ai-content — AI content generation status */
+    getAiContent: builder.query<ApiEnvelope<unknown>, void>({
+      query: () => 'admin/ai-content',
+      providesTags: ['AiContent'],
+    }),
+    /** POST /api/admin/ai-content — trigger AI content generation */
+    generateAiContent: builder.mutation<ApiEnvelope<unknown>, { filePath?: string; model?: string; additionalContext?: string; overridePrompt?: string }>({
+      query: (body) => ({
+        url: 'admin/ai-content',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['AiContent'],
+    }),
+    /** GET /api/admin/brand-config — read brand config */
+    getAdminBrandConfig: builder.query<ApiEnvelope<unknown>, void>({
+      query: () => 'admin/brand-config',
+      providesTags: ['BrandConfig'],
+    }),
+    /** PUT /api/admin/brand-config — update brand config */
+    updateAdminBrandConfig: builder.mutation<ApiEnvelope<unknown>, FormData | Record<string, unknown>>({
+      query: (body) => ({
+        url: 'admin/brand-config',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['BrandConfig'],
+    }),
+    /** GET /api/admin/navigation — list nav tree */
+    getNavigation: builder.query<ApiEnvelope<unknown>, void>({
+      query: () => 'admin/navigation',
+      providesTags: ['Navigation'],
+    }),
+    /** POST /api/admin/navigation — create nav item */
+    createNavigationItem: builder.mutation<ApiEnvelope<unknown>, Record<string, unknown>>({
+      query: (body) => ({
+        url: 'admin/navigation',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Navigation'],
+    }),
+    /** PUT /api/admin/navigation — batch update nav items */
+    updateNavigationItems: builder.mutation<ApiEnvelope<unknown>, { items: Record<string, unknown>[] }>({
+      query: (body) => ({
+        url: 'admin/navigation',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Navigation'],
+    }),
+    /** DELETE /api/admin/navigation — delete by IDs */
+    deleteNavigationItems: builder.mutation<ApiEnvelope<unknown>, string[]>({
+      query: (ids) => ({
+        url: `admin/navigation?ids=${ids.map(encodeURIComponent).join(',')}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Navigation'],
+    }),
   }),
 });
 
@@ -112,4 +180,13 @@ export const {
   useListAdminGroupsQuery,
   useCreateAdminGroupMutation,
   useUpdateAdminGroupMutation,
+  useClearSeedMutation,
+  useGetAiContentQuery,
+  useGenerateAiContentMutation,
+  useGetAdminBrandConfigQuery,
+  useUpdateAdminBrandConfigMutation,
+  useGetNavigationQuery,
+  useCreateNavigationItemMutation,
+  useUpdateNavigationItemsMutation,
+  useDeleteNavigationItemsMutation,
 } = adminApi;

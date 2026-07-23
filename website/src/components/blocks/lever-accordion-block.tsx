@@ -9,6 +9,7 @@ import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
+import { useGetDashboardDataQuery } from '@/store/apis/dashboard-api';
 
 interface Lever {
   num: number; title: string; summary: string; details: string[];
@@ -24,21 +25,12 @@ const FALLBACK_LEVERS: Lever[] = [
 
 export function LeverAccordionBlock({ config }: { config: Record<string, unknown> }) {
   const { title } = parseBlockConfig('lever_accordion', config);
+  const { data, isLoading } = useGetDashboardDataQuery();
   const [expanded, setExpanded] = useState<number | false>(false);
-  const [levers, setLevers] = useState<Lever[] | null>(null);
 
-  useEffect(() => {
-    fetch('/api/dashboard-data')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.data?.levers?.length) {
-          setLevers(data.data.levers);
-        } else {
-          setLevers(FALLBACK_LEVERS);
-        }
-      })
-      .catch(() => setLevers(FALLBACK_LEVERS));
-  }, []);
+  const levers = !isLoading && data?.data?.levers?.length
+    ? data.data.levers
+    : (!isLoading ? FALLBACK_LEVERS : null);
 
   if (!levers) return null;
 
@@ -72,7 +64,7 @@ export function LeverAccordionBlock({ config }: { config: Record<string, unknown
             </Box>
           </AccordionSummary>
           <AccordionDetails>
-            {lever.details.map((d) => (
+            {(Array.isArray(lever.details) ? lever.details : [lever.details]).map((d) => (
               <Typography key={d} variant="body2" color="text.secondary" sx={{ pl: 1, mb: 0.75 }}>→ {d}</Typography>
             ))}
           </AccordionDetails>

@@ -21,6 +21,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SendIcon from '@mui/icons-material/Send';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { MarkdownBody } from '@/components/blocks/markdown-body';
+import {
+  useGetAiFindingsQuery,
+  useCreateAiFindingMutation,
+  useDeleteAiFindingsMutation,
+  useSaveAiFindingsBatchMutation,
+  useSummarizeFindingMutation,
+} from '@/store/apis/chat-api';
 
 interface AiFinding {
   id: string;
@@ -115,30 +122,30 @@ function FindingAccordion({
 
 export function AiFindingsBlock() {
   const router = useRouter();
+
+  // RTK Query hooks
+  const { data: findingsData, isLoading } = useGetAiFindingsQuery();
+  const [createFinding] = useCreateAiFindingMutation();
+  const [deleteFindings, { isLoading: isDeleting }] = useDeleteAiFindingsMutation();
+  const [saveBatch] = useSaveAiFindingsBatchMutation();
+  const [summarizeMutation] = useSummarizeFindingMutation();
+
+  // Local state
   const [findings, setFindings] = useState<AiFinding[]>([]);
-  const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [summarizingId, setSummarizingId] = useState<string | null>(null);
   const [summarizingAll, setSummarizingAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [saving, setSaving] = useState(false);
   const [, forceUpdate] = useState(0);
 
-  const loadFindings = useCallback(async () => {
-    try {
-      const res = await fetch('/api/chat/ai-findings');
-      if (res.ok) {
-        const data = await res.json();
-        setFindings(data?.data?.findings ?? []);
-      }
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
+  // Sync RTK Query data into local state
+  useEffect(() => {
+    if (findingsData) {
+      // findingsData.data is typed loosely as unknown[] but at runtime is { findings: AiFinding[] }
+      const payload = findingsData.data as unknown as { findings?: AiFinding[] };
+      setFindings(payload?.findings ?? []);
     }
-  }, []);
-
-  useEffect(() => { void loadFindings(); }, [loadFindings]);
+  }, [findingsData]);
 
   const toggleExpand = useCallback((id: string) => {
     setExpandedIds((prev) => {
@@ -194,20 +201,11 @@ export function AiFindingsBlock() {
   const summarize = useCallback(async (finding: AiFinding) => {
     setSummarizingId(finding.id);
     try {
-      const res = await fetch('/api/chat/summarize-finding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: finding.content }),
-      });
-      const payload = await res.json();
-      if (payload.success && payload.data?.summary) {
-        const updated = `**AI Summary:** ${payload.data.summary}\n\n---\n\n${finding.content}`;
-        await fetch('/api/chat/ai-findings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: updated, title: finding.title }),
-        });
-        await loadFindings();
+      const summaryResult = await summarizeMutation({ content: finding.content }).unwrap();
+      if (summaryResult.data?.summary) {
+        const updated = `**AI Summary:** ${summaryResult.data.summary}\n\n---\n\n${finding.content}`;
+        await createFinding({ content: updated, title: finding.title }).unwrap();
+        // Mutation invalidates AiFindings tag → auto-refetch → useEffect syncs local state
         setExpandedIds((prev) => new Set(prev).add(finding.id));
       }
     } catch {
@@ -215,7 +213,7 @@ export function AiFindingsBlock() {
     } finally {
       setSummarizingId(null);
     }
-  }, [loadFindings]);
+  }, [summarizeMutation, createFinding]);
 
   const summarizeAll = useCallback(async () => {
     setSummarizingAll(true);
@@ -230,14 +228,9 @@ export function AiFindingsBlock() {
         .map((f) => `## ${f.title}\n\n${f.content}`)
         .join('\n\n---\n\n');
 
-      const res = await fetch('/api/chat/summarize-finding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: combinedText }),
-      });
-      const payload = await res.json();
+      const summaryPayload = await summarizeMutation({ content: combinedText }).unwrap();
 
-      if (payload.success && payload.data?.summary) {
+      if (summaryPayload.success && summaryPayload.data?.summary) {
         // Remove the original findings that were summarized
         const idsToRemove = new Set(targetFindings.map((f) => f.id));
         const remaining = findings.filter((f) => !idsToRemove.has(f.id));
@@ -246,25 +239,14 @@ export function AiFindingsBlock() {
         const summaryFinding = {
           id: `find-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           title: `AI Summary — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
-          content: `**Combined AI Summary:** ${payload.data.summary}\n\n---\n\n${combinedText}`,
+          content: `**Combined AI Summary:** ${summaryPayload.data.summary}\n\n---\n\n${combinedText}`,
           createdAt: new Date().toISOString(),
         };
         remaining.unshift(summaryFinding);
 
         // Save via batch endpoint
-        const saveRes = await fetch('/api/chat/ai-findings/save-batch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ findings: remaining }),
-        });
-        if (saveRes.ok) {
-          setFindings(remaining);
-        } else {
-          // Fallback: reload from API
-          const refresh = await fetch('/api/chat/ai-findings');
-          const data = await refresh.json();
-          setFindings(data?.data?.findings ?? []);
-        }
+        await saveBatch({ findings: remaining }).unwrap();
+        setFindings(remaining);
         setSelectedIds(new Set());
         setExpandedIds(new Set([summaryFinding.id]));
       }
@@ -273,24 +255,19 @@ export function AiFindingsBlock() {
     } finally {
       setSummarizingAll(false);
     }
-  }, [findings, selectedIds]);
+  }, [findings, selectedIds, summarizeMutation, saveBatch]);
 
   const deleteSelected = useCallback(async () => {
     if (selectedIds.size === 0) return;
-    setSaving(true);
     try {
       const ids = Array.from(selectedIds);
-      await fetch(`/api/chat/ai-findings?ids=${ids.map(encodeURIComponent).join(',')}`, {
-        method: 'DELETE',
-      });
+      await deleteFindings(ids).unwrap();
       setSelectedIds(new Set());
-      await loadFindings();
+      // Mutation invalidates AiFindings tag → auto-refetch → useEffect syncs local state
     } catch {
       // silent
-    } finally {
-      setSaving(false);
     }
-  }, [selectedIds, loadFindings]);
+  }, [selectedIds, deleteFindings]);
 
   const useInChat = useCallback(() => {
     const selected = findings.filter((f) => selectedIds.has(f.id));
@@ -310,7 +287,7 @@ export function AiFindingsBlock() {
     router.push('/config?tab=3' as Route);
   }, [findings, selectedIds, router]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
         <CircularProgress size={24} />
@@ -358,7 +335,7 @@ export function AiFindingsBlock() {
               <Button size="small" variant="text" onClick={summarizeAll} disabled={summarizingAll} startIcon={summarizingAll ? <CircularProgress size={14} /> : <AutoFixHighIcon />}>
                 {summarizingAll ? 'Summarizing...' : 'Summarize All'}
               </Button>
-              <Button size="small" variant="text" color="error" onClick={deleteSelected} disabled={selectedIds.size === 0 || saving} startIcon={<DeleteIcon />}>
+              <Button size="small" variant="text" color="error" onClick={deleteSelected} disabled={selectedIds.size === 0 || isDeleting} startIcon={<DeleteIcon />}>
                 Delete{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
               </Button>
               <Button size="small" variant="text" onClick={useInChat} startIcon={<SendIcon />}>
