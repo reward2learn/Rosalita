@@ -4,6 +4,7 @@ import {
   COOKIE_NAME,
   SESSION_MAX_AGE,
   verifySession,
+  type AuthTier,
   type SessionClaims,
 } from '@/lib/auth/jwt';
 
@@ -51,6 +52,21 @@ function parseCookieHeader(raw: string): Record<string, string> {
 }
 
 export async function getSessionFromRequest(request: Request): Promise<SessionClaims | null> {
+  // Fast path: headers injected by middleware (already validated)
+  if (request.headers.get('X-Session-Verified') === '1') {
+    return {
+      sub: request.headers.get('X-Session-Sub')!,
+      tier: request.headers.get('X-Session-Tier') as AuthTier,
+      email: request.headers.get('X-Session-Email') ?? undefined,
+      name: request.headers.get('X-Session-Name') ?? undefined,
+      roleCode: request.headers.get('X-Session-RoleCode') ?? undefined,
+      platformAdmin: request.headers.get('X-Session-PlatformAdmin') === '1',
+      groups: JSON.parse(request.headers.get('X-Session-Groups') ?? '[]'),
+      permissions: JSON.parse(request.headers.get('X-Session-Permissions') ?? '[]'),
+    };
+  }
+
+  // Slow path: parse cookie and verify JWT (original behavior)
   const raw = request.headers.get('cookie') ?? '';
   const token = parseCookieHeader(raw)[COOKIE_NAME];
   if (!token) return null;

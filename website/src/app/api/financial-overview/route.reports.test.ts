@@ -1,6 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { GET } from './route';
 
+vi.mock('@/lib/auth/guards', () => ({
+  requireRead: vi.fn(),
+  requireWrite: vi.fn(),
+  requireWriteAuth: vi.fn(),
+  requireSession: vi.fn(),
+  requireGoogle: vi.fn(),
+}));
+
 vi.mock('@/lib/db', () => ({
   createClient: vi.fn(() => ({
     dailyZReport: {
@@ -27,8 +35,15 @@ vi.mock('@/lib/db', () => ({
   })),
 }));
 
+import { requireRead } from '@/lib/auth/guards';
+
 describe('GET /api/financial-overview?resource=reports', () => {
   it('UC-RPT-01: returns daily rollup metrics', async () => {
+    vi.mocked(requireRead).mockResolvedValue({
+      ok: true,
+      session: { sub: 'test-user', tier: 'pin' as const },
+    });
+
     const response = await GET(
       new Request('http://localhost/api/financial-overview?resource=reports&period=daily'),
     );

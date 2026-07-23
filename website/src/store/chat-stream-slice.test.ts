@@ -38,6 +38,7 @@ describe('chatStreamSlice', () => {
       streamingText: '',
       isStreaming: false,
       error: null,
+      pendingSessionActions: [],
     });
   });
 

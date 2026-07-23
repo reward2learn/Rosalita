@@ -12,6 +12,8 @@ vi.mock('@/lib/auth/guards', () => ({
   requireWriteAuth: vi.fn(),
   requireGoogle: vi.fn(),
   requireRole: vi.fn(),
+  requireRead: vi.fn(),
+  requireWrite: vi.fn(),
 }));
 
 vi.mock('@/lib/secrets', () => ({
@@ -70,7 +72,7 @@ describe('/api/admin/roles', () => {
     const { requireWriteAuth } = await import('@/lib/auth/guards');
     vi.mocked(requireWriteAuth).mockResolvedValue({ ok: true, session: adminSession() } as never);
     vi.mocked(getSecretPlaintext).mockImplementation(async (key: string) =>
-      key === 'ROLE_PIN_AMA' ? '4271' : null,
+      key === 'USER_PIN_ama' ? '4271' : null,
     );
     const res = await GET(new Request('http://localhost/api/admin/roles'));
     expect(res.status).toBe(200);
@@ -93,7 +95,7 @@ describe('/api/admin/roles', () => {
       }),
     );
     expect(res.status).toBe(200);
-    expect(setSecret).toHaveBeenCalledWith('ROLE_PIN_MADE', '8390');
+    expect(setSecret).toHaveBeenCalledWith('USER_PIN_made', '8390');
   });
 
   it('UC-ADMIN-02: POST rejects unknown role code', async () => {

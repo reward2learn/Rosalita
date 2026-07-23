@@ -17,7 +17,8 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import * as XLSX from 'xlsx';
+import { read, utils } from 'xlsx';
+import type { WorkSheet } from 'xlsx';
 
 // ── Types ──────────────────────────────────────────────
 
@@ -129,14 +130,14 @@ function periodFromDateStr(s: string): string {
  * - Otherwise, searches for "DESCRIPTION" or known labels in column B (index 1).
  * - Falls back to row 0 if nothing is found.
  */
-function detectHeaderRow(ws: XLSX.WorkSheet, searchLabels = ['DESCRIPTION']): number {
+function detectHeaderRow(ws: WorkSheet, searchLabels = ['DESCRIPTION']): number {
   // Check freeze panes first
   if (ws['!freeze'] && typeof ws['!freeze'].ySplit === 'number') {
     return ws['!freeze'].ySplit - 1; // 0-indexed
   }
 
   // Search for known labels in column B
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
+  const rows = utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
   for (let i = 0; i < Math.min(rows.length, 20); i++) {
     const r = rows[i] as unknown as unknown[];
     const val = String(r[1] ?? '').trim().toUpperCase();
@@ -150,9 +151,9 @@ function detectHeaderRow(ws: XLSX.WorkSheet, searchLabels = ['DESCRIPTION']): nu
 
 // ── Sheet extractors ────────────────────────────────────
 
-function extractPl(ws: XLSX.WorkSheet): PlLine[] {
+function extractPl(ws: WorkSheet): PlLine[] {
   const lines: PlLine[] = [];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
+  const rows = utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
   let inIncome = false;
   let inCos = false;
   let inExpenses = false;
@@ -185,9 +186,9 @@ function extractPl(ws: XLSX.WorkSheet): PlLine[] {
   return lines;
 }
 
-function extractBs(ws: XLSX.WorkSheet): { description: string; amount: number }[] {
+function extractBs(ws: WorkSheet): { description: string; amount: number }[] {
   const items: { description: string; amount: number }[] = [];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
+  const rows = utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
   const headerRow = detectHeaderRow(ws, ['DESCRIPTION']);
   for (let i = headerRow + 1; i < rows.length; i++) {
     const row = rows[i] as unknown as unknown[];
@@ -203,9 +204,9 @@ function extractBs(ws: XLSX.WorkSheet): { description: string; amount: number }[
   return items;
 }
 
-function extractMonthlyVariance(ws: XLSX.WorkSheet): MonthlyVarianceRow[] {
+function extractMonthlyVariance(ws: WorkSheet): MonthlyVarianceRow[] {
   const rows: MonthlyVarianceRow[] = [];
-  const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' });
+  const json = utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' });
   for (const row of json) {
     const item = String(row['Item'] ?? '').trim();
     if (!item || item === 'Item') continue;
@@ -220,9 +221,9 @@ function extractMonthlyVariance(ws: XLSX.WorkSheet): MonthlyVarianceRow[] {
   return rows;
 }
 
-function extractBepMonthly(ws: XLSX.WorkSheet): BepMonthlyRow[] {
+function extractBepMonthly(ws: WorkSheet): BepMonthlyRow[] {
   // BEP sheet has a complex layout with monthly columns
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
+  const rows = utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
   const bepRows: BepMonthlyRow[] = [];
 
   // Find header row with dates (row 3 in the sheet)
@@ -306,8 +307,8 @@ function extractBepMonthly(ws: XLSX.WorkSheet): BepMonthlyRow[] {
   return bepRows;
 }
 
-function extractDailySales(ws: XLSX.WorkSheet): ExcelData['dailySales'] {
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
+function extractDailySales(ws: WorkSheet): ExcelData['dailySales'] {
+  const rows = utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
   const terraceRevenue: DailySalesRow[] = [];
   const clubRevenue: DailySalesRow[] = [];
   const totals: Record<string, number> = {};
@@ -358,9 +359,9 @@ function extractDailySales(ws: XLSX.WorkSheet): ExcelData['dailySales'] {
   return { terraceRevenue, clubRevenue, totals, spendPerGuest };
 }
 
-function extractMonthOnMonth(ws: XLSX.WorkSheet): MonthOnMonthLine[] {
+function extractMonthOnMonth(ws: WorkSheet): MonthOnMonthLine[] {
   const lines: MonthOnMonthLine[] = [];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
+  const rows = utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
   const headerRow = detectHeaderRow(ws, ['DESCRIPTION']);
   for (let i = headerRow + 1; i < rows.length; i++) {
     const r = rows[i] as unknown as unknown[];
@@ -379,9 +380,9 @@ function extractMonthOnMonth(ws: XLSX.WorkSheet): MonthOnMonthLine[] {
   return lines;
 }
 
-function extractSummaryPl(ws: XLSX.WorkSheet): SummaryPlYear[] {
+function extractSummaryPl(ws: WorkSheet): SummaryPlYear[] {
   const years: SummaryPlYear[] = [];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
+  const rows = utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1, defval: '' });
 
   // Find header row (row 3 in the sheet, 0-indexed)
   let headerRowIdx = -1;
@@ -458,7 +459,7 @@ export function extractExcelData(source?: string | Buffer): ExcelData {
     workbookSourceName = diskPath.split('/').pop() ?? 'Unknown';
   }
 
-  const wb = XLSX.read(buf, { type: 'buffer' });
+  const wb = read(buf, { type: 'buffer' });
 
   const data: ExcelData = {
     workbookName: workbookSourceName,

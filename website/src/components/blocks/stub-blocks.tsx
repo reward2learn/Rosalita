@@ -1,9 +1,18 @@
-'use client';
-
+import dynamic from 'next/dynamic';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
-import { OpsAdminTabs } from '@/components/ops-admin/ops-admin-tabs';
-import { ChatPanel } from '@/components/chat/chat-panel';
-import { ReviewBlocks } from '@/components/review/review-blocks';
+
+const OpsAdminTabs = dynamic(
+  () => import('@/components/ops-admin/ops-admin-tabs').then((m) => ({ default: m.OpsAdminTabs })),
+  { ssr: false },
+);
+const ChatPanel = dynamic(
+  () => import('@/components/chat/chat-panel').then((m) => ({ default: m.ChatPanel })),
+  { ssr: false },
+);
+const ReviewBlocks = dynamic(
+  () => import('@/components/review/review-blocks').then((m) => ({ default: m.ReviewBlocks })),
+  { ssr: false },
+);
 
 export function OpsAdminTabsBlock({ config }: { config: Record<string, unknown> }) {
   parseBlockConfig('ops_admin_tabs', config);

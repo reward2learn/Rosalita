@@ -19,6 +19,7 @@
     "generate:review-fallbacks": "bun run scripts/generate-review-part-fallbacks.ts",
     "seed": "bun run scripts/seed-from-sources.ts",
     "seed:google-oauth": "bun run scripts/seed-google-oauth.ts",
+    "analyze": "ANALYZE=true bun run build",
     "worker:pdf": "node scripts/pdf-worker.js",
     "postinstall": "node scripts/create_job_queue.mjs"
   },
@@ -48,6 +49,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
+    "@next/bundle-analyzer": "^16.2.11",
     "@playwright/test": "1.51.1",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.2.0",

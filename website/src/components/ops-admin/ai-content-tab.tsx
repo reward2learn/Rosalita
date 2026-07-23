@@ -232,7 +232,7 @@ export function AiContentTab() {
 
     try {
       const response = await clearSeed({ mode: 'all', confirm: clearConfirmText }).unwrap();
-      const deleted = response.data as unknown as Record<string, number>;
+      const deleted = response.data.deleted;
       setClearResult(deleted);
       setClearConfirmOpen(false);
       setClearConfirmText('');

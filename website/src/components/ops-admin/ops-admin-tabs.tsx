@@ -60,7 +60,7 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTooltip, Legend);
+let opsChartJsRegistered = false;
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setActiveTab } from '@/store/ui-slice';
 import {
@@ -879,6 +879,13 @@ function ZReportChartView() {
   const [chartMonth, setChartMonth] = useState(now.getMonth() + 1);
   const [chartMetrics, setChartMetrics] = useState<string[]>(['nett_sales']);
 
+  useEffect(() => {
+    if (!opsChartJsRegistered) {
+      ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTooltip, Legend);
+      opsChartJsRegistered = true;
+    }
+  }, []);
+
   const from = `${chartYear}-${String(chartMonth).padStart(2, '0')}-01`;
   const lastDay = new Date(chartYear, chartMonth, 0).getDate();
   const to = `${chartYear}-${String(chartMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -1279,7 +1286,7 @@ function DayPosTab() {
               sx={{
                 position: 'sticky',
                 bottom: 66,
-                background: 'var(--bg)',
+                background: '#0f0f14',
                 zIndex: 99,
               }}
             >

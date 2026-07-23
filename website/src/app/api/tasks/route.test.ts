@@ -56,6 +56,8 @@ vi.mock('@/lib/auth/guards', () => ({
   requireWriteAuth: vi.fn(),
   requireGoogle: vi.fn(),
   requireRole: vi.fn(),
+  requireRead: vi.fn(),
+  requireWrite: vi.fn(),
 }));
 
 vi.mock('@/domain/seed/seed-runner', () => ({
@@ -104,8 +106,9 @@ describe('/api/tasks', () => {
   });
 
   it('UC-TASK-01: GET returns role-scoped tasks for a non-admin viewer', async () => {
-    const { requireSession } = await import('@/lib/auth/guards');
+    const { requireSession, requireRead } = await import('@/lib/auth/guards');
     vi.mocked(requireSession).mockResolvedValue({ ok: true, session: session() } as never);
+    vi.mocked(requireRead).mockResolvedValue({ ok: true, session: session() } as never);
     const res = await GET(authedRequest('http://localhost/api/tasks'));
     expect(res.status).toBe(200);
     const json = (await res.json()) as { data: { tasks: Record<string, unknown>[]; viewerRole: string; isPlatformAdmin: boolean } };
@@ -116,15 +119,20 @@ describe('/api/tasks', () => {
   });
 
   it('UC-TASK-02: GET ?role= is forbidden for non-admins', async () => {
-    const { requireSession } = await import('@/lib/auth/guards');
+    const { requireSession, requireRead } = await import('@/lib/auth/guards');
     vi.mocked(requireSession).mockResolvedValue({ ok: true, session: session() } as never);
+    vi.mocked(requireRead).mockResolvedValue({ ok: true, session: session() } as never);
     const res = await GET(authedRequest('http://localhost/api/tasks?role=made'));
     expect(res.status).toBe(403);
   });
 
   it('UC-TASK-02: GET ?role= returns all tasks for a platform admin', async () => {
-    const { requireSession } = await import('@/lib/auth/guards');
+    const { requireSession, requireRead } = await import('@/lib/auth/guards');
     vi.mocked(requireSession).mockResolvedValue({
+      ok: true,
+      session: session({ roleCode: 'admin', platformAdmin: true }),
+    } as never);
+    vi.mocked(requireRead).mockResolvedValue({
       ok: true,
       session: session({ roleCode: 'admin', platformAdmin: true }),
     } as never);
@@ -136,8 +144,9 @@ describe('/api/tasks', () => {
   });
 
   it('UC-TASK-03: POST creates a task (write auth required)', async () => {
-    const { requireWriteAuth } = await import('@/lib/auth/guards');
+    const { requireWriteAuth, requireWrite } = await import('@/lib/auth/guards');
     vi.mocked(requireWriteAuth).mockResolvedValue({ ok: true, session: session() } as never);
+    vi.mocked(requireWrite).mockResolvedValue({ ok: true, session: session() } as never);
     const res = await POST(
       authedRequest('http://localhost/api/tasks', {
         method: 'POST',
@@ -152,8 +161,9 @@ describe('/api/tasks', () => {
   });
 
   it('UC-TASK-03: POST rejects missing title', async () => {
-    const { requireWriteAuth } = await import('@/lib/auth/guards');
+    const { requireWriteAuth, requireWrite } = await import('@/lib/auth/guards');
     vi.mocked(requireWriteAuth).mockResolvedValue({ ok: true, session: session() } as never);
+    vi.mocked(requireWrite).mockResolvedValue({ ok: true, session: session() } as never);
     const res = await POST(
       authedRequest('http://localhost/api/tasks', {
         method: 'POST',
@@ -165,8 +175,9 @@ describe('/api/tasks', () => {
   });
 
   it('UC-TASK-04: PATCH updates status for an owned task', async () => {
-    const { requireWriteAuth } = await import('@/lib/auth/guards');
+    const { requireWriteAuth, requireWrite } = await import('@/lib/auth/guards');
     vi.mocked(requireWriteAuth).mockResolvedValue({ ok: true, session: session() } as never);
+    vi.mocked(requireWrite).mockResolvedValue({ ok: true, session: session() } as never);
     const res = await PATCH(
       authedRequest('http://localhost/api/tasks', {
         method: 'PATCH',
@@ -180,8 +191,9 @@ describe('/api/tasks', () => {
   });
 
   it('UC-TASK-04: PATCH rejects invalid status', async () => {
-    const { requireWriteAuth } = await import('@/lib/auth/guards');
+    const { requireWriteAuth, requireWrite } = await import('@/lib/auth/guards');
     vi.mocked(requireWriteAuth).mockResolvedValue({ ok: true, session: session() } as never);
+    vi.mocked(requireWrite).mockResolvedValue({ ok: true, session: session() } as never);
     const res = await PATCH(
       authedRequest('http://localhost/api/tasks', {
         method: 'PATCH',
@@ -197,8 +209,9 @@ describe('/api/tasks', () => {
     vi.resetModules();
     const { GET: freshGet } = await import('./route');
     const seedMod = await import('@/domain/seed/seed-runner');
-    const { requireSession } = await import('@/lib/auth/guards');
+    const { requireSession, requireRead } = await import('@/lib/auth/guards');
     vi.mocked(requireSession).mockResolvedValue({ ok: true, session: session() } as never);
+    vi.mocked(requireRead).mockResolvedValue({ ok: true, session: session() } as never);
     await freshGet(authedRequest('http://localhost/api/tasks'));
     expect(seedMod.ensureTaskTables).toHaveBeenCalled();
     expect(seedMod.seedTaskTracking).toHaveBeenCalled();

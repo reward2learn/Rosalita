@@ -11,7 +11,7 @@
  *   4. Generate use-case descriptions for each logical report
  */
 
-import * as XLSX from 'xlsx';
+import { read, utils } from 'xlsx';
 import type { WorkBook, WorkSheet } from 'xlsx';
 
 // ── Types ──────────────────────────────────────────────
@@ -155,7 +155,7 @@ function guessDataType(
 }
 
 function findHeaderRow(ws: WorkSheet): { headerRow: number; headers: string[] } {
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as unknown[][];
+  const rows = utils.sheet_to_json(ws, { header: 1 }) as unknown[][];
   const maxScan = Math.min(rows.length, 20);
 
   // Keywords that indicate a row is a column header (not a title / metadata row)
@@ -259,7 +259,7 @@ function extractSampleRows(
   headerRow: number,
   maxSamples = 5,
 ): Record<string, unknown>[] {
-  const json = XLSX.utils.sheet_to_json(ws, {
+  const json = utils.sheet_to_json(ws, {
     defval: '',
     header: 1,
   }) as unknown[][];
@@ -287,7 +287,7 @@ function analyzeSheet(
   const { category, title } = detectCategory(tabName);
 
   // Extract all data as rows for column sampling
-  const allRows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as unknown[][];
+  const allRows = utils.sheet_to_json(ws, { header: 1 }) as unknown[][];
   const dataRows = allRows.slice(headerRow).filter((r: unknown[]) =>
     r.some((c: unknown) => c !== '' && c !== undefined && c !== null),
   );
@@ -344,7 +344,7 @@ function analyzeSheet(
 // ── Company / period detection ──────────────────────────
 
 function detectHeaderInfo(ws: WorkSheet): { company: string; period: string } {
-  const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 });
+  const rows = utils.sheet_to_json<string[]>(ws, { header: 1 });
   let company = '';
   let period = '';
 
@@ -371,7 +371,7 @@ export function analyzeWorkbook(
   data: Buffer | ArrayBuffer | Uint8Array,
   fileName = 'workbook.xlsx',
 ): WorkbookAnalysis {
-  const wb = XLSX.read(data, { type: 'buffer' });
+  const wb = read(data, { type: 'buffer' });
   const sheetNames = wb.SheetNames;
 
   // Detect company/period from first sheet

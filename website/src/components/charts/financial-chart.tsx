@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
@@ -29,18 +29,7 @@ import {
 } from '@/lib/chart-utils';
 import type { ChartKpi } from '@/store/ui-slice';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  BarController,
-  LineController,
-  Tooltip,
-  Legend,
-  Filler,
-);
+let chartJsRegistered = false;
 
 export interface FinancialChartProps {
   kpi: ChartKpi;
@@ -97,6 +86,25 @@ export function FinancialChart({
   isError = false,
 }: FinancialChartProps) {
   const chartRef = useRef<ChartInstance<'bar'> | null>(null);
+
+  useEffect(() => {
+    if (!chartJsRegistered) {
+      ChartJS.register(
+        CategoryScale,
+        LinearScale,
+        PointElement,
+        LineElement,
+        BarElement,
+        BarController,
+        LineController,
+        Tooltip,
+        Legend,
+        Filler,
+      );
+      chartJsRegistered = true;
+    }
+  }, []);
+
   const currentMonthIdx = useMemo(() => findCurrentMonthIndex(labels), [labels]);
 
   const { barData, barColors, cumulative } = useMemo(

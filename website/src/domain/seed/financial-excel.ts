@@ -1,7 +1,7 @@
 /**
  * Parse financial projections from Cashflow Excel — ported from load_financial_data.mjs.
  */
-import * as XLSX from 'xlsx';
+import { read, readFile, utils } from 'xlsx';
 import type { WorkBook, WorkSheet } from 'xlsx';
 import { layoutForSheet, PNL_LINE_ITEMS, rowForItem } from '@/domain/seed/pnl-rows';
 
@@ -66,7 +66,7 @@ const SHEET_CONFIG: Record<string, SheetConfig> = {
 };
 
 function getCell(sheet: WorkSheet, col: number, row: number): unknown {
-  const addr = XLSX.utils.encode_cell({ c: col - 1, r: row - 1 });
+  const addr = utils.encode_cell({ c: col - 1, r: row - 1 });
   const cell = sheet[addr];
   return cell ? cell.v : null;
 }
@@ -255,11 +255,11 @@ function parseWorkbook(wb: WorkBook): FinancialProjectionRow[] {
 export function parseFinancialProjectionsFromBuffer(
   data: Buffer | ArrayBuffer | Uint8Array,
 ): FinancialProjectionRow[] {
-  const wb = XLSX.read(data, { type: 'buffer' });
+  const wb = read(data, { type: 'buffer' });
   return parseWorkbook(wb);
 }
 
 export function parseFinancialProjectionsFromExcel(excelPath: string): FinancialProjectionRow[] {
-  const wb = XLSX.readFile(excelPath);
+  const wb = readFile(excelPath);
   return parseWorkbook(wb);
 }

@@ -16,7 +16,7 @@
 
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@/generated/prisma';
-import * as XLSX from 'xlsx';
+import { read, utils } from 'xlsx';
 import type { WorkSheet } from 'xlsx';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +34,7 @@ const HEADER_KEYWORDS = /description|amount|total|date|revenue|account|name|qty|
 const TITLE_KEYWORDS = /^(profit\s*&?\s*loss|balance\s*sheet|trial\s*balance|general\s*ledger|periode|period|month\s*of|input\s*data|auto\s*calc)/i;
 
 function findHeaderRow(ws: WorkSheet): { headerRow: number; headers: string[] } {
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as unknown[][];
+  const rows = utils.sheet_to_json(ws, { header: 1 }) as unknown[][];
   const maxScan = Math.min(rows.length, 20);
 
   let bestRow = 0;
@@ -102,7 +102,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
 
     const buf = Buffer.from(cached.content, 'base64');
-    const wb = XLSX.read(buf, { type: 'buffer' });
+    const wb = read(buf, { type: 'buffer' });
 
     const tabName = wb.SheetNames.find((n) => n.toLowerCase() === sheetName.toLowerCase());
     if (!tabName) {
@@ -133,7 +133,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     const columns = columnKeys.filter((k) => !k.startsWith('__hidden_'));
 
     // Parse data using deduplicated / placeholder column keys.
-    const allRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+    const allRows = utils.sheet_to_json<Record<string, unknown>>(ws, {
       header: columnKeys,
       defval: '',
     });

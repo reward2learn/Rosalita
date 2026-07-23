@@ -1,11 +1,24 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
-import { DataGrid, type GridColDef, type GridValidRowModel } from '@mui/x-data-grid';
+import type { GridColDef, GridValidRowModel } from '@mui/x-data-grid';
 import { useGetSheetDataQuery } from '@/store/apis/sheet-data-api';
+
+const DataGrid = dynamic(
+  () => import('@mui/x-data-grid').then((m) => ({ default: m.DataGrid })),
+  {
+    ssr: false,
+    loading: () => (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress size={24} />
+      </Box>
+    ),
+  },
+);
 
 interface SheetViewerConfig {
   sheet?: string;

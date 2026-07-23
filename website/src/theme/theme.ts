@@ -1,5 +1,3 @@
-'use client';
-
 import { createTheme } from '@mui/material/styles';
 
 /** Red Ruby Bali dark theme — tokens from style.css */

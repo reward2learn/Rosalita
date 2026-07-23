@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -9,11 +10,21 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { AuthGate } from '@/components/auth/auth-gate';
 import { SignInPanelGate } from '@/components/auth/sign-in-panel';
-import { AiContentTab } from '@/components/ops-admin/ai-content-tab';
 import { ChatSettingsForm } from '@/components/config/chat-settings-form';
 import { OpenAiKeyForm } from '@/components/config/openai-key-form';
-import { SourceUploadForm } from '@/components/config/source-upload-form';
-import { DataViewTab } from '@/components/config/data-view-tab';
+
+const AiContentTab = dynamic(
+  () => import('@/components/ops-admin/ai-content-tab').then((m) => ({ default: m.AiContentTab })),
+  { ssr: false },
+);
+const SourceUploadForm = dynamic(
+  () => import('@/components/config/source-upload-form').then((m) => ({ default: m.SourceUploadForm })),
+  { ssr: false },
+);
+const DataViewTab = dynamic(
+  () => import('@/components/config/data-view-tab').then((m) => ({ default: m.DataViewTab })),
+  { ssr: false },
+);
 
 function ConfigPageInner() {
   const searchParams = useSearchParams();
