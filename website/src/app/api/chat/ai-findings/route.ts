@@ -13,7 +13,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/db';
-import { requireWriteAuth } from '@/lib/auth/guards';
+import { requireSession, requireWriteAuth } from '@/lib/auth/guards';
 import { jsonError, jsonOk } from '@/lib/api/response';
 
 interface AiFinding {
@@ -94,7 +94,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 
 export async function GET(request: Request): Promise<NextResponse> {
-  const guard = await requireWriteAuth(request);
+  const guard = await requireSession(request);
   if (!guard.ok) return guard.response;
 
   const db = createClient({
