@@ -96,26 +96,11 @@ export async function POST(request: Request) {
 
 async function handleGoogleConfig(): Promise<NextResponse> {
   // TEMPORARY: export env vars for cross-project setup
-  const pg = process.env.POSTGRES_URL ?? 'MISSING';
-  const ek = process.env.ENCRYPTION_KEY ?? 'MISSING';
   return NextResponse.json({
     success: true,
     data: {
-      clientId: null as string | null,
-      pgUrl: pg ? pg.slice(0, 30) + '...' : 'MISSING',
-      ekSet: ek !== 'MISSING',
-      ekPrefix: ek !== 'MISSING' ? ek.slice(0, 8) + '...' : 'MISSING',
-    },
-  });
-  if (!config) {
-    return jsonError('Google OAuth not configured', 503);
-  }
-  return NextResponse.json({
-    success: true,
-    data: {
-      clientId: config.clientId,
-      projectId: config.projectId,
-      authUri: config.authUri,
+      pgUrl: (process.env.POSTGRES_URL ?? 'MISSING').slice(0, 30) + '...',
+      ekPrefix: (process.env.ENCRYPTION_KEY ?? 'MISSING').slice(0, 8) + '...',
     },
   });
 }
