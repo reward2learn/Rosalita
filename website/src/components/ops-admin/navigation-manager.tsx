@@ -136,15 +136,28 @@ export function NavigationManager() {
   const [batchGroups, setBatchGroups] = useState<string[]>([]);
 
   // ── RTK Query: navigation ─────────────────────────────
-  const { data: navData, isLoading: navLoading } = useGetNavigationQuery();
+  const { data: navData, isLoading: navLoading, isError: navError, error: navQueryError } = useGetNavigationQuery();
 
   useEffect(() => {
     if (navData?.success) {
       const navItems = (navData.data as { items?: NavItem[] })?.items ?? [];
       setItems(navItems);
       setFlatItems(flattenTree(navItems));
+      setError(null);
+    } else if (navData && navData.success === false) {
+      setError(navData.error ?? 'Failed to load navigation');
     }
   }, [navData]);
+
+  useEffect(() => {
+    if (navError) {
+      const msg =
+        navQueryError && typeof navQueryError === 'object' && 'status' in navQueryError
+          ? `Failed to load navigation (${String((navQueryError as { status: unknown }).status)})`
+          : 'Failed to load navigation';
+      setError(msg);
+    }
+  }, [navError, navQueryError]);
 
   // ── RTK Query: security groups ────────────────────────
   const { data: groupsData } = useListAdminGroupsQuery();

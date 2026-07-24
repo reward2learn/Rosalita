@@ -10,8 +10,9 @@
  *   groups — comma-separated group codes the user belongs to
  */
 
-import { NextResponse } from 'next/server';
 import { PrismaClient } from '@/generated/prisma';
+import { jsonOk } from '@/lib/api/response';
+import { ensureNavigationTable, seedMissingNavigationFromCatalog } from '@/lib/navigation/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,7 @@ interface NavItem {
   children: NavItem[];
 }
 
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tier = searchParams.get('tier') || 'public';
   const groupsParam = searchParams.get('groups') || '';
@@ -48,11 +49,15 @@ export async function GET(request: Request): Promise<NextResponse> {
   // If no DB is configured, return empty nav (graceful fallback for dev/demo)
   const dbUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
   if (!dbUrl) {
-    return NextResponse.json({ items: [] });
+    return jsonOk({ items: [] as NavItem[] });
   }
 
-  const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+  const prisma = getClient();
   try {
+    await ensureNavigationTable(prisma);
+    const seeded = await seedMissingNavigationFromCatalog(prisma);
+    if (seeded > 0) console.log(`[navigation] Seeded ${seeded} new item(s) from page catalog`);
+
     const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
       `SELECT id, parent_id AS "parentId", sort_order AS "sortOrder", title, path, icon,
               auth_tier AS "authTier", required_groups AS "requiredGroups",
@@ -104,10 +109,11 @@ export async function GET(request: Request): Promise<NextResponse> {
       }
     }
 
-    return NextResponse.json({ items: roots });
+    return jsonOk({ items: roots });
   } catch (err) {
     console.error('[navigation] Failed to read:', err);
-    return NextResponse.json({ items: [] });
+    // Empty envelope — app shell falls back to static page-catalog
+    return jsonOk({ items: [] as NavItem[] });
   } finally {
     await prisma.$disconnect();
   }

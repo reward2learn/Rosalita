@@ -75,10 +75,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const groupsParam = encodeURIComponent((groups ?? []).join(','));
   const { data: navData } = useGetNavigationQuery({ tier, groups: groupsParam });
 
-  const dbNavItems: DbNavItem[] | undefined = navData?.data?.items as DbNavItem[] | undefined;
+  // Prefer ApiEnvelope `{ success, data: { items } }`; tolerate legacy `{ items }` shape.
+  const envelopeItems = navData?.data?.items as DbNavItem[] | undefined;
+  const legacyItems = (navData as { items?: DbNavItem[] } | undefined)?.items;
+  const dbNavItems = envelopeItems ?? legacyItems;
 
-  // Use DB nav if loaded, otherwise fall back to static catalog
-  const navItems = ((dbNavItems as DbNavItem[]) ?? listNavPages(tier, groups ?? []).map((p) => ({
+  const catalogFallback = listNavPages(tier, groups ?? []).map((p) => ({
     id: `static-${p.slug}`,
     parentId: null,
     sortOrder: 0,
@@ -91,7 +93,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     isDynamic: false,
     isDefault: false,
     children: [] as DbNavItem[],
-  }))) as (DbNavItem | (DbNavItem & { _isCatalog?: boolean }))[];
+  }));
+
+  // Use DB nav when the API returned an items array (including empty).
+  // Only fall back to the static catalog when the response is missing/malformed.
+  const navItems = (dbNavItems !== undefined ? dbNavItems : catalogFallback) as DbNavItem[];
 
 
 

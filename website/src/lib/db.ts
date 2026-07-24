@@ -18,7 +18,7 @@ const globalForPrisma = globalThis as typeof globalThis & {
 };
 
 function getPostgresUrl(): string {
-  const url = process.env.POSTGRES_URL;
+  const url = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
   if (!url) {
     throw new Error('POSTGRES_URL is not set');
   }

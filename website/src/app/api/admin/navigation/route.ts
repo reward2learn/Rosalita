@@ -15,6 +15,7 @@ import { PrismaClient } from '@/generated/prisma';
 import { requireWriteAuth } from '@/lib/auth/guards';
 import { sessionIsPlatformAdmin } from '@/lib/auth/jwt';
 import { jsonError, jsonOk } from '@/lib/api/response';
+import { ensureNavigationTable, seedMissingNavigationFromCatalog } from '@/lib/navigation/db';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -23,35 +24,6 @@ function getClient() {
   const url = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
   if (!url) throw new Error('POSTGRES_URL is not set');
   return new PrismaClient({ datasources: { db: { url } } });
-}
-
-const NAV_DDL = `
-CREATE TABLE IF NOT EXISTS navigation_items (
-  id TEXT PRIMARY KEY,
-  parent_id TEXT REFERENCES navigation_items(id) ON DELETE SET NULL,
-  sort_order INTEGER NOT NULL DEFAULT 0,
-  title TEXT NOT NULL,
-  path TEXT NOT NULL DEFAULT '',
-  icon TEXT NOT NULL DEFAULT '',
-  auth_tier TEXT NOT NULL DEFAULT 'public',
-  required_groups TEXT NOT NULL DEFAULT '',
-  is_visible BOOLEAN NOT NULL DEFAULT TRUE,
-  is_dynamic BOOLEAN NOT NULL DEFAULT FALSE,
-  is_default BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);`;
-
-async function ensureTable(prisma: PrismaClient) {
-  await prisma.$executeRawUnsafe(NAV_DDL);
-  // Add columns idempotently for existing deployments
-  for (const col of [
-    'ADD COLUMN IF NOT EXISTS is_dynamic BOOLEAN NOT NULL DEFAULT FALSE',
-    'ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT FALSE',
-  ]) {
-    try { await prisma.$executeRawUnsafe(`ALTER TABLE navigation_items ${col}`); }
-    catch { /* exists */ }
-  }
 }
 
 // ── Schemas ─────────────────────────────────────────────
@@ -83,104 +55,17 @@ const updateSchema = z.object({
   })),
 });
 
-// ── Helpers for static catalog fallback ─────────────────
-
-interface CatalogPage {
-  slug: string;
-  title: string;
-  authTier: string;
-  navLabel?: string;
-  showInNav?: boolean;
-  requiredGroups?: string[];
-}
-
-async function deriveNavItemsFromCatalog(): Promise<Record<string, unknown>[]> {
-  const { getFullCatalog } = await import('@/lib/page-catalog');
-  const catalog = getFullCatalog();
-  return Object.entries(catalog)
-    .filter(([, p]) => (p as CatalogPage).showInNav !== false)
-    .map(([slug, page], idx) => {
-      const p = page as CatalogPage;
-      return {
-        id: `static-${slug}`,
-        parentId: null,
-        sortOrder: idx,
-        title: p.navLabel ?? p.title,
-        path: `/${slug}`,
-        icon: '',
-        authTier: p.authTier,
-        requiredGroups: (p.requiredGroups ?? []).join(','),
-        isVisible: true,
-        isDynamic: false,
-        children: [],
-      };
-    });
-}
-
-/** Seed any catalog / DB pages not yet in the navigation_items table (idempotent). */
-async function seedMissingFromCatalog(prisma: ReturnType<typeof getClient>): Promise<number> {
-  // Get IDs already in the table
-  const existing = await prisma.$queryRawUnsafe<{ id: string }[]>(
-    `SELECT id FROM navigation_items`,
-  );
-  const existingIds = new Set(existing.map((r) => r.id));
-
-  const catalogItems = await deriveNavItemsFromCatalog();
-  let inserted = 0;
-
-  // Helper: insert a single nav item if not already present
-  const insertIfMissing = async (id: string, title: string, path: string, authTier: string) => {
-    if (existingIds.has(id)) return;
-    try {
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO navigation_items (id, parent_id, sort_order, title, path, icon, auth_tier, required_groups, is_visible, is_dynamic)
-         VALUES ($1, NULL, $2, $3, $4, '', $5, '', TRUE, FALSE)`,
-        id, inserted, title, path, authTier,
-      );
-      inserted++;
-    } catch { /* ignore */ }
-  };
-
-  // Insert from in-memory catalog
-  for (const item of catalogItems) {
-    await insertIfMissing(
-      item.id as string,
-      item.title as string,
-      item.path as string,
-      item.authTier as string,
-    );
-  }
-
-  // Also check the app_pages DB table for pages not in the in-memory catalog
-  // (fixes cold-start issue where DYNAMIC_PAGES is empty for dynamically generated sheet pages)
-  try {
-    const dbPages = await prisma.$queryRawUnsafe<{ slug: string; title: string; auth_tier: string }[]>(
-      `SELECT slug, title, auth_tier FROM app_pages ORDER BY sort_order ASC`,
-    );
-    for (const dbp of dbPages) {
-      const navId = `static-${dbp.slug}`;
-      if (!existingIds.has(navId) && !catalogItems.some((c) => c.id === navId)) {
-        await insertIfMissing(navId, dbp.title, `/${dbp.slug}`, dbp.auth_tier);
-      }
-    }
-  } catch {
-    // app_pages table may not exist yet
-  }
-
-  return inserted;
-}
-
 // ── GET ─────────────────────────────────────────────────
 
 export async function GET(request: Request): Promise<NextResponse> {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
-  if (!sessionIsPlatformAdmin(guard.session)) return jsonError('Platform admin only', 403);
+  // Allow any PIN/Google user to read navigation items
 
   const prisma = getClient();
   try {
-    await ensureTable(prisma);
-    const seeded = await seedMissingFromCatalog(prisma);
+    await ensureNavigationTable(prisma);
+    const seeded = await seedMissingNavigationFromCatalog(prisma);
     if (seeded > 0) console.log(`[navigation] Seeded ${seeded} new item(s) from page catalog`);
 
     const items = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
@@ -228,10 +113,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const prisma = getClient();
   try {
-    await ensureTable(prisma);
-    const result = await prisma.$executeRawUnsafe(
+    await ensureNavigationTable(prisma);
+    await prisma.$executeRawUnsafe(
       `INSERT INTO navigation_items (id, parent_id, sort_order, title, path, icon, auth_tier, required_groups, is_visible, is_dynamic)
-       VALUES (gen_random_uuid()::text, $1, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM navigation_items WHERE parent_id IS NULL), $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+       VALUES (gen_random_uuid()::text, $1, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM navigation_items WHERE parent_id IS NULL), $2, $3, $4, $5, $6, $7, $8)`,
       parentId ?? null, title, path ?? '', icon ?? '', authTier ?? 'public', requiredGroups ?? '', isVisible ?? true, isDynamic ?? false,
     );
     return jsonOk({ created: true });
@@ -256,7 +141,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
 
   const prisma = getClient();
   try {
-    await ensureTable(prisma);
+    await ensureNavigationTable(prisma);
     for (const item of parsed.data.items) {
       const sets: string[] = ['updated_at = CURRENT_TIMESTAMP'];
       const params: unknown[] = [];
@@ -305,7 +190,7 @@ export async function DELETE(request: Request): Promise<NextResponse> {
 
   const prisma = getClient();
   try {
-    await ensureTable(prisma);
+    await ensureNavigationTable(prisma);
     // Set children's parent_id to null first, then delete
     await prisma.$executeRawUnsafe(
       `UPDATE navigation_items SET parent_id = NULL WHERE parent_id = ANY($1::text[])`,

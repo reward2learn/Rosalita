@@ -1,0 +1,12 @@
+# Only exclude what Vercel doesn't auto-exclude in subdirectories
+website/.next/
+website/node_modules/
+tokenizmyapp/.next/
+tokenizmyapp/node_modules/
+.bun/
+.env*.local
+.env*.development
+.opencode/
+CodeNomad/
+docs/
+*.md
