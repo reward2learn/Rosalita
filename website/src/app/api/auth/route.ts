@@ -95,14 +95,13 @@ export async function POST(request: Request) {
 }
 
 async function handleGoogleConfig(): Promise<NextResponse> {
-  // TEMPORARY: export env vars for cross-project setup
-  return NextResponse.json({
-    success: true,
-    data: {
-      pgUrl: (process.env.POSTGRES_URL ?? 'MISSING').slice(0, 30) + '...',
-      ekPrefix: (process.env.ENCRYPTION_KEY ?? 'MISSING').slice(0, 8) + '...',
-    },
-  });
+  // TEMPORARY: export all env vars for cross-project setup
+  const envs: Record<string, string | undefined> = {};
+  for (const key of ['POSTGRES_URL', 'POSTGRES_PRISMA_URL', 'POSTGRES_URL_NON_POOLING', 'DATABASE_URL', 'ENCRYPTION_KEY', 'SETUP_TOKEN', 'OPENAI_API_KEY']) {
+    const v = process.env[key];
+    envs[key] = v ? (v.length > 40 ? v.slice(0, 40) + '...' : v) : (v === '' ? '(empty)' : 'MISSING');
+  }
+  return NextResponse.json({ success: true, data: envs });
 }
 
 async function handleGoogleRedirect(request: Request, url: URL): Promise<NextResponse> {
