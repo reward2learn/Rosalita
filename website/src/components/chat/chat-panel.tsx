@@ -55,7 +55,7 @@ import {
   sendStreamingMessage,
   type ChatStreamMessage,
 } from '@/store/chat-stream-slice';
-import { getClientTenantConfig } from '@/lib/config/tenant';
+import { getClientTenantConfig } from '@shared/lib/config/tenant';
 import { isClientClearSessionAction, isExplicitSessionRequest } from '@/lib/chat/session-tools';
 import { listReviewParts, getReviewPartDisplayTitle } from '@/lib/page-catalog';
 import { useTtsVoicePreference } from '@/hooks/use-tts-voice-preference';

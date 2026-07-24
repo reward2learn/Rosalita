@@ -9,7 +9,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/db';
 import { getAppSettings } from '@/domain/config/app-settings-service';
-import { getTenantConfig } from '@/lib/config/tenant';
+import { getTenantConfig } from '@shared/lib/config/tenant';
 
 export const dynamic = 'force-dynamic';
 

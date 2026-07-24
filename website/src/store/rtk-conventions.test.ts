@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { baseQuery } from '@/store/base-query';
+import { baseQuery } from '@shared/store/base-query';
 import { metricsApi } from '@/store/apis/metrics-api';
 
 describe('RTK Query client conventions', () => {

@@ -1,4 +1,4 @@
-import { getTenantConfig } from '@/lib/config/tenant';
+import { getTenantConfig } from '@shared/lib/config/tenant';
 
 /** Seed fallback snippets — sourced from Business Review & Executive Summary.
  *  Content is tenant-specific; this module provides generic fallbacks

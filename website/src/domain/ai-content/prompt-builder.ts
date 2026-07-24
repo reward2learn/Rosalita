@@ -10,7 +10,7 @@
  */
 
 import type { ExcelData, PlLine, BepMonthlyRow, MonthOnMonthLine } from '@/domain/excel/excel-extractor';
-import { getTenantConfig } from '@/lib/config/tenant';
+import { getTenantConfig } from '@shared/lib/config/tenant';
 
 // ── Formatting helpers ──────────────────────────────────
 

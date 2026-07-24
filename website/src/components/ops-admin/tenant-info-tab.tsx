@@ -7,8 +7,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Button from '@mui/material/Button';
-import { useGetBrandConfigQuery } from '@/store/apis/brand-config-api';
-import { getClientTenantConfig } from '@/lib/config/tenant';
+import { useGetBrandConfigQuery } from '@shared/store/apis/brand-config-api';
+import { getClientTenantConfig } from '@shared/lib/config/tenant';
 import { getTemplate } from '@/domain/tenant/template-catalog';
 
 export function TenantInfoTab() {

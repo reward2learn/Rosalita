@@ -1,5 +1,5 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { baseQuery } from '@/store/base-query';
+import { baseQuery } from '@shared/store/base-query';
 
 export interface PosApiResponse<T = unknown> {
   success: boolean;

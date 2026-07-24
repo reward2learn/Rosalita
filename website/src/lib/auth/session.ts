@@ -7,7 +7,7 @@ import {
   type AuthTier,
   type SessionClaims,
 } from '@/lib/auth/jwt';
-import { getTenantAppUrl, isTenantDomain } from '@/lib/config/tenant';
+import { getTenantAppUrl, isTenantDomain } from '@shared/lib/config/tenant';
 
 function isProduction(): boolean {
   return process.env.VERCEL_ENV === 'production';

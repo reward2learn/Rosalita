@@ -33,10 +33,10 @@ import { getReviewPartDisplayTitle, listNavPages, resolvePage, resolveReviewPart
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDrawerOpen } from '@/store/ui-slice';
 import { useListPagesQuery } from '@/store/apis/content-api';
-import { useGetBrandConfigQuery } from '@/store/apis/brand-config-api';
+import { useGetBrandConfigQuery } from '@shared/store/apis/brand-config-api';
 import { useGetNavigationQuery } from '@/store/apis/navigation-api';
 import { NavIcon } from '@/components/shared/nav-icon';
-import { getClientTenantConfig } from '@/lib/config/tenant';
+import { getClientTenantConfig } from '@shared/lib/config/tenant';
 
 const DRAWER_WIDTH = 280;
 

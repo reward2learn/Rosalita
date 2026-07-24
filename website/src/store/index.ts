@@ -15,7 +15,7 @@ import { tasksApi } from '@/store/apis/tasks-api';
 import { adminApi } from '@/store/apis/admin-api';
 import { dashboardApi } from '@/store/apis/dashboard-api';
 import { sheetDataApi } from '@/store/apis/sheet-data-api';
-import { brandConfigApi } from '@/store/apis/brand-config-api';
+import { brandConfigApi } from '@shared/store/apis/brand-config-api';
 import { navigationApi } from '@/store/apis/navigation-api';
 import { tenantApi } from '@/store/apis/tenant-api';
 

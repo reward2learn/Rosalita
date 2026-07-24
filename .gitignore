@@ -19,3 +19,4 @@ logs/
 !.env*.example
 .vercel
 .env*
+node_modules

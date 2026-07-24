@@ -14,7 +14,7 @@ import { AuthGate } from '@/components/auth/auth-gate';
 import { SignInPanelGate } from '@/components/auth/sign-in-panel';
 import { ChatSettingsForm } from '@/components/config/chat-settings-form';
 import { OpenAiKeyForm } from '@/components/config/openai-key-form';
-import { getClientTenantConfig } from '@/lib/config/tenant';
+import { getClientTenantConfig } from '@shared/lib/config/tenant';
 import { getTemplate } from '@/domain/tenant/template-catalog';
 
 const AiContentTab = dynamic(

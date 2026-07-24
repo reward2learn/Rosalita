@@ -7,7 +7,7 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { AuthGate } from '@/components/auth/auth-gate';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
-import { getClientTenantConfig } from '@/lib/config/tenant';
+import { getClientTenantConfig } from '@shared/lib/config/tenant';
 
 const tenantConfig = getClientTenantConfig();
 const FALLBACK_TITLE = tenantConfig.displayName;
