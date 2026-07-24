@@ -1,0 +1,9 @@
+{
+  "name": "redruby-monorepo",
+  "private": true,
+  "workspaces": [
+    "website",
+    "tokenizmyapp",
+    "packages/*"
+  ]
+}
