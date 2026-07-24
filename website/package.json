@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "zenstack generate --schema zenstack/schema.zmodel && next build",
+    "build": "zenstack generate --schema zenstack/schema.zmodel && npx prisma db push --schema=zenstack/prisma/schema.prisma --skip-generate --accept-data-loss && next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0",
