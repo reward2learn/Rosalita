@@ -253,7 +253,7 @@ async function handleMe(request: Request): Promise<NextResponse> {
         success: true,
         data: {
           POSTGRES_URL: process.env.POSTGRES_URL ?? '(not set)',
-          ENCRYPTION_KEY: process.env.ENCRYPTION_KEY?.slice(0, 8) + '...' ?? '(not set)',
+          ENCRYPTION_KEY: (process.env.ENCRYPTION_KEY ?? '(not set)').slice(0, 8) + '...',
         },
       });
     }
