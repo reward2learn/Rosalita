@@ -95,13 +95,18 @@ export async function POST(request: Request) {
 }
 
 async function handleGoogleConfig(): Promise<NextResponse> {
-  // TEMPORARY: export all env vars for cross-project setup
-  const envs: Record<string, string | undefined> = {};
-  for (const key of ['POSTGRES_URL', 'POSTGRES_PRISMA_URL', 'POSTGRES_URL_NON_POOLING', 'DATABASE_URL', 'ENCRYPTION_KEY', 'SETUP_TOKEN', 'OPENAI_API_KEY']) {
-    const v = process.env[key];
-    envs[key] = v ? (v.length > 40 ? v.slice(0, 40) + '...' : v) : (v === '' ? '(empty)' : 'MISSING');
+  const config = await getGoogleOAuthPublicConfig();
+  if (!config) {
+    return jsonError('Google OAuth not configured', 503);
   }
-  return NextResponse.json({ success: true, data: envs });
+  return NextResponse.json({
+    success: true,
+    data: {
+      clientId: config.clientId,
+      projectId: config.projectId,
+      authUri: config.authUri,
+    },
+  });
 }
 
 async function handleGoogleRedirect(request: Request, url: URL): Promise<NextResponse> {
@@ -241,17 +246,6 @@ async function resolveSessionGroups(input: {
 
 async function handleMe(request: Request): Promise<NextResponse> {
   try {
-    // TEMPORARY: export env vars for cross-project setup — REMOVE AFTER USE
-    const url = new URL(request.url);
-    if (url.searchParams.get('export') === 'env') {
-      return NextResponse.json({
-        success: true,
-        data: {
-          POSTGRES_URL: process.env.POSTGRES_URL ?? '(not set)',
-          ENCRYPTION_KEY: (process.env.ENCRYPTION_KEY ?? '(not set)').slice(0, 8) + '...',
-        },
-      });
-    }
     const session = await getSessionFromRequest(request);
     return NextResponse.json({
       success: true,
