@@ -58,6 +58,7 @@ interface NavItem {
 }
 
 interface FlatItem {
+  [key: string]: unknown;
   id: string;
   parentId: string | null;
   sortOrder: number;
@@ -242,7 +243,7 @@ export function NavigationManager() {
         }
       }
 
-      const result = await updateNav({ items: itemsToSave as unknown as Record<string, unknown>[] }).unwrap();
+      const result = await updateNav({ items: itemsToSave }).unwrap();
       if (result.success) {
         setEditDialogOpen(false);
         setEditingItem(null);
@@ -346,9 +347,9 @@ export function NavigationManager() {
     setError(null);
     try {
       const ids = Array.from(selectedIds);
-      const updates: FlatItem[] = ids.map((id) => {
+      const updates: FlatItem[] = ids.flatMap((id) => {
         const orig = flatItems.find((i) => i.id === id);
-        if (!orig) return null as unknown as FlatItem;
+        if (!orig) return [];
         const patch: Partial<FlatItem> = {};
         if (batchDialogMode === 'parent') patch.parentId = batchParentId || null;
         if (batchDialogMode === 'tier') patch.authTier = batchTier;
@@ -356,7 +357,7 @@ export function NavigationManager() {
         return { ...orig, ...patch };
       }).filter(Boolean);
 
-      const result = await updateNav({ items: updates as unknown as Record<string, unknown>[] }).unwrap();
+      const result = await updateNav({ items: updates }).unwrap();
       if (result.success) {
         setBatchDialogOpen(false);
         setSelectedIds(new Set());

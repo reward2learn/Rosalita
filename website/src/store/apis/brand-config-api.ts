@@ -3,6 +3,9 @@ import { baseQuery } from '@/store/base-query';
 import type { ApiEnvelope } from '@/store/api-types';
 
 export interface BrandConfig {
+  tenantSlug: string;
+  tenantDisplayName: string;
+  tenantTemplate: string;
   brandLogoText: string;
   brandLogoUrl: string | null;
   brandPrimaryColor: string;

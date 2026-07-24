@@ -7,6 +7,7 @@ import {
   type AuthTier,
   type SessionClaims,
 } from '@/lib/auth/jwt';
+import { getTenantAppUrl, isTenantDomain } from '@/lib/config/tenant';
 
 function isProduction(): boolean {
   return process.env.VERCEL_ENV === 'production';
@@ -81,8 +82,6 @@ export async function getSession(): Promise<SessionClaims | null> {
   return verifySession(token);
 }
 
-const PRODUCTION_APP_URL = 'https://redrubybali.vercel.app';
-
 /** Detect whether we are running in a local development environment. */
 function isLocalDev(): boolean {
   // Vercel sets VERCEL_ENV on both deployments and `vercel dev`.
@@ -94,12 +93,8 @@ function resolveCanonicalAppUrl(): string {
   // In local dev without Vercel, default to localhost:3000
   if (isLocalDev()) return 'http://localhost:3000';
 
-  const fromPublic = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
-  if (fromPublic) return fromPublic;
-  if (process.env.VERCEL_ENV === 'production') return PRODUCTION_APP_URL;
-  const vercelUrl = process.env.VERCEL_URL?.trim();
-  if (vercelUrl) return `https://${vercelUrl}`;
-  return PRODUCTION_APP_URL;
+  // Delegate to tenant config for production/staging URL resolution
+  return getTenantAppUrl();
 }
 
 export function getOrigin(request: Request): string {
@@ -107,9 +102,10 @@ export function getOrigin(request: Request): string {
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '';
   const proto = request.headers.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
   if (host) {
-    const origin = `${proto}://${host.split(',')[0].trim()}`;
-    // On production Vercel domains, use the canonical URL for consistency
-    if (origin.includes('redrubybali.vercel.app') || origin.includes(process.env.VERCEL_URL ?? '')) {
+    const hostname = host.split(',')[0].trim();
+    const origin = `${proto}://${hostname}`;
+    // On production Vercel domains, use the canonical tenant URL for consistency
+    if (isTenantDomain(hostname)) {
       return resolveCanonicalAppUrl();
     }
     return origin;

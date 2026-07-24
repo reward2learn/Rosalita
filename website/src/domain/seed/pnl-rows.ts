@@ -1,5 +1,5 @@
 /**
- * Ordered P&L line items matching the Red Ruby Excel workbook layout.
+ * Ordered P&L line items matching the Excel workbook layout.
  */
 export interface PnlLineItem {
   key: string;
@@ -13,7 +13,7 @@ export interface PnlLineItem {
 
 export const PNL_LINE_ITEMS: PnlLineItem[] = [
   { key: 'header_title', label: 'Profit & Loss Projections', header: true },
-  { key: 'venue', label: 'Red Ruby Bali', header: true },
+  { key: 'venue', label: 'Venue', header: true },
   { key: 'gross_income_idr', label: 'Gross Income IDR', header: true },
 
   // ── Club Revenue ──

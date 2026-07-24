@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifySession, COOKIE_NAME, type SessionClaims } from '@/lib/auth/jwt';
-import { resolvePage, tierAllowsAccess } from '@/lib/page-catalog';
+// Public pages that don't require auth (kept in sync with page-catalog.ts)
+const PUBLIC_SLUGS = new Set(['dashboard', 'terms-of-service', 'privacy-policy']);
 
 const CSP = [
   "default-src 'self'",
@@ -53,7 +54,7 @@ function injectSessionHeaders(headers: Headers, session: SessionClaims): void {
 
 // ── Middleware ──────────────────────────────────────────
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Phase 5: Rewrites (moved from next.config.mjs)
@@ -103,8 +104,8 @@ export async function middleware(request: NextRequest) {
   // Phase 4: Page-level auth gating for non-API, non-NextJS routes
   if (!pathname.startsWith('/api/') && !pathname.startsWith('/_next/')) {
     const slug = pathname.split('/')[1] || 'dashboard';
-    const page = resolvePage(slug);
-    if (page && !tierAllowsAccess('public', page.authTier)) {
+    const isPublic = PUBLIC_SLUGS.has(slug) || slug === '';
+    if (!isPublic) {
       if (!session) {
         const redirectUrl = new URL('/dashboard', request.url);
         redirectUrl.searchParams.set('redirect_reason', 'auth_required');

@@ -10,6 +10,7 @@
  */
 
 import type { ExcelData, PlLine, BepMonthlyRow, MonthOnMonthLine } from '@/domain/excel/excel-extractor';
+import { getTenantConfig } from '@/lib/config/tenant';
 
 // ── Formatting helpers ──────────────────────────────────
 
@@ -31,14 +32,14 @@ function fmtPct(n: number): string {
 // ── Section builders ────────────────────────────────────
 
 function buildCompanyInfoSection(data: ExcelData): string {
+  const tenant = getTenantConfig();
   return [
     `## Company Information`,
-    `- **Company**: ${data.company}`,
+    `- **Company**: ${data.company || tenant.displayName}`,
     `- **Period**: ${data.period}`,
     `- **Workbook**: ${data.workbookName}`,
+    `- **Tenant**: ${tenant.slug}`,
     ``,
-    `Red Ruby Club & Terrace Bar is a nightclub and bar in Petitenget, Seminyak, Bali.`,
-    `It operates two main revenue streams: Club (nightclub) and Terrace 24h (outdoor bar).`,
   ].join('\n');
 }
 
@@ -167,15 +168,17 @@ ${rows.join('\n')}`,
 // ── Main prompt builder ─────────────────────────────────
 
 export function buildGenerationPrompt(data: ExcelData, additionalContext?: string): string {
+  const tenant = getTenantConfig();
+  const businessName = data.company || tenant.displayName;
   const sections: string[] = [
-    `# Red Ruby Financial Analysis — AI Content Generation Prompt`,
+    `# ${businessName} Financial Analysis — AI Content Generation Prompt`,
     ``,
-    `You are a financial analyst and business writer for Red Ruby Club & Terrace Bar (PT Taman Bintang Bali) in Petitenget, Bali.`,
+    `You are a financial analyst and business writer for ${businessName}.`,
     `Your task is to generate TWO documents based EXCLUSIVELY on the financial data provided below.`,
     ``,
-    `This is NOT a growth review. This is an EXIT VIABILITY ASSESSMENT. The shareholder (Graham Bristow) wants to sell their stake in PT Taman Bintang Bali (Red Ruby). Everything you generate must be framed around two questions:`,
+    `This is NOT a growth review. This is an EXIT VIABILITY ASSESSMENT. The shareholder wants to sell their stake in the business. Everything you generate must be framed around two questions:`,
     ``,
-    `1. Why is Red Ruby in trouble?`,
+    `1. Why is ${businessName} in trouble?`,
     `2. What value can the shareholder extract, and through what pathway, given the current condition?`,
     ``,
     `## CRITICAL OUTPUT INSTRUCTIONS`,
@@ -186,8 +189,8 @@ export function buildGenerationPrompt(data: ExcelData, additionalContext?: strin
     `### Output Format`,
     `\`\`\`json`,
     `{`,
-    `  "businessReview": "# Red Ruby Club & Terrace Bar — Business Review\\n\\n## Part A: Current Situation...",`,
-    `  "executiveSummary": "# Red Ruby Club & Terrace Bar — Executive Summary (Exit Viability)\\n\\n## The Appointment...",`,
+    `  "businessReview": "# ${businessName} — Business Review\\n\\n## Part A: Current Situation...",`,
+    `  "executiveSummary": "# ${businessName} — Executive Summary (Exit Viability)\\n\\n## The Appointment...",`,
     `}`,
     `\`\`\``,
     ``,
@@ -311,10 +314,12 @@ export function buildDataSummary(data: ExcelData): string {
  * This is called as a third AI phase after the Business Review and Executive Summary.
  */
 export function buildDashboardPrompt(data: ExcelData, additionalContext?: string): string {
+  const tenant = getTenantConfig();
+  const businessName = data.company || tenant.displayName;
   const sections: string[] = [
-    `# Red Ruby Dashboard Data Generation`,
+    `# ${businessName} Dashboard Data Generation`,
     ``,
-    `You are a financial analyst for Red Ruby Club & Terrace Bar. Based on the financial data below, generate structured JSON data for the dashboard.`,
+    `You are a financial analyst for ${businessName}. Based on the financial data below, generate structured JSON data for the dashboard.`,
     ``,
     `Return ONLY a JSON object with exactly three keys: "actionPhases", "targetRows", and "levers".`,
     ``,

@@ -19,6 +19,9 @@ import PaletteIcon from '@mui/icons-material/Palette';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface BrandConfig {
+  tenantSlug: string;
+  tenantDisplayName: string;
+  tenantTemplate: string;
   brandLogoText: string;
   brandLogoUrl: string;
   brandPrimaryColor: string;
@@ -37,6 +40,9 @@ export function BrandConfigTab() {
   const [updateBrandConfig, { isLoading: isSaving }] = useUpdateAdminBrandConfigMutation();
 
   const [config, setConfig] = useState<BrandConfig>({
+    tenantSlug: '',
+    tenantDisplayName: '',
+    tenantTemplate: 'default',
     brandLogoText: '',
     brandLogoUrl: '',
     brandPrimaryColor: '#eb3d28',
@@ -74,6 +80,9 @@ export function BrandConfigTab() {
 
     try {
       const formData = new FormData();
+      if (config.tenantSlug) formData.append('tenantSlug', config.tenantSlug);
+      if (config.tenantDisplayName) formData.append('tenantDisplayName', config.tenantDisplayName);
+      if (config.tenantTemplate) formData.append('tenantTemplate', config.tenantTemplate);
       formData.append('brandLogoText', config.brandLogoText);
       formData.append('brandPrimaryColor', config.brandPrimaryColor);
       formData.append('brandSecondaryColor', config.brandSecondaryColor);
@@ -95,7 +104,7 @@ export function BrandConfigTab() {
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
-  }, [config.brandLogoText, config.brandPrimaryColor, config.brandSecondaryColor, logoPreview, updateBrandConfig]);
+  }, [config.tenantSlug, config.tenantDisplayName, config.tenantTemplate, config.brandLogoText, config.brandPrimaryColor, config.brandSecondaryColor, logoPreview, updateBrandConfig]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -135,11 +144,49 @@ export function BrandConfigTab() {
           Brand Configuration
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Configure the logo, colors, and branding displayed across the application.
+          Configure the tenant identity, logo, colors, and branding displayed across the application.
           Changes take effect immediately.
         </Typography>
 
         <Stack spacing={3}>
+          {/* ── Tenant Identity ────────────────────────── */}
+          <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.02)' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+              Tenant Identity
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              These settings define the tenant&apos;s identity. The slug is used for subdomain URL derivation
+              (e.g. &quot;redrubybali&quot; → redrubybali.vercel.app).
+            </Typography>
+
+            <Stack spacing={2}>
+              <TextField
+                label="Tenant Slug"
+                placeholder="e.g. redrubybali"
+                value={config.tenantSlug}
+                onChange={(e) => setConfig((prev) => ({ ...prev, tenantSlug: e.target.value }))}
+                fullWidth
+                helperText="Subdomain identifier — lowercase, no spaces (e.g. 'mybusiness'). Leave empty to use env var default."
+              />
+              <TextField
+                label="Display Name"
+                placeholder="e.g. Red Ruby Bali"
+                value={config.tenantDisplayName}
+                onChange={(e) => setConfig((prev) => ({ ...prev, tenantDisplayName: e.target.value }))}
+                fullWidth
+                helperText="Human-readable business name shown in the header, chat labels, and page titles."
+              />
+              <TextField
+                label="Template"
+                placeholder="e.g. nightclub-bar"
+                value={config.tenantTemplate}
+                onChange={(e) => setConfig((prev) => ({ ...prev, tenantTemplate: e.target.value }))}
+                fullWidth
+                helperText="Template category for default pages and navigation (e.g. 'nightclub-bar', 'restaurant', 'hotel')."
+              />
+            </Stack>
+          </Paper>
+
           {/* ── Logo text ─────────────────────────────── */}
           <TextField
             label="Logo Text"

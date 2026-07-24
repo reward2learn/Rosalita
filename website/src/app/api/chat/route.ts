@@ -527,10 +527,11 @@ async function handleVoicePost(request: Request): Promise<NextResponse> {
 async function handleConversations(request: Request, url: URL): Promise<NextResponse> {
   const session = await getSessionFromRequest(request);
   try {
-    await ensureConversationsOnce();
-  } catch {
-    // Best-effort column ensure; queries surface a clear error if columns are missing.
-  }
+    try {
+      await ensureConversationsOnce();
+    } catch {
+      // Best-effort column ensure; queries surface a clear error if columns are missing.
+    }
   const userName = session?.name || session?.email || 'Anonymous';
   const db = createClient({
     tier: session?.tier ?? 'public',
@@ -664,6 +665,10 @@ async function handleConversations(request: Request, url: URL): Promise<NextResp
       created_at: r.createdAt,
     })),
   });
+  } catch (err) {
+    console.error('[conversations] Error:', err);
+    return NextResponse.json({ success: true, data: [] });
+  }
 }
 
 export async function GET(request: Request) {

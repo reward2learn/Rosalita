@@ -55,6 +55,7 @@ import {
   sendStreamingMessage,
   type ChatStreamMessage,
 } from '@/store/chat-stream-slice';
+import { getClientTenantConfig } from '@/lib/config/tenant';
 import { isClientClearSessionAction, isExplicitSessionRequest } from '@/lib/chat/session-tools';
 import { listReviewParts, getReviewPartDisplayTitle } from '@/lib/page-catalog';
 import { useTtsVoicePreference } from '@/hooks/use-tts-voice-preference';
@@ -76,13 +77,15 @@ const VOICE_PHASE_LABEL: Record<string, string> = {
 };
 
 function formatTranscript(messages: ChatStreamMessage[]): string {
+  const tenant = getClientTenantConfig();
+  const assistant = tenant.displayName;
   const lines = [
-    'Red Ruby Bali — AI Chat Transcript',
+    `${assistant} — AI Chat Transcript`,
     `Generated: ${new Date().toLocaleString()}`,
     '',
   ];
   for (const msg of messages) {
-      const role = msg.role === 'user' ? 'You' : 'Red Ruby AI';
+    const role = msg.role === 'user' ? 'You' : `${assistant} AI`;
     lines.push(`── ${role} ──`);
     lines.push(msg.content);
     lines.push('');
@@ -356,8 +359,9 @@ export function ChatPanel() {
 
   const handleCopy = async () => {
     if (!messages.length) return;
+    const assistant = getClientTenantConfig().displayName;
     const text = messages.map((msg) => {
-    const role = msg.role === 'user' ? 'You' : 'Red Ruby AI';
+      const role = msg.role === 'user' ? 'You' : `${assistant} AI`;
       return `[${role}]\n${msg.content}`;
     }).join('\n\n');
     try {
@@ -374,7 +378,8 @@ export function ChatPanel() {
     const url = URL.createObjectURL(blob);
     const anchor = globalThis.document.createElement('a');
     anchor.href = url;
-    anchor.download = `redruby-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+    const tenantSlug = getClientTenantConfig().slug;
+    anchor.download = `${tenantSlug}-chat-${new Date().toISOString().slice(0, 10)}.txt`;
     globalThis.document.body.appendChild(anchor);
     anchor.click();
     globalThis.document.body.removeChild(anchor);

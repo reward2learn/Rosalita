@@ -54,9 +54,10 @@ async function launchBrowser() {
 export async function generateDashboardPdf(
   origin: string,
   cookieHeader: string,
-  pagePath = '/index.html',
+  pagePath = '/dashboard',
 ): Promise<Uint8Array> {
-  const targetUrl = `${origin}${pagePath}?pdf=1`;
+  const separator = pagePath.includes('?') ? '&' : '?';
+  const targetUrl = `${origin}${pagePath}${separator}pdf=1`;
   const browser = await launchBrowser();
 
   try {
@@ -140,7 +141,7 @@ export class PdfExportService {
       const pdfBuffer = await generateDashboardPdf(
         claimed.payload.origin,
         claimed.payload.sessionCookie ?? '',
-        claimed.payload.pagePath ?? '/index.html',
+        claimed.payload.pagePath ?? '/dashboard',
       );
       const base64Pdf = Buffer.from(pdfBuffer).toString('base64');
       const completedData = { pdfBase64: base64Pdf, filename: PDF_FILENAME };

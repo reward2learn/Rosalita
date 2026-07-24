@@ -1,38 +1,47 @@
 /* ══════════════════════════════════════════════════
-   Rosalita Cantina — Prestix Design System
+   Red Ruby — Prestix Design System
    PDF / print rules only (MUI handles UI rendering)
    ══════════════════════════════════════════════════ */
 
 /* ── PDF Capture Wrapper ─────────────────────────── */
 #pdfCapture {
-  background: var(--bg);
+  background: #0f0f14;
 }
 
-/* ── Print / PDF — preserve theme-dark, section page breaks ── */
+/* ── Print / PDF — hide chrome, preserve background & layout ── */
 @media print {
-  body.theme-dark {
-    display: block;
-    overflow: visible;
-    background: var(--bg) !important;
-    color: var(--text) !important;
+  /* Hide the MUI AppBar and any navigation */
+  header,
+  nav,
+  [role="banner"],
+  .MuiAppBar-root {
+    display: none !important;
   }
 
-  body.theme-dark #pdfCapture {
-    background: var(--bg) !important;
-    max-width: 100%;
+  /* Ensure full-width content */
+  body {
     margin: 0;
+    padding: 0;
   }
 
-  body.theme-dark #pdfCapture,
-  body.theme-dark #pdfCapture * {
+  /* Force background colors to print */
+  #pdfCapture,
+  #pdfCapture * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Let content flow naturally — no forced page breaks between sections */
-  #pdfCapture .section {
-    break-inside: auto;
-    page-break-inside: auto;
+  /* Page break rules for content blocks */
+  .MuiAccordion-root {
+    break-inside: avoid;
+  }
+
+  .MuiPaper-root {
+    break-inside: avoid;
+  }
+
+  section {
+    break-inside: avoid;
   }
 
   /* Keep small blocks intact within a page */

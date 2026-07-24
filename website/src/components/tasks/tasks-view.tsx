@@ -321,7 +321,7 @@ export function TasksView({ forcedRole }: { forcedRole?: string | null } = {}) {
 
 function buildAskAiPrompt(task: TaskView): string {
   const owners = task.assignments.map((a) => a.roleCode).join(' + ') || 'the team';
-  return `Explain the exit-viability task "${task.title}" assigned to ${owners} (priority ${task.priority}). What is the goal, why it matters for the Red Ruby sale, and the concrete steps to complete it? Reference the July 2026 MVP Business Review context.`;
+  return `Explain the exit-viability task "${task.title}" assigned to ${owners} (priority ${task.priority}). What is the goal, why it matters for the business sale, and the concrete steps to complete it? Reference the latest Business Review context.`;
 }
 
 function TaskDetailModal({

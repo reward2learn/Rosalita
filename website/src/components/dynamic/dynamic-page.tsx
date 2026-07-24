@@ -1,6 +1,7 @@
 'use client';
 
 import Box from '@mui/material/Box';
+import { useSearchParams } from 'next/navigation';
 import type { AuthTier, PageDefinition } from '@/lib/page-catalog';
 import { getBlockComponent } from '@/lib/block-registry';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
@@ -47,6 +48,8 @@ function BlockSection({
 export function DynamicPage({ page }: DynamicPageProps) {
   const tier = useAppSelector((s) => s.auth.tier);
   const platformAdmin = useAppSelector((s) => s.auth.platformAdmin);
+  const searchParams = useSearchParams();
+  const isPdf = searchParams.get('pdf') === '1';
   const showSignIn = page.slug === 'dashboard' && tier === 'public';
 
   return (
@@ -65,7 +68,7 @@ export function DynamicPage({ page }: DynamicPageProps) {
         {page.title}
       </Box>
 
-      {page.pdfExport && platformAdmin ? (
+      {!isPdf && page.pdfExport && platformAdmin ? (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pt: 2 }}>
           <PdfExportButton page={`/${page.slug}`} label="PDF" />
         </Box>

@@ -15,6 +15,7 @@ Plan v2: legacy static HTML + `api/*.js` → **Next.js 16 App Router** with ZenS
 | Auth | JWT cookie `redruby.session` (`jose`, `ENCRYPTION_KEY`) |
 | Database | Neon Postgres via ZenStack `createClient` |
 | PDF | Puppeteer + `@sparticuz/chromium` (server-only) |
+| Proxy | `src/proxy.ts` | CSP, JWT injection, auth redirect, rewrites |
 | Testing | Vitest + RTL |
 | Package manager | **bun** (all scripts) |
 | Deploy | Vercel (`framework: nextjs`) |
@@ -22,7 +23,7 @@ Plan v2: legacy static HTML + `api/*.js` → **Next.js 16 App Router** with ZenS
 ## Phase order (v2)
 
 ```
-P0 → P1 → P2 → P3 → P4 (hard gate) → P6 seed → P5 dynamic UI → P7 → P8 → P9
+P0 → P1 → P2 → P3 → P4 (hard gate) → P6 seed → P5 dynamic UI → P7 → P8 → P9 → P9+ (optimization)
 ```
 
 - **P4** blocks P6 until `enforce:redux` passes.
@@ -198,5 +199,22 @@ bun run seed             # Seed from legacy sources
 | Google OAuth redirect URI | `https://rosalita-business-review.vercel.app/api/auth/callback/google` |
 | Auth origin | `getOrigin()` uses canonical URL in `VERCEL_ENV=production`; preview uses request host |
 | Deploy fixes | `.vercelignore` `/api/` only (was excluding `src/app/api`); production deploy `dpl_BioPxSwcWPZddDKJCbww5bUeATda` |
+
+### 2026-07-23 — P9+ optimization sprint
+
+| Item | Result |
+|------|--------|
+| Proxy (middleware replacement) | CSP, HSTS, JWT injection, auth redirect, rewrites in `src/proxy.ts` |
+| Session fast path | Guards check `X-Session-Verified` header first; 2-3 HMAC → 1 per request |
+| PDF export | Default pagePath `/dashboard` (was `/index.html`) |
+| Code-splitting | 7 heavy components + DataGrid via `next/dynamic` |
+| Client→Server | 7 components converted; tasks/[role] async bug fixed |
+| CSS | 1424→47 lines; legacy HTML styles purged |
+| xlsx | `import * as XLSX` → named imports (4 files) |
+| ChartJS | Lazy registration in 2 files |
+| Bundle analyzer | `bun run analyze` available |
+| Type-check | Zero errors |
+| Tests | 146/146 passing |
+| Build | Turbopack production build passes |
 
 

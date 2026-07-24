@@ -8,7 +8,7 @@ export interface PnlLineItemDef {
 
 export const PNL_LINE_ITEMS: PnlLineItemDef[] = [
   { key: 'header_title', label: 'Profit & Loss Projections', header: true },
-  { key: 'venue', label: 'Red Ruby Bali', header: true },
+  { key: 'venue', label: 'Venue', header: true },
   { key: 'gross_income_idr', label: 'Gross Income IDR', header: true },
   { key: 'club_guests_night', label: 'Guests - Club per night' },
   { key: 'club_guests_month', label: 'Guests - Club per month' },

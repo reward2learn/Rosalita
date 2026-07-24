@@ -20,7 +20,9 @@ export function buildExpenseAiPrompt(department) {
   const dept = getActualsDepartment(department);
   const fields = fieldMeta(department);
   const keys = fields.map((f) => `"${f.key}": number|null`).join(', ');
-  return `You extract cost amounts from an expense invoice, payroll slip, or payment receipt for Red Ruby Bali.
+  return `You extract cost amounts from an expense invoice, payroll slip, or payment receipt.
+
+The business name on the documents will vary per deployment.
 
 Cost account: ${dept?.label || department}
 

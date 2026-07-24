@@ -1,14 +1,19 @@
 /**
- * Admin Brand Config API
+ * Admin Brand & Tenant Config API
  *
  * GET  /api/admin/brand-config
- *   Returns: full brand config including both text and image URL
+ *   Returns: full brand + tenant config
  *
- * PUT  /api/admin/brand-config   (multipart/form-data)
+ * PUT  /api/admin/brand-config   (multipart/form-data or JSON)
  *   Fields:
- *     brandLogoText — text string for the header logo
- *     brandLogoUrl  — URL or base64 data-URI of the uploaded logo image
- *   Returns: updated brand config
+ *     tenantSlug         — subdomain slug (e.g. "redrubybali")
+ *     tenantDisplayName  — human-readable name (e.g. "Red Ruby Bali")
+ *     tenantTemplate     — template category (e.g. "nightclub-bar")
+ *     brandLogoText      — text string for the header logo
+ *     brandLogoUrl       — URL or base64 data-URI of the uploaded logo image
+ *     brandPrimaryColor  — hex color
+ *     brandSecondaryColor — hex color
+ *   Returns: updated config
  */
 
 import { NextResponse } from 'next/server';
@@ -23,6 +28,9 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
 const putSchema = z.object({
+  tenantSlug: z.string().max(50).optional(),
+  tenantDisplayName: z.string().max(100).optional(),
+  tenantTemplate: z.string().max(50).optional(),
   brandLogoText: z.string().max(100).optional(),
   brandLogoUrl: z.string().max(50000).optional(), // base64 data-URIs can be large
   brandPrimaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a hex color like #eb3d28').optional(),
@@ -40,6 +48,9 @@ export async function GET(request: Request): Promise<NextResponse> {
   const settings = await getAppSettings(db);
 
   return jsonOk({
+    tenantSlug: settings.tenantSlug,
+    tenantDisplayName: settings.tenantDisplayName,
+    tenantTemplate: settings.tenantTemplate,
     brandLogoText: settings.brandLogoText,
     brandLogoUrl: settings.brandLogoUrl,
     brandPrimaryColor: settings.brandPrimaryColor,
@@ -48,13 +59,16 @@ export async function GET(request: Request): Promise<NextResponse> {
   });
 }
 
-// ── PUT (multipart) ─────────────────────────────────────
+// ── PUT (multipart or JSON) ─────────────────────────────
 
 export async function PUT(request: Request): Promise<NextResponse> {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
   if (!sessionIsPlatformAdmin(guard.session)) return jsonError('Platform admin only', 403);
 
+  let tenantSlug: string | undefined;
+  let tenantDisplayName: string | undefined;
+  let tenantTemplate: string | undefined;
   let brandLogoText: string | undefined;
   let brandLogoUrl: string | undefined;
   let brandPrimaryColor: string | undefined;
@@ -63,14 +77,21 @@ export async function PUT(request: Request): Promise<NextResponse> {
   const contentType = request.headers.get('content-type') ?? '';
 
   if (contentType.includes('multipart/form-data')) {
-    // Handle file upload + text field via FormData
+    // Handle file upload + text fields via FormData
     try {
       const formData = await request.formData();
 
+      const slugField = formData.get('tenantSlug');
+      if (slugField && typeof slugField === 'string') tenantSlug = slugField.trim();
+
+      const nameField = formData.get('tenantDisplayName');
+      if (nameField && typeof nameField === 'string') tenantDisplayName = nameField;
+
+      const templateField = formData.get('tenantTemplate');
+      if (templateField && typeof templateField === 'string') tenantTemplate = templateField;
+
       const textField = formData.get('brandLogoText');
-      if (textField && typeof textField === 'string') {
-        brandLogoText = textField;
-      }
+      if (textField && typeof textField === 'string') brandLogoText = textField;
 
       const fileField = formData.get('brandLogo');
       if (fileField instanceof File && fileField.size > 0) {
@@ -83,7 +104,6 @@ export async function PUT(request: Request): Promise<NextResponse> {
         brandLogoUrl = `data:${mime};base64,${base64}`;
       }
 
-      // Also allow a direct URL override via a separate form field
       const urlField = formData.get('brandLogoUrl');
       if (urlField && typeof urlField === 'string' && urlField.trim()) {
         brandLogoUrl = urlField.trim();
@@ -107,10 +127,15 @@ export async function PUT(request: Request): Promise<NextResponse> {
       const body = await request.json();
       const parsed = putSchema.safeParse(body);
       if (!parsed.success) {
-        return jsonError('Invalid request body — expected { brandLogoText?: string, brandLogoUrl?: string }', 400);
+        return jsonError('Invalid request body', 400);
       }
+      tenantSlug = parsed.data.tenantSlug;
+      tenantDisplayName = parsed.data.tenantDisplayName;
+      tenantTemplate = parsed.data.tenantTemplate;
       brandLogoText = parsed.data.brandLogoText;
       brandLogoUrl = parsed.data.brandLogoUrl;
+      brandPrimaryColor = parsed.data.brandPrimaryColor;
+      brandSecondaryColor = parsed.data.brandSecondaryColor;
     } catch {
       return jsonError('Expected JSON or multipart/form-data body', 400);
     }
@@ -118,6 +143,9 @@ export async function PUT(request: Request): Promise<NextResponse> {
 
   const db = createClient();
   const settings = await updateAppSettings(db, {
+    ...(tenantSlug !== undefined ? { tenantSlug } : {}),
+    ...(tenantDisplayName !== undefined ? { tenantDisplayName } : {}),
+    ...(tenantTemplate !== undefined ? { tenantTemplate } : {}),
     ...(brandLogoText !== undefined ? { brandLogoText } : {}),
     ...(brandLogoUrl !== undefined ? { brandLogoUrl } : {}),
     ...(brandPrimaryColor !== undefined ? { brandPrimaryColor } : {}),
@@ -125,6 +153,9 @@ export async function PUT(request: Request): Promise<NextResponse> {
   });
 
   return jsonOk({
+    tenantSlug: settings.tenantSlug,
+    tenantDisplayName: settings.tenantDisplayName,
+    tenantTemplate: settings.tenantTemplate,
     brandLogoText: settings.brandLogoText,
     brandLogoUrl: settings.brandLogoUrl,
     brandPrimaryColor: settings.brandPrimaryColor,

@@ -5,7 +5,9 @@ import { resolveOpenAiKey, resolveOpenAiBaseUrl } from '@/lib/openai';
 import { getActualsDepartment } from '@/domain/actuals/monthly-actuals-schema';
 import { parseExpenseText } from '@/domain/pos/expense-extract';
 
-const EXPENSE_OCR_PROMPT = `You transcribe expense invoices, payroll slips, and payment receipts for Red Ruby Bali (Indonesia).
+const EXPENSE_OCR_PROMPT = `You transcribe expense invoices, payroll slips, and payment receipts.
+
+The business name on the documents will vary per deployment.
 
 Return ONLY valid JSON:
 { "text": "full verbatim transcription as a single string" }

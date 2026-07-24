@@ -3,7 +3,9 @@ import { resolveOpenAiBaseUrl } from '@/lib/openai';
 import { Z_REPORT_FIELD_KEYS } from '@/domain/z-report/z-report-schema';
 import { toPeriodApiValue } from '@/domain/shared/date-utils';
 
-export const POS_EXTRACTION_PROMPT = `You extract ALL fields from a Red Ruby Bali POS Z Sales Day Report (SPICERY -REDRUBY- BALI) OCR text.
+export const POS_EXTRACTION_PROMPT = `You extract ALL fields from a POS Z Sales Day Report OCR text.
+
+The business name and POS system name (e.g. "SPICERY -REDRUBY- BALI") will vary per deployment.
 
 Return ONLY valid JSON using these snake_case keys (null if missing):
 report_date (YYYY-MM-DD), report_time (HH:MM), operator, report_no, pos_group,

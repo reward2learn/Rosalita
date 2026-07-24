@@ -55,6 +55,18 @@ Do **not** use Prestix deploy commands from other projects.
 5. **PDF:** Server-side only (`GET /api/auth?action=pdf`); Puppeteer + `@sparticuz/chromium`.
 6. **No `dotenv/config`** in `src/`.
 
+## Proxy (middleware replacement)
+
+Next.js 16 deprecates `middleware.ts` in favor of `proxy.ts`. The app uses `src/proxy.ts` for:
+- **Security headers**: CSP, HSTS, X-Content-Type-Options, X-Frame-Options
+- **JWT injection**: Validates `redruby.session` once, injects `X-Session-*` headers for API routes
+- **Auth redirect**: Redirects unauthenticated users from protected pages to `/dashboard`
+- **API rewrites**: 7 path rewrites consolidated from `next.config.mjs`
+
+### Session fast path
+
+Route handler guards (`requireWriteAuth`, `requireRead`, etc.) check for `X-Session-Verified: 1` header first. If present, claims are constructed from headers (zero crypto). Falls back to cookie + JWT verification.
+
 ## Auth tiers
 
 | Tier | Source | Access |
@@ -90,7 +102,7 @@ Cookie: `redruby.session` (JWT via `jose`, `ENCRYPTION_KEY` 64 hex chars).
 
 `website-migration-commander` — `.opencode/agent/core/website-migration-commander.md`
 
-Phase order: **P0 → P1 → P2 → P3 → P4 (hard gate) → P6 seed → P5 dynamic UI → P7 → P8 → P9**
+Phase order: **P0 → P1 → P2 → P3 → P4 (hard gate) → P6 seed → P5 dynamic UI → P7 → P8 → P9 → P9+ (optimization)**
 
 P5 theme/shell (no RTK) may parallel P4 after P3. **P6 blocked until P4-010 + enforce:redux.**
 

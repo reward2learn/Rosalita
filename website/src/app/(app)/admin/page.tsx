@@ -34,6 +34,8 @@ import { PlatformAdminGate } from '@/components/auth/platform-admin-gate';
 import { SignInPanelGate } from '@/components/auth/sign-in-panel';
 import { BrandConfigTab } from '@/components/ops-admin/brand-config-tab';
 import { NavigationManager } from '@/components/ops-admin/navigation-manager';
+import { TenantDashboard } from '@/components/ops-admin/tenant-dashboard';
+import { getClientTenantConfig } from '@/lib/config/tenant';
 import {
   useListRoleConfigsQuery,
   useListAdminConversationsQuery,
@@ -624,6 +626,8 @@ function GroupManager() {
 
 export default function AdminPage() {
   const [tab, setTab] = useState(0);
+  const isTokenizmyapp = getClientTenantConfig().slug === 'tokenizmyapp';
+
   return (
     <PlatformAdminGate
       fallback={<SignInPanelGate requiredTier="pin" />}
@@ -634,6 +638,7 @@ export default function AdminPage() {
             Platform Admin
           </Typography>
           <Tabs value={tab} onChange={(_e, v) => setTab(v)} variant="scrollable" scrollButtons="auto">
+            {isTokenizmyapp ? <Tab label="Tenants" /> : null}
             <Tab label="Navigation" />
             <Tab label="Brand Config" />
             <Tab label="Security Groups" />
@@ -641,12 +646,13 @@ export default function AdminPage() {
             <Tab label="User Roles" />
             <Tab label="User Conversations" />
           </Tabs>
-          {tab === 0 ? <NavigationManager /> : null}
-          {tab === 1 ? <BrandConfigTab /> : null}
-          {tab === 2 ? <GroupManager /> : null}
-          {tab === 3 ? <UserManager /> : null}
-          {tab === 4 ? <RoleManager /> : null}
-          {tab === 5 ? <ConversationManager /> : null}
+          {isTokenizmyapp && tab === 0 ? <TenantDashboard /> : null}
+          {tab === (isTokenizmyapp ? 1 : 0) ? <NavigationManager /> : null}
+          {tab === (isTokenizmyapp ? 2 : 1) ? <BrandConfigTab /> : null}
+          {tab === (isTokenizmyapp ? 3 : 2) ? <GroupManager /> : null}
+          {tab === (isTokenizmyapp ? 4 : 3) ? <UserManager /> : null}
+          {tab === (isTokenizmyapp ? 5 : 4) ? <RoleManager /> : null}
+          {tab === (isTokenizmyapp ? 6 : 5) ? <ConversationManager /> : null}
         </Stack>
       </Box>
     </PlatformAdminGate>

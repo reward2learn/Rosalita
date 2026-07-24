@@ -7,8 +7,11 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { AuthGate } from '@/components/auth/auth-gate';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
+import { getClientTenantConfig } from '@/lib/config/tenant';
 
-const EMBER = 'Bali';
+const tenantConfig = getClientTenantConfig();
+const FALLBACK_TITLE = tenantConfig.displayName;
+const FALLBACK_SUBTITLE = 'Business Operations';
 
 export function HeroBlock({ config }: { config: Record<string, unknown> }) {
   const { headline, subtitle, badge } = parseBlockConfig('hero', config);
@@ -50,10 +53,10 @@ export function HeroBlock({ config }: { config: Record<string, unknown> }) {
           lineHeight: 1.08,
         }}
       >
-        {headline ?? 'Red Ruby'}
+        {headline ?? FALLBACK_TITLE}
         <br />
         <Box component="span" sx={{ color: 'primary.main' }}>
-          {headline ? '& Turnaround Strategy' : EMBER}
+          {headline ? '& Turnaround Strategy' : FALLBACK_SUBTITLE}
         </Box>
       </Typography>
       {subtitle ? (

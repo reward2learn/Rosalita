@@ -106,6 +106,45 @@
 | UC-UI-02 | Render block registry | per block | `block-registry.ts` + Zod `BlockConfig` | Unknown block type fails type-check |
 | UC-UI-03 | Seed DB pages for post-MVP CMS | — | P6 `seed-from-sources.ts` | DB mirrors catalog; runtime reads catalog first |
 
+### Security & Middleware (P9+ proxy)
+
+| ID | Use case | Auth | Implementation | Acceptance |
+|----|----------|------|----------------|------------|
+| UC-SEC-01 | CSP + HSTS + security headers | public | `src/proxy.ts` sets Content-Security-Policy, Strict-Transport-Security, X-Content-Type-Options, X-Frame-Options on all matched routes | Headers present on all responses; static assets excluded via matcher |
+| UC-SEC-02 | JWT session header injection | session | Proxy validates `redruby.session` JWT once per API request; strips external X-Session-* headers; injects X-Session-Tier, X-Session-Sub, X-Session-Groups, X-Session-Permissions, X-Session-Verified via `NextResponse.next({ request: { headers } })` | Guards use fast path via header check; 2-3 HMAC calls → 1 per request |
+| UC-SEC-03 | Server-side auth redirect | session | Proxy checks page auth tier via public slug list; redirects unauthenticated users to `/dashboard?redirect_reason=auth_required` for non-public pages | No client-side spinner flash; redirect happens before RSC payload |
+| UC-SEC-04 | Rewrite consolidation | public | 7 API rewrites moved from `next.config.mjs` → `src/proxy.ts`: OAuth callback, monthly-actuals, pos-scan/parse, voice, conversations, reports | Rewrites applied in proxy before auth checks |
+
+### Performance (P9+ optimization)
+
+| ID | Use case | Implementation | Acceptance |
+|----|----------|----------------|------------|
+| UC-PERF-01 | Code-split heavy components | `next/dynamic` with `ssr: false` for OpsAdminTabs (2654 lines), AiContentTab (953), SourceUploadForm (806), DataViewTab, ChatPanel, ReviewBlocks | Components split into lazy chunks; not in main bundle |
+| UC-PERF-02 | Dynamic DataGrid import | `@mui/x-data-grid` (~300KB) dynamically imported in sheet-viewer-block + reports-rollup-block | DataGrid only loaded when sheet/report DataGrid renders |
+| UC-PERF-03 | Lazy ChartJS registration | `ChartJS.register()` moved from module scope to first-mount `useEffect` in financial-chart.tsx + ops-admin-tabs.tsx | Chart.js not parsed on initial page load |
+| UC-PERF-04 | Tree-shaken xlsx imports | `import * as XLSX` → `import { read, readFile, utils }` in 4 files | ~1MB removed from server bundles |
+| UC-PERF-05 | Client→Server component conversion | 7 files: theme.ts, markdown-body, hero-block, app-providers, stub-blocks, tasks/page, tasks/[role] | 15% fewer client components; tasks/[role] fixed async/server bug |
+| UC-PERF-06 | RTK Query deduplication | Confirmed: RTK Query shares cache entries for identical queries across sibling components | No duplicate `useGetChartOverviewQuery('conservative')` calls |
+
+### PDF Export
+
+| ID | Use case | Auth | Implementation | Acceptance |
+|----|----------|------|----------------|------------|
+| UC-PDF-01 | Next.js dashboard PDF export | google | `generateDashboardPdf` defaults to `/dashboard` (not `/index.html`); Puppeteer sets session cookie; `#pdfCapture` element in DynamicPage; PDF button hidden when `?pdf=1`; `@media print` CSS hides nav | PDF generated from live Next.js dashboard with full data |
+| UC-PDF-02 | PDF export styling | — | `style.css` purged to 47 lines; `@media print` hides MUI AppBar/nav; `#pdfCapture` background hardcoded | Clean PDF output without shell chrome |
+
+### CSS & Assets
+
+| ID | Use case | Implementation | Acceptance |
+|----|----------|----------------|------------|
+| UC-CSS-01 | Legacy CSS purge | Deleted 1377 lines of dead CSS (1424→47 lines); removed `:root` block, reset, html/body, nav, hero, cards, sections, tables, accordions, gallery, footer, responsive breakpoints | Only `#pdfCapture` + `@media print` remain |
+
+### Bundle Analysis
+
+| ID | Use case | Implementation | Acceptance |
+|----|----------|----------------|------------|
+| UC-BA-01 | Bundle analyzer | `@next/bundle-analyzer` installed; gated on `ANALYZE=true`; script: `bun run analyze` | Visual treemap of all chunks |
+
 ---
 
 ## UC → phase mapping
@@ -122,6 +161,7 @@
 | P7 | UC-DASH-*, UC-DOC-01–03, UC-OPS-02 |
 | P8 | UC-OPS-01, UC-AI-*, UC-DOC-01–02 |
 | P9 | UC-AUTH-*, UC-RPT-*, E2E all tiers |
+| P9+ | UC-SEC-*, UC-PERF-*, UC-PDF-*, UC-CSS-01, UC-BA-01 |
 
 ---
 
@@ -130,6 +170,7 @@
 - Admin UI to edit `AppPage` in database (post-MVP P10)
 - Client-side PDF generation
 - `x-admin-key` in any client bundle
-- Zustand stores
 - Port of `review.html` (use MD seed + `/review/[partSlug]` only)
 - Greenfield schema (introspection + `@@map` only)
+- Proxy/middleware rewrite: migrate from `middleware.ts` to `proxy.ts` naming convention (Next.js 16 deprecation) — **DONE**
+- Legacy HTML pages: all 10 `.html` files retired; CSS purged accordingly

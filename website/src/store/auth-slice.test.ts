@@ -14,11 +14,11 @@ describe('authSlice', () => {
       undefined,
       setSession({
         tier: 'google',
-        user: { id: 'u1', email: 'owner@redrubybali.com', authMethod: 'google' },
+        user: { id: 'u1', email: 'owner@example.com', authMethod: 'google' },
       }),
     );
     expect(state.tier).toBe('google');
-    expect(state.user?.email).toBe('owner@redrubybali.com');
+    expect(state.user?.email).toBe('owner@example.com');
     expect(state.bootstrapped).toBe(true);
   });
 

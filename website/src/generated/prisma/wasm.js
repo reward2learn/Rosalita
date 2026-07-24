@@ -254,6 +254,10 @@ exports.Prisma.SecretScalarFieldEnum = {
 exports.Prisma.AppSettingScalarFieldEnum = {
   id: 'id',
   webSearchEnabled: 'webSearchEnabled',
+  tenantSlug: 'tenantSlug',
+  tenantDisplayName: 'tenantDisplayName',
+  tenantTemplate: 'tenantTemplate',
+  tenantMetadata: 'tenantMetadata',
   brandLogoText: 'brandLogoText',
   brandLogoUrl: 'brandLogoUrl',
   brandPrimaryColor: 'brandPrimaryColor',
@@ -434,6 +438,23 @@ exports.Prisma.MonthlyTargetScalarFieldEnum = {
   targetStaffCostPct: 'targetStaffCostPct'
 };
 
+exports.Prisma.TenantScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  displayName: 'displayName',
+  template: 'template',
+  status: 'status',
+  vercelProjectId: 'vercelProjectId',
+  appUrl: 'appUrl',
+  dbUrl: 'dbUrl',
+  primaryColor: 'primaryColor',
+  secondaryColor: 'secondaryColor',
+  metadata: 'metadata',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -532,7 +553,8 @@ exports.Prisma.ModelName = {
   MonthlyActualInput: 'MonthlyActualInput',
   MonthlyActualDepartment: 'MonthlyActualDepartment',
   DailyMetric: 'DailyMetric',
-  MonthlyTarget: 'MonthlyTarget'
+  MonthlyTarget: 'MonthlyTarget',
+  Tenant: 'Tenant'
 };
 
 /**

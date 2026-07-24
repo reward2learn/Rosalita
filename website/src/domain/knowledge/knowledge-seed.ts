@@ -1,4 +1,8 @@
-/** Seed fallback snippets — sourced from Red Ruby Executive Summary & Business Review. */
+import { getTenantConfig } from '@/lib/config/tenant';
+
+/** Seed fallback snippets — sourced from Business Review & Executive Summary.
+ *  Content is tenant-specific; this module provides generic fallbacks
+ *  that can be overridden per tenant via DB knowledge_snippets. */
 
 export const EXECUTIVE_SUMMARY_FALLBACK = `# Red Ruby Club & Terrace Bar — Executive Summary (MVP Exit Viability)
 ### PT Taman Bintang Bali | Prepared for Graham Bristow & Co-Stakeholders
@@ -149,8 +153,9 @@ function formatIdr(n: number): string {
   return `IDR ${n}`;
 }
 
-export function buildStructuredPromptFromSnippets(
+function buildStructuredPromptFromSnippetsImpl(
   snippets: { key: string; category: string; content: string }[],
+  tenantName: string,
 ): string {
   const byCategory = new Map<string, string[]>();
   for (const s of snippets) {
@@ -164,10 +169,10 @@ export function buildStructuredPromptFromSnippets(
   }
 
   const sections: string[] = [
-    'You are Red Ruby AI — a business intelligence assistant for Red Ruby Club & Terrace Bar, a nightclub and bar in Petitenget, Bali, operated by PT Taman Bintang Bali.',
+    `You are ${tenantName} AI — a business intelligence assistant for ${tenantName}.`,
     '',
     '## Your Role',
-    'Help management track KPIs, analyze operational data, monitor break-even performance, and provide actionable insights for the club and terrace bar.',
+    'Help management track KPIs, analyze operational data, monitor break-even performance, and provide actionable insights.',
   ];
 
   const categoryTitles: Record<string, string> = {
@@ -228,4 +233,12 @@ export function buildStructuredPromptFromSnippets(
   }
 
   return result;
+}
+
+/** Public API — resolves tenant name from env vars at call time. */
+export function buildStructuredPromptFromSnippets(
+  snippets: { key: string; category: string; content: string }[],
+): string {
+  const tenant = getTenantConfig();
+  return buildStructuredPromptFromSnippetsImpl(snippets, tenant.displayName);
 }

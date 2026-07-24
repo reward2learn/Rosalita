@@ -4,10 +4,13 @@ import '../../style.css';
 import { AppProviders } from '@/components/providers/app-providers';
 import { ThemeRegistry } from '@/theme/theme-registry';
 import { AppShell } from '@/components/layout/app-shell';
+import { getTenantConfig } from '@/lib/config/tenant';
+
+const tenant = getTenantConfig();
 
 export const metadata: Metadata = {
-  title: 'Red Ruby Bali',
-  description: 'Red Ruby Bali business operations dashboard',
+  title: tenant.appTitle,
+  description: tenant.description,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

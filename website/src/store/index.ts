@@ -17,6 +17,7 @@ import { dashboardApi } from '@/store/apis/dashboard-api';
 import { sheetDataApi } from '@/store/apis/sheet-data-api';
 import { brandConfigApi } from '@/store/apis/brand-config-api';
 import { navigationApi } from '@/store/apis/navigation-api';
+import { tenantApi } from '@/store/apis/tenant-api';
 
 const apiMiddleware = [
   authApi.middleware,
@@ -34,6 +35,7 @@ const apiMiddleware = [
   sheetDataApi.middleware,
   brandConfigApi.middleware,
   navigationApi.middleware,
+  tenantApi.middleware,
 ] as const;
 
 export function makeStore() {
@@ -57,6 +59,7 @@ export function makeStore() {
       [sheetDataApi.reducerPath]: sheetDataApi.reducer,
       [brandConfigApi.reducerPath]: brandConfigApi.reducer,
       [navigationApi.reducerPath]: navigationApi.reducer,
+      [tenantApi.reducerPath]: tenantApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(...apiMiddleware),

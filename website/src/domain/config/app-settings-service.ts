@@ -6,6 +6,10 @@ const APP_SETTINGS_DDL = `
 CREATE TABLE IF NOT EXISTS app_settings (
   id TEXT PRIMARY KEY,
   web_search_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  tenant_slug TEXT NOT NULL DEFAULT 'tokenizmyapp',
+  tenant_display_name TEXT NOT NULL DEFAULT '',
+  tenant_template TEXT NOT NULL DEFAULT 'default',
+  tenant_metadata JSONB DEFAULT '{}',
   brand_logo_text TEXT NOT NULL DEFAULT '',
   brand_logo_url TEXT NOT NULL DEFAULT '',
   brand_primary_color TEXT NOT NULL DEFAULT '#eb3d28',
@@ -15,6 +19,10 @@ CREATE TABLE IF NOT EXISTS app_settings (
 
 export interface AppSettingsDto {
   webSearchEnabled: boolean;
+  tenantSlug: string;
+  tenantDisplayName: string;
+  tenantTemplate: string;
+  tenantMetadata: Record<string, unknown>;
   brandLogoText: string;
   brandLogoUrl: string;
   brandPrimaryColor: string;
@@ -27,6 +35,10 @@ export async function ensureAppSettingsTable(db: DbClient): Promise<void> {
 
   // Migrate: add columns if they don't exist (idempotent for existing deployments)
   const migrationCols = [
+    'ADD COLUMN IF NOT EXISTS tenant_slug TEXT NOT NULL DEFAULT \'tokenizmyapp\'',
+    'ADD COLUMN IF NOT EXISTS tenant_display_name TEXT NOT NULL DEFAULT \'\'',
+    'ADD COLUMN IF NOT EXISTS tenant_template TEXT NOT NULL DEFAULT \'default\'',
+    'ADD COLUMN IF NOT EXISTS tenant_metadata JSONB DEFAULT \'{}\'',
     'ADD COLUMN IF NOT EXISTS brand_logo_text TEXT NOT NULL DEFAULT \'\'',
     'ADD COLUMN IF NOT EXISTS brand_logo_url TEXT NOT NULL DEFAULT \'\'',
     'ADD COLUMN IF NOT EXISTS brand_primary_color TEXT NOT NULL DEFAULT \'#eb3d28\'',
@@ -46,12 +58,17 @@ export async function getAppSettings(db: DbClient): Promise<AppSettingsDto> {
 
   const existing = await db.appSetting.findUnique({ where: { id: APP_SETTINGS_ID } });
   if (existing) {
+    const ex = existing as Record<string, unknown>;
     return {
       webSearchEnabled: existing.webSearchEnabled,
-      brandLogoText: (existing as Record<string, unknown>).brandLogoText as string ?? '',
-      brandLogoUrl: (existing as Record<string, unknown>).brandLogoUrl as string ?? '',
-      brandPrimaryColor: (existing as Record<string, unknown>).brandPrimaryColor as string ?? '#eb3d28',
-      brandSecondaryColor: (existing as Record<string, unknown>).brandSecondaryColor as string ?? '#0af9fe',
+      tenantSlug: String(ex.tenantSlug ?? ex.tenant_slug ?? 'tokenizmyapp'),
+      tenantDisplayName: String(ex.tenantDisplayName ?? ex.tenant_display_name ?? ''),
+      tenantTemplate: String(ex.tenantTemplate ?? ex.tenant_template ?? 'default'),
+      tenantMetadata: (ex.tenantMetadata ?? ex.tenant_metadata ?? {}) as Record<string, unknown>,
+      brandLogoText: String(ex.brandLogoText ?? ex.brand_logo_text ?? ''),
+      brandLogoUrl: String(ex.brandLogoUrl ?? ex.brand_logo_url ?? ''),
+      brandPrimaryColor: String(ex.brandPrimaryColor ?? ex.brand_primary_color ?? '#eb3d28'),
+      brandSecondaryColor: String(ex.brandSecondaryColor ?? ex.brand_secondary_color ?? '#0af9fe'),
       updatedAt: existing.updatedAt,
     };
   }
@@ -59,13 +76,18 @@ export async function getAppSettings(db: DbClient): Promise<AppSettingsDto> {
   const created = await db.appSetting.create({
     data: { id: APP_SETTINGS_ID },
   });
+  const cr = created as Record<string, unknown>;
 
   return {
     webSearchEnabled: created.webSearchEnabled,
-    brandLogoText: (created as Record<string, unknown>).brandLogoText as string ?? '',
-    brandLogoUrl: (created as Record<string, unknown>).brandLogoUrl as string ?? '',
-    brandPrimaryColor: (created as Record<string, unknown>).brandPrimaryColor as string ?? '#eb3d28',
-    brandSecondaryColor: (created as Record<string, unknown>).brandSecondaryColor as string ?? '#0af9fe',
+    tenantSlug: String(cr.tenantSlug ?? cr.tenant_slug ?? 'tokenizmyapp'),
+    tenantDisplayName: String(cr.tenantDisplayName ?? cr.tenant_display_name ?? ''),
+    tenantTemplate: String(cr.tenantTemplate ?? cr.tenant_template ?? 'default'),
+    tenantMetadata: (cr.tenantMetadata ?? cr.tenant_metadata ?? {}) as Record<string, unknown>,
+    brandLogoText: String(cr.brandLogoText ?? cr.brand_logo_text ?? ''),
+    brandLogoUrl: String(cr.brandLogoUrl ?? cr.brand_logo_url ?? ''),
+    brandPrimaryColor: String(cr.brandPrimaryColor ?? cr.brand_primary_color ?? '#eb3d28'),
+    brandSecondaryColor: String(cr.brandSecondaryColor ?? cr.brand_secondary_color ?? '#0af9fe'),
     updatedAt: created.updatedAt,
   };
 }
@@ -74,6 +96,10 @@ export async function updateAppSettings(
   db: DbClient,
   patch: {
     webSearchEnabled?: boolean;
+    tenantSlug?: string;
+    tenantDisplayName?: string;
+    tenantTemplate?: string;
+    tenantMetadata?: Record<string, unknown>;
     brandLogoText?: string;
     brandLogoUrl?: string;
     brandPrimaryColor?: string;
@@ -90,6 +116,22 @@ export async function updateAppSettings(
   if (patch.webSearchEnabled !== undefined) {
     sets.push(`web_search_enabled = $${idx++}`);
     params.push(patch.webSearchEnabled);
+  }
+  if (patch.tenantSlug !== undefined) {
+    sets.push(`tenant_slug = $${idx++}`);
+    params.push(patch.tenantSlug);
+  }
+  if (patch.tenantDisplayName !== undefined) {
+    sets.push(`tenant_display_name = $${idx++}`);
+    params.push(patch.tenantDisplayName);
+  }
+  if (patch.tenantTemplate !== undefined) {
+    sets.push(`tenant_template = $${idx++}`);
+    params.push(patch.tenantTemplate);
+  }
+  if (patch.tenantMetadata !== undefined) {
+    sets.push(`tenant_metadata = $${idx++}`);
+    params.push(JSON.stringify(patch.tenantMetadata));
   }
   if (patch.brandLogoText !== undefined) {
     sets.push(`brand_logo_text = $${idx++}`);
@@ -117,12 +159,16 @@ export async function updateAppSettings(
 
   // Read back the full row
   const row = await db.$queryRawUnsafe<Record<string, unknown>[]>(
-    `SELECT web_search_enabled, brand_logo_text, brand_logo_url, brand_primary_color, brand_secondary_color, updated_at FROM app_settings WHERE id = $1`,
+    `SELECT web_search_enabled, tenant_slug, tenant_display_name, tenant_template, tenant_metadata, brand_logo_text, brand_logo_url, brand_primary_color, brand_secondary_color, updated_at FROM app_settings WHERE id = $1`,
     APP_SETTINGS_ID,
   );
 
   return {
     webSearchEnabled: Boolean(row[0]?.web_search_enabled ?? false),
+    tenantSlug: String(row[0]?.tenant_slug ?? 'tokenizmyapp'),
+    tenantDisplayName: String(row[0]?.tenant_display_name ?? ''),
+    tenantTemplate: String(row[0]?.tenant_template ?? 'default'),
+    tenantMetadata: (row[0]?.tenant_metadata ?? {}) as Record<string, unknown>,
     brandLogoText: String(row[0]?.brand_logo_text ?? ''),
     brandLogoUrl: String(row[0]?.brand_logo_url ?? ''),
     brandPrimaryColor: String(row[0]?.brand_primary_color ?? '#eb3d28'),

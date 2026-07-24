@@ -1,6 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 
-/** Red Ruby Bali dark theme — tokens from style.css */
+/** Dark theme — tokens from style.css. Brand colors are loaded dynamically via ThemeRegistry. */
 export const theme = createTheme({
   palette: {
     mode: 'dark',

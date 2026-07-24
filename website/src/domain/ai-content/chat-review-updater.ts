@@ -63,7 +63,7 @@ export async function rephraseReviewDocumentsFromChat(
     .join('\n\n');
 
   const promptSections = [
-    `You are a financial analyst updating the Red Ruby Club & Terrace Bar Business Review and Executive Summary.`,
+    `You are a financial analyst updating the Business Review and Executive Summary.`,
     ``,
     `## CURRENT Business Review`,
     currentReviewText || '(No existing review — create from scratch)',
@@ -212,7 +212,7 @@ export async function rephraseExecutiveSummary(
 
   // Build prompt
   const promptSections = [
-    `You are a financial analyst updating the Red Ruby Club & Terrace Bar Executive Summary.`,
+    `You are a financial analyst updating the Executive Summary.`,
     ``,
     `## CURRENT Executive Summary`,
     currentExecSummary || '(No existing executive summary — create from scratch)',

@@ -103,15 +103,24 @@ export async function ensureJobQueueTable(db: DbClient): Promise<boolean> {
 }
 
 const CONVERSATIONS_COLUMNS_DDL = [
+  `CREATE TABLE IF NOT EXISTS conversations (
+    id SERIAL PRIMARY KEY,
+    user_name TEXT NOT NULL DEFAULT 'Anonymous',
+    owner_sub TEXT,
+    title TEXT NOT NULL DEFAULT 'Chat Conversation',
+    messages JSONB NOT NULL DEFAULT '[]',
+    message_count INTEGER NOT NULL DEFAULT 0,
+    archived BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  );`,
   `ALTER TABLE conversations ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT false;`,
   `ALTER TABLE conversations ADD COLUMN IF NOT EXISTS owner_sub TEXT;`,
   `ALTER TABLE conversations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP;`,
 ];
 
 export async function ensureConversationsColumns(db: DbClient): Promise<boolean> {
-  if (!process.env.POSTGRES_URL) {
-    throw new Error('POSTGRES_URL is not set — refusing to run ensureConversationsColumns');
-  }
+  // createClient() already validated POSTGRES_URL — no need to re-check here
 
   await withRetry(async () => {
     await runStatements(db, CONVERSATIONS_COLUMNS_DDL);

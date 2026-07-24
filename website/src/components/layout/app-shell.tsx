@@ -36,6 +36,7 @@ import { useListPagesQuery } from '@/store/apis/content-api';
 import { useGetBrandConfigQuery } from '@/store/apis/brand-config-api';
 import { useGetNavigationQuery } from '@/store/apis/navigation-api';
 import { NavIcon } from '@/components/shared/nav-icon';
+import { getClientTenantConfig } from '@/lib/config/tenant';
 
 const DRAWER_WIDTH = 280;
 
@@ -64,9 +65,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { tier, user, groups } = useAppSelector((s) => s.auth);
   useListPagesQuery();
 
-  // Brand config via RTK Query
+  // Brand config via RTK Query — fallback to tenant env var, then default
   const { data: brandData } = useGetBrandConfigQuery();
-  const brandText = brandData?.data?.brandLogoText ?? 'Red Ruby';
+  const tenantFallback = getClientTenantConfig().displayName;
+  const brandText = brandData?.data?.brandLogoText || tenantFallback || 'My App';
   const brandLogoUrl = brandData?.data?.brandLogoUrl ?? '';
 
   // DB-driven navigation via RTK Query (fallback: static catalog via listNavPages)

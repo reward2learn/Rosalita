@@ -10,7 +10,9 @@ import {
 
 type PosExtraction = Record<string, unknown> & { confidence?: string; method?: string };
 
-const OCR_PROMPT = `You transcribe Red Ruby Bali POS Z Sales Day Report thermal receipt photos (SPICERY -REDRUBY- BALI).
+const OCR_PROMPT = `You transcribe POS Z Sales Day Report thermal receipt photos.
+
+The business name and POS system name printed on the receipt will vary per deployment.
 
 Return ONLY valid JSON:
 { "text": "full verbatim transcription as a single string" }

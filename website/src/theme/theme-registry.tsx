@@ -15,7 +15,7 @@ const FALLBACK_COLORS: BrandColors = { primary: '#eb3d28', secondary: '#0af9fe' 
 
 /**
  * Build an MUI dark theme using the given brand colors.
- * Falls back to the default Red Ruby palette when brand config is not yet loaded.
+ * Falls back to default palette when brand config is not yet loaded.
  */
 function buildTheme(brand: BrandColors) {
   return createTheme({

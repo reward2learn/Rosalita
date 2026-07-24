@@ -86,7 +86,7 @@ export type NavigationItem = $Result.DefaultSelection<Prisma.$NavigationItemPayl
 export type Secret = $Result.DefaultSelection<Prisma.$SecretPayload>
 /**
  * Model AppSetting
- * Singleton app settings — chat flags, brand config, etc.
+ * Singleton app settings — chat flags, brand config, tenant identity, etc.
  */
 export type AppSetting = $Result.DefaultSelection<Prisma.$AppSettingPayload>
 /**
@@ -134,6 +134,11 @@ export type DailyMetric = $Result.DefaultSelection<Prisma.$DailyMetricPayload>
  * 
  */
 export type MonthlyTarget = $Result.DefaultSelection<Prisma.$MonthlyTargetPayload>
+/**
+ * Model Tenant
+ * A registered tenant application — created via the root config app wizard.
+ */
+export type Tenant = $Result.DefaultSelection<Prisma.$TenantPayload>
 
 /**
  * Enums
@@ -610,6 +615,16 @@ export class PrismaClient<
     * ```
     */
   get monthlyTarget(): Prisma.MonthlyTargetDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.tenant`: Exposes CRUD operations for the **Tenant** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Tenants
+    * const tenants = await prisma.tenant.findMany()
+    * ```
+    */
+  get tenant(): Prisma.TenantDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1073,7 +1088,8 @@ export namespace Prisma {
     MonthlyActualInput: 'MonthlyActualInput',
     MonthlyActualDepartment: 'MonthlyActualDepartment',
     DailyMetric: 'DailyMetric',
-    MonthlyTarget: 'MonthlyTarget'
+    MonthlyTarget: 'MonthlyTarget',
+    Tenant: 'Tenant'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1092,7 +1108,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "appPage" | "pageSection" | "businessReviewPart" | "lever" | "actionItem" | "role" | "userAccount" | "securityGroup" | "userGroup" | "task" | "taskAssignment" | "knowledgeSnippet" | "navigationItem" | "secret" | "appSetting" | "googleOAuthConfig" | "conversation" | "pdfJob" | "financialProjection" | "dailyZReport" | "monthlyActualInput" | "monthlyActualDepartment" | "dailyMetric" | "monthlyTarget"
+      modelProps: "appPage" | "pageSection" | "businessReviewPart" | "lever" | "actionItem" | "role" | "userAccount" | "securityGroup" | "userGroup" | "task" | "taskAssignment" | "knowledgeSnippet" | "navigationItem" | "secret" | "appSetting" | "googleOAuthConfig" | "conversation" | "pdfJob" | "financialProjection" | "dailyZReport" | "monthlyActualInput" | "monthlyActualDepartment" | "dailyMetric" | "monthlyTarget" | "tenant"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2872,6 +2888,80 @@ export namespace Prisma {
           }
         }
       }
+      Tenant: {
+        payload: Prisma.$TenantPayload<ExtArgs>
+        fields: Prisma.TenantFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.TenantFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.TenantFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload>
+          }
+          findFirst: {
+            args: Prisma.TenantFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.TenantFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload>
+          }
+          findMany: {
+            args: Prisma.TenantFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload>[]
+          }
+          create: {
+            args: Prisma.TenantCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload>
+          }
+          createMany: {
+            args: Prisma.TenantCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.TenantCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload>[]
+          }
+          delete: {
+            args: Prisma.TenantDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload>
+          }
+          update: {
+            args: Prisma.TenantUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload>
+          }
+          deleteMany: {
+            args: Prisma.TenantDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.TenantUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.TenantUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload>[]
+          }
+          upsert: {
+            args: Prisma.TenantUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPayload>
+          }
+          aggregate: {
+            args: Prisma.TenantAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateTenant>
+          }
+          groupBy: {
+            args: Prisma.TenantGroupByArgs<ExtArgs>
+            result: $Utils.Optional<TenantGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.TenantCountArgs<ExtArgs>
+            result: $Utils.Optional<TenantCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -2980,6 +3070,7 @@ export namespace Prisma {
     monthlyActualDepartment?: MonthlyActualDepartmentOmit
     dailyMetric?: DailyMetricOmit
     monthlyTarget?: MonthlyTargetOmit
+    tenant?: TenantOmit
   }
 
   /* Types for Logging */
@@ -18410,6 +18501,9 @@ export namespace Prisma {
   export type AppSettingMinAggregateOutputType = {
     id: string | null
     webSearchEnabled: boolean | null
+    tenantSlug: string | null
+    tenantDisplayName: string | null
+    tenantTemplate: string | null
     brandLogoText: string | null
     brandLogoUrl: string | null
     brandPrimaryColor: string | null
@@ -18420,6 +18514,9 @@ export namespace Prisma {
   export type AppSettingMaxAggregateOutputType = {
     id: string | null
     webSearchEnabled: boolean | null
+    tenantSlug: string | null
+    tenantDisplayName: string | null
+    tenantTemplate: string | null
     brandLogoText: string | null
     brandLogoUrl: string | null
     brandPrimaryColor: string | null
@@ -18430,6 +18527,10 @@ export namespace Prisma {
   export type AppSettingCountAggregateOutputType = {
     id: number
     webSearchEnabled: number
+    tenantSlug: number
+    tenantDisplayName: number
+    tenantTemplate: number
+    tenantMetadata: number
     brandLogoText: number
     brandLogoUrl: number
     brandPrimaryColor: number
@@ -18442,6 +18543,9 @@ export namespace Prisma {
   export type AppSettingMinAggregateInputType = {
     id?: true
     webSearchEnabled?: true
+    tenantSlug?: true
+    tenantDisplayName?: true
+    tenantTemplate?: true
     brandLogoText?: true
     brandLogoUrl?: true
     brandPrimaryColor?: true
@@ -18452,6 +18556,9 @@ export namespace Prisma {
   export type AppSettingMaxAggregateInputType = {
     id?: true
     webSearchEnabled?: true
+    tenantSlug?: true
+    tenantDisplayName?: true
+    tenantTemplate?: true
     brandLogoText?: true
     brandLogoUrl?: true
     brandPrimaryColor?: true
@@ -18462,6 +18569,10 @@ export namespace Prisma {
   export type AppSettingCountAggregateInputType = {
     id?: true
     webSearchEnabled?: true
+    tenantSlug?: true
+    tenantDisplayName?: true
+    tenantTemplate?: true
+    tenantMetadata?: true
     brandLogoText?: true
     brandLogoUrl?: true
     brandPrimaryColor?: true
@@ -18545,6 +18656,10 @@ export namespace Prisma {
   export type AppSettingGroupByOutputType = {
     id: string
     webSearchEnabled: boolean
+    tenantSlug: string
+    tenantDisplayName: string
+    tenantTemplate: string
+    tenantMetadata: JsonValue
     brandLogoText: string
     brandLogoUrl: string
     brandPrimaryColor: string
@@ -18572,6 +18687,10 @@ export namespace Prisma {
   export type AppSettingSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     webSearchEnabled?: boolean
+    tenantSlug?: boolean
+    tenantDisplayName?: boolean
+    tenantTemplate?: boolean
+    tenantMetadata?: boolean
     brandLogoText?: boolean
     brandLogoUrl?: boolean
     brandPrimaryColor?: boolean
@@ -18582,6 +18701,10 @@ export namespace Prisma {
   export type AppSettingSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     webSearchEnabled?: boolean
+    tenantSlug?: boolean
+    tenantDisplayName?: boolean
+    tenantTemplate?: boolean
+    tenantMetadata?: boolean
     brandLogoText?: boolean
     brandLogoUrl?: boolean
     brandPrimaryColor?: boolean
@@ -18592,6 +18715,10 @@ export namespace Prisma {
   export type AppSettingSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     webSearchEnabled?: boolean
+    tenantSlug?: boolean
+    tenantDisplayName?: boolean
+    tenantTemplate?: boolean
+    tenantMetadata?: boolean
     brandLogoText?: boolean
     brandLogoUrl?: boolean
     brandPrimaryColor?: boolean
@@ -18602,6 +18729,10 @@ export namespace Prisma {
   export type AppSettingSelectScalar = {
     id?: boolean
     webSearchEnabled?: boolean
+    tenantSlug?: boolean
+    tenantDisplayName?: boolean
+    tenantTemplate?: boolean
+    tenantMetadata?: boolean
     brandLogoText?: boolean
     brandLogoUrl?: boolean
     brandPrimaryColor?: boolean
@@ -18609,7 +18740,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type AppSettingOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "webSearchEnabled" | "brandLogoText" | "brandLogoUrl" | "brandPrimaryColor" | "brandSecondaryColor" | "updatedAt", ExtArgs["result"]["appSetting"]>
+  export type AppSettingOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "webSearchEnabled" | "tenantSlug" | "tenantDisplayName" | "tenantTemplate" | "tenantMetadata" | "brandLogoText" | "brandLogoUrl" | "brandPrimaryColor" | "brandSecondaryColor" | "updatedAt", ExtArgs["result"]["appSetting"]>
 
   export type $AppSettingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "AppSetting"
@@ -18617,6 +18748,22 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       webSearchEnabled: boolean
+      /**
+       * Tenant subdomain slug (e.g. "redrubybali" — used for URL derivation)
+       */
+      tenantSlug: string
+      /**
+       * Human-readable business name (e.g. "Red Ruby Bali")
+       */
+      tenantDisplayName: string
+      /**
+       * Template category identifier (e.g. "nightclub-bar", "restaurant", "hotel")
+       */
+      tenantTemplate: string
+      /**
+       * Arbitrary JSON metadata for tenant-specific configuration
+       */
+      tenantMetadata: Prisma.JsonValue
       brandLogoText: string
       brandLogoUrl: string
       brandPrimaryColor: string
@@ -19047,6 +19194,10 @@ export namespace Prisma {
   interface AppSettingFieldRefs {
     readonly id: FieldRef<"AppSetting", 'String'>
     readonly webSearchEnabled: FieldRef<"AppSetting", 'Boolean'>
+    readonly tenantSlug: FieldRef<"AppSetting", 'String'>
+    readonly tenantDisplayName: FieldRef<"AppSetting", 'String'>
+    readonly tenantTemplate: FieldRef<"AppSetting", 'String'>
+    readonly tenantMetadata: FieldRef<"AppSetting", 'Json'>
     readonly brandLogoText: FieldRef<"AppSetting", 'String'>
     readonly brandLogoUrl: FieldRef<"AppSetting", 'String'>
     readonly brandPrimaryColor: FieldRef<"AppSetting", 'String'>
@@ -30161,6 +30312,1147 @@ export namespace Prisma {
 
 
   /**
+   * Model Tenant
+   */
+
+  export type AggregateTenant = {
+    _count: TenantCountAggregateOutputType | null
+    _min: TenantMinAggregateOutputType | null
+    _max: TenantMaxAggregateOutputType | null
+  }
+
+  export type TenantMinAggregateOutputType = {
+    id: string | null
+    slug: string | null
+    displayName: string | null
+    template: string | null
+    status: string | null
+    vercelProjectId: string | null
+    appUrl: string | null
+    dbUrl: string | null
+    primaryColor: string | null
+    secondaryColor: string | null
+    createdBy: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TenantMaxAggregateOutputType = {
+    id: string | null
+    slug: string | null
+    displayName: string | null
+    template: string | null
+    status: string | null
+    vercelProjectId: string | null
+    appUrl: string | null
+    dbUrl: string | null
+    primaryColor: string | null
+    secondaryColor: string | null
+    createdBy: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TenantCountAggregateOutputType = {
+    id: number
+    slug: number
+    displayName: number
+    template: number
+    status: number
+    vercelProjectId: number
+    appUrl: number
+    dbUrl: number
+    primaryColor: number
+    secondaryColor: number
+    metadata: number
+    createdBy: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type TenantMinAggregateInputType = {
+    id?: true
+    slug?: true
+    displayName?: true
+    template?: true
+    status?: true
+    vercelProjectId?: true
+    appUrl?: true
+    dbUrl?: true
+    primaryColor?: true
+    secondaryColor?: true
+    createdBy?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TenantMaxAggregateInputType = {
+    id?: true
+    slug?: true
+    displayName?: true
+    template?: true
+    status?: true
+    vercelProjectId?: true
+    appUrl?: true
+    dbUrl?: true
+    primaryColor?: true
+    secondaryColor?: true
+    createdBy?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TenantCountAggregateInputType = {
+    id?: true
+    slug?: true
+    displayName?: true
+    template?: true
+    status?: true
+    vercelProjectId?: true
+    appUrl?: true
+    dbUrl?: true
+    primaryColor?: true
+    secondaryColor?: true
+    metadata?: true
+    createdBy?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type TenantAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Tenant to aggregate.
+     */
+    where?: TenantWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Tenants to fetch.
+     */
+    orderBy?: TenantOrderByWithRelationInput | TenantOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: TenantWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Tenants from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Tenants.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Tenants
+    **/
+    _count?: true | TenantCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: TenantMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: TenantMaxAggregateInputType
+  }
+
+  export type GetTenantAggregateType<T extends TenantAggregateArgs> = {
+        [P in keyof T & keyof AggregateTenant]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateTenant[P]>
+      : GetScalarType<T[P], AggregateTenant[P]>
+  }
+
+
+
+
+  export type TenantGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TenantWhereInput
+    orderBy?: TenantOrderByWithAggregationInput | TenantOrderByWithAggregationInput[]
+    by: TenantScalarFieldEnum[] | TenantScalarFieldEnum
+    having?: TenantScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: TenantCountAggregateInputType | true
+    _min?: TenantMinAggregateInputType
+    _max?: TenantMaxAggregateInputType
+  }
+
+  export type TenantGroupByOutputType = {
+    id: string
+    slug: string
+    displayName: string
+    template: string
+    status: string
+    vercelProjectId: string | null
+    appUrl: string | null
+    dbUrl: string | null
+    primaryColor: string
+    secondaryColor: string
+    metadata: JsonValue
+    createdBy: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: TenantCountAggregateOutputType | null
+    _min: TenantMinAggregateOutputType | null
+    _max: TenantMaxAggregateOutputType | null
+  }
+
+  type GetTenantGroupByPayload<T extends TenantGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<TenantGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof TenantGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], TenantGroupByOutputType[P]>
+            : GetScalarType<T[P], TenantGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type TenantSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    slug?: boolean
+    displayName?: boolean
+    template?: boolean
+    status?: boolean
+    vercelProjectId?: boolean
+    appUrl?: boolean
+    dbUrl?: boolean
+    primaryColor?: boolean
+    secondaryColor?: boolean
+    metadata?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["tenant"]>
+
+  export type TenantSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    slug?: boolean
+    displayName?: boolean
+    template?: boolean
+    status?: boolean
+    vercelProjectId?: boolean
+    appUrl?: boolean
+    dbUrl?: boolean
+    primaryColor?: boolean
+    secondaryColor?: boolean
+    metadata?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["tenant"]>
+
+  export type TenantSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    slug?: boolean
+    displayName?: boolean
+    template?: boolean
+    status?: boolean
+    vercelProjectId?: boolean
+    appUrl?: boolean
+    dbUrl?: boolean
+    primaryColor?: boolean
+    secondaryColor?: boolean
+    metadata?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["tenant"]>
+
+  export type TenantSelectScalar = {
+    id?: boolean
+    slug?: boolean
+    displayName?: boolean
+    template?: boolean
+    status?: boolean
+    vercelProjectId?: boolean
+    appUrl?: boolean
+    dbUrl?: boolean
+    primaryColor?: boolean
+    secondaryColor?: boolean
+    metadata?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "slug" | "displayName" | "template" | "status" | "vercelProjectId" | "appUrl" | "dbUrl" | "primaryColor" | "secondaryColor" | "metadata" | "createdBy" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
+
+  export type $TenantPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Tenant"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      /**
+       * Subdomain slug — unique identifier (e.g. "redrubybali")
+       */
+      slug: string
+      /**
+       * Human-readable business name (e.g. "Red Ruby Bali")
+       */
+      displayName: string
+      /**
+       * Template category (e.g. "nightclub-bar", "restaurant", "hotel")
+       */
+      template: string
+      /**
+       * Status: "draft" | "deploying" | "live" | "error"
+       */
+      status: string
+      /**
+       * Vercel project ID (populated after deploy)
+       */
+      vercelProjectId: string | null
+      /**
+       * Custom domain (e.g. "redrubybali.vercel.app")
+       */
+      appUrl: string | null
+      /**
+       * Neon database URL for this tenant (if separate DB)
+       */
+      dbUrl: string | null
+      /**
+       * Brand primary color (hex)
+       */
+      primaryColor: string
+      /**
+       * Brand secondary color (hex)
+       */
+      secondaryColor: string
+      /**
+       * Arbitrary JSON metadata
+       */
+      metadata: Prisma.JsonValue
+      /**
+       * Who created this tenant
+       */
+      createdBy: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["tenant"]>
+    composites: {}
+  }
+
+  type TenantGetPayload<S extends boolean | null | undefined | TenantDefaultArgs> = $Result.GetResult<Prisma.$TenantPayload, S>
+
+  type TenantCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<TenantFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: TenantCountAggregateInputType | true
+    }
+
+  export interface TenantDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Tenant'], meta: { name: 'Tenant' } }
+    /**
+     * Find zero or one Tenant that matches the filter.
+     * @param {TenantFindUniqueArgs} args - Arguments to find a Tenant
+     * @example
+     * // Get one Tenant
+     * const tenant = await prisma.tenant.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends TenantFindUniqueArgs>(args: SelectSubset<T, TenantFindUniqueArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Tenant that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {TenantFindUniqueOrThrowArgs} args - Arguments to find a Tenant
+     * @example
+     * // Get one Tenant
+     * const tenant = await prisma.tenant.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends TenantFindUniqueOrThrowArgs>(args: SelectSubset<T, TenantFindUniqueOrThrowArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Tenant that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantFindFirstArgs} args - Arguments to find a Tenant
+     * @example
+     * // Get one Tenant
+     * const tenant = await prisma.tenant.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends TenantFindFirstArgs>(args?: SelectSubset<T, TenantFindFirstArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Tenant that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantFindFirstOrThrowArgs} args - Arguments to find a Tenant
+     * @example
+     * // Get one Tenant
+     * const tenant = await prisma.tenant.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends TenantFindFirstOrThrowArgs>(args?: SelectSubset<T, TenantFindFirstOrThrowArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Tenants that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Tenants
+     * const tenants = await prisma.tenant.findMany()
+     * 
+     * // Get first 10 Tenants
+     * const tenants = await prisma.tenant.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const tenantWithIdOnly = await prisma.tenant.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends TenantFindManyArgs>(args?: SelectSubset<T, TenantFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Tenant.
+     * @param {TenantCreateArgs} args - Arguments to create a Tenant.
+     * @example
+     * // Create one Tenant
+     * const Tenant = await prisma.tenant.create({
+     *   data: {
+     *     // ... data to create a Tenant
+     *   }
+     * })
+     * 
+     */
+    create<T extends TenantCreateArgs>(args: SelectSubset<T, TenantCreateArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Tenants.
+     * @param {TenantCreateManyArgs} args - Arguments to create many Tenants.
+     * @example
+     * // Create many Tenants
+     * const tenant = await prisma.tenant.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends TenantCreateManyArgs>(args?: SelectSubset<T, TenantCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Tenants and returns the data saved in the database.
+     * @param {TenantCreateManyAndReturnArgs} args - Arguments to create many Tenants.
+     * @example
+     * // Create many Tenants
+     * const tenant = await prisma.tenant.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Tenants and only return the `id`
+     * const tenantWithIdOnly = await prisma.tenant.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends TenantCreateManyAndReturnArgs>(args?: SelectSubset<T, TenantCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Tenant.
+     * @param {TenantDeleteArgs} args - Arguments to delete one Tenant.
+     * @example
+     * // Delete one Tenant
+     * const Tenant = await prisma.tenant.delete({
+     *   where: {
+     *     // ... filter to delete one Tenant
+     *   }
+     * })
+     * 
+     */
+    delete<T extends TenantDeleteArgs>(args: SelectSubset<T, TenantDeleteArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Tenant.
+     * @param {TenantUpdateArgs} args - Arguments to update one Tenant.
+     * @example
+     * // Update one Tenant
+     * const tenant = await prisma.tenant.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends TenantUpdateArgs>(args: SelectSubset<T, TenantUpdateArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Tenants.
+     * @param {TenantDeleteManyArgs} args - Arguments to filter Tenants to delete.
+     * @example
+     * // Delete a few Tenants
+     * const { count } = await prisma.tenant.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends TenantDeleteManyArgs>(args?: SelectSubset<T, TenantDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Tenants.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Tenants
+     * const tenant = await prisma.tenant.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends TenantUpdateManyArgs>(args: SelectSubset<T, TenantUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Tenants and returns the data updated in the database.
+     * @param {TenantUpdateManyAndReturnArgs} args - Arguments to update many Tenants.
+     * @example
+     * // Update many Tenants
+     * const tenant = await prisma.tenant.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Tenants and only return the `id`
+     * const tenantWithIdOnly = await prisma.tenant.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends TenantUpdateManyAndReturnArgs>(args: SelectSubset<T, TenantUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Tenant.
+     * @param {TenantUpsertArgs} args - Arguments to update or create a Tenant.
+     * @example
+     * // Update or create a Tenant
+     * const tenant = await prisma.tenant.upsert({
+     *   create: {
+     *     // ... data to create a Tenant
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Tenant we want to update
+     *   }
+     * })
+     */
+    upsert<T extends TenantUpsertArgs>(args: SelectSubset<T, TenantUpsertArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Tenants.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantCountArgs} args - Arguments to filter Tenants to count.
+     * @example
+     * // Count the number of Tenants
+     * const count = await prisma.tenant.count({
+     *   where: {
+     *     // ... the filter for the Tenants we want to count
+     *   }
+     * })
+    **/
+    count<T extends TenantCountArgs>(
+      args?: Subset<T, TenantCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], TenantCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Tenant.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends TenantAggregateArgs>(args: Subset<T, TenantAggregateArgs>): Prisma.PrismaPromise<GetTenantAggregateType<T>>
+
+    /**
+     * Group by Tenant.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends TenantGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: TenantGroupByArgs['orderBy'] }
+        : { orderBy?: TenantGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, TenantGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetTenantGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Tenant model
+   */
+  readonly fields: TenantFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Tenant.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__TenantClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Tenant model
+   */
+  interface TenantFieldRefs {
+    readonly id: FieldRef<"Tenant", 'String'>
+    readonly slug: FieldRef<"Tenant", 'String'>
+    readonly displayName: FieldRef<"Tenant", 'String'>
+    readonly template: FieldRef<"Tenant", 'String'>
+    readonly status: FieldRef<"Tenant", 'String'>
+    readonly vercelProjectId: FieldRef<"Tenant", 'String'>
+    readonly appUrl: FieldRef<"Tenant", 'String'>
+    readonly dbUrl: FieldRef<"Tenant", 'String'>
+    readonly primaryColor: FieldRef<"Tenant", 'String'>
+    readonly secondaryColor: FieldRef<"Tenant", 'String'>
+    readonly metadata: FieldRef<"Tenant", 'Json'>
+    readonly createdBy: FieldRef<"Tenant", 'String'>
+    readonly createdAt: FieldRef<"Tenant", 'DateTime'>
+    readonly updatedAt: FieldRef<"Tenant", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Tenant findUnique
+   */
+  export type TenantFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * Filter, which Tenant to fetch.
+     */
+    where: TenantWhereUniqueInput
+  }
+
+  /**
+   * Tenant findUniqueOrThrow
+   */
+  export type TenantFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * Filter, which Tenant to fetch.
+     */
+    where: TenantWhereUniqueInput
+  }
+
+  /**
+   * Tenant findFirst
+   */
+  export type TenantFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * Filter, which Tenant to fetch.
+     */
+    where?: TenantWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Tenants to fetch.
+     */
+    orderBy?: TenantOrderByWithRelationInput | TenantOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Tenants.
+     */
+    cursor?: TenantWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Tenants from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Tenants.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Tenants.
+     */
+    distinct?: TenantScalarFieldEnum | TenantScalarFieldEnum[]
+  }
+
+  /**
+   * Tenant findFirstOrThrow
+   */
+  export type TenantFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * Filter, which Tenant to fetch.
+     */
+    where?: TenantWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Tenants to fetch.
+     */
+    orderBy?: TenantOrderByWithRelationInput | TenantOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Tenants.
+     */
+    cursor?: TenantWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Tenants from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Tenants.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Tenants.
+     */
+    distinct?: TenantScalarFieldEnum | TenantScalarFieldEnum[]
+  }
+
+  /**
+   * Tenant findMany
+   */
+  export type TenantFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * Filter, which Tenants to fetch.
+     */
+    where?: TenantWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Tenants to fetch.
+     */
+    orderBy?: TenantOrderByWithRelationInput | TenantOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Tenants.
+     */
+    cursor?: TenantWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Tenants from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Tenants.
+     */
+    skip?: number
+    distinct?: TenantScalarFieldEnum | TenantScalarFieldEnum[]
+  }
+
+  /**
+   * Tenant create
+   */
+  export type TenantCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * The data needed to create a Tenant.
+     */
+    data: XOR<TenantCreateInput, TenantUncheckedCreateInput>
+  }
+
+  /**
+   * Tenant createMany
+   */
+  export type TenantCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Tenants.
+     */
+    data: TenantCreateManyInput | TenantCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Tenant createManyAndReturn
+   */
+  export type TenantCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * The data used to create many Tenants.
+     */
+    data: TenantCreateManyInput | TenantCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Tenant update
+   */
+  export type TenantUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * The data needed to update a Tenant.
+     */
+    data: XOR<TenantUpdateInput, TenantUncheckedUpdateInput>
+    /**
+     * Choose, which Tenant to update.
+     */
+    where: TenantWhereUniqueInput
+  }
+
+  /**
+   * Tenant updateMany
+   */
+  export type TenantUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Tenants.
+     */
+    data: XOR<TenantUpdateManyMutationInput, TenantUncheckedUpdateManyInput>
+    /**
+     * Filter which Tenants to update
+     */
+    where?: TenantWhereInput
+    /**
+     * Limit how many Tenants to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Tenant updateManyAndReturn
+   */
+  export type TenantUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * The data used to update Tenants.
+     */
+    data: XOR<TenantUpdateManyMutationInput, TenantUncheckedUpdateManyInput>
+    /**
+     * Filter which Tenants to update
+     */
+    where?: TenantWhereInput
+    /**
+     * Limit how many Tenants to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Tenant upsert
+   */
+  export type TenantUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * The filter to search for the Tenant to update in case it exists.
+     */
+    where: TenantWhereUniqueInput
+    /**
+     * In case the Tenant found by the `where` argument doesn't exist, create a new Tenant with this data.
+     */
+    create: XOR<TenantCreateInput, TenantUncheckedCreateInput>
+    /**
+     * In case the Tenant was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<TenantUpdateInput, TenantUncheckedUpdateInput>
+  }
+
+  /**
+   * Tenant delete
+   */
+  export type TenantDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+    /**
+     * Filter which Tenant to delete.
+     */
+    where: TenantWhereUniqueInput
+  }
+
+  /**
+   * Tenant deleteMany
+   */
+  export type TenantDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Tenants to delete
+     */
+    where?: TenantWhereInput
+    /**
+     * Limit how many Tenants to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Tenant without action
+   */
+  export type TenantDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tenant
+     */
+    select?: TenantSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tenant
+     */
+    omit?: TenantOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -30350,6 +31642,10 @@ export namespace Prisma {
   export const AppSettingScalarFieldEnum: {
     id: 'id',
     webSearchEnabled: 'webSearchEnabled',
+    tenantSlug: 'tenantSlug',
+    tenantDisplayName: 'tenantDisplayName',
+    tenantTemplate: 'tenantTemplate',
+    tenantMetadata: 'tenantMetadata',
     brandLogoText: 'brandLogoText',
     brandLogoUrl: 'brandLogoUrl',
     brandPrimaryColor: 'brandPrimaryColor',
@@ -30558,6 +31854,26 @@ export namespace Prisma {
   };
 
   export type MonthlyTargetScalarFieldEnum = (typeof MonthlyTargetScalarFieldEnum)[keyof typeof MonthlyTargetScalarFieldEnum]
+
+
+  export const TenantScalarFieldEnum: {
+    id: 'id',
+    slug: 'slug',
+    displayName: 'displayName',
+    template: 'template',
+    status: 'status',
+    vercelProjectId: 'vercelProjectId',
+    appUrl: 'appUrl',
+    dbUrl: 'dbUrl',
+    primaryColor: 'primaryColor',
+    secondaryColor: 'secondaryColor',
+    metadata: 'metadata',
+    createdBy: 'createdBy',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type TenantScalarFieldEnum = (typeof TenantScalarFieldEnum)[keyof typeof TenantScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -31658,6 +32974,10 @@ export namespace Prisma {
     NOT?: AppSettingWhereInput | AppSettingWhereInput[]
     id?: StringFilter<"AppSetting"> | string
     webSearchEnabled?: BoolFilter<"AppSetting"> | boolean
+    tenantSlug?: StringFilter<"AppSetting"> | string
+    tenantDisplayName?: StringFilter<"AppSetting"> | string
+    tenantTemplate?: StringFilter<"AppSetting"> | string
+    tenantMetadata?: JsonFilter<"AppSetting">
     brandLogoText?: StringFilter<"AppSetting"> | string
     brandLogoUrl?: StringFilter<"AppSetting"> | string
     brandPrimaryColor?: StringFilter<"AppSetting"> | string
@@ -31668,6 +32988,10 @@ export namespace Prisma {
   export type AppSettingOrderByWithRelationInput = {
     id?: SortOrder
     webSearchEnabled?: SortOrder
+    tenantSlug?: SortOrder
+    tenantDisplayName?: SortOrder
+    tenantTemplate?: SortOrder
+    tenantMetadata?: SortOrder
     brandLogoText?: SortOrder
     brandLogoUrl?: SortOrder
     brandPrimaryColor?: SortOrder
@@ -31681,6 +33005,10 @@ export namespace Prisma {
     OR?: AppSettingWhereInput[]
     NOT?: AppSettingWhereInput | AppSettingWhereInput[]
     webSearchEnabled?: BoolFilter<"AppSetting"> | boolean
+    tenantSlug?: StringFilter<"AppSetting"> | string
+    tenantDisplayName?: StringFilter<"AppSetting"> | string
+    tenantTemplate?: StringFilter<"AppSetting"> | string
+    tenantMetadata?: JsonFilter<"AppSetting">
     brandLogoText?: StringFilter<"AppSetting"> | string
     brandLogoUrl?: StringFilter<"AppSetting"> | string
     brandPrimaryColor?: StringFilter<"AppSetting"> | string
@@ -31691,6 +33019,10 @@ export namespace Prisma {
   export type AppSettingOrderByWithAggregationInput = {
     id?: SortOrder
     webSearchEnabled?: SortOrder
+    tenantSlug?: SortOrder
+    tenantDisplayName?: SortOrder
+    tenantTemplate?: SortOrder
+    tenantMetadata?: SortOrder
     brandLogoText?: SortOrder
     brandLogoUrl?: SortOrder
     brandPrimaryColor?: SortOrder
@@ -31707,6 +33039,10 @@ export namespace Prisma {
     NOT?: AppSettingScalarWhereWithAggregatesInput | AppSettingScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"AppSetting"> | string
     webSearchEnabled?: BoolWithAggregatesFilter<"AppSetting"> | boolean
+    tenantSlug?: StringWithAggregatesFilter<"AppSetting"> | string
+    tenantDisplayName?: StringWithAggregatesFilter<"AppSetting"> | string
+    tenantTemplate?: StringWithAggregatesFilter<"AppSetting"> | string
+    tenantMetadata?: JsonWithAggregatesFilter<"AppSetting">
     brandLogoText?: StringWithAggregatesFilter<"AppSetting"> | string
     brandLogoUrl?: StringWithAggregatesFilter<"AppSetting"> | string
     brandPrimaryColor?: StringWithAggregatesFilter<"AppSetting"> | string
@@ -32700,6 +34036,103 @@ export namespace Prisma {
     targetStaffCostPct?: DecimalWithAggregatesFilter<"MonthlyTarget"> | Decimal | DecimalJsLike | number | string
   }
 
+  export type TenantWhereInput = {
+    AND?: TenantWhereInput | TenantWhereInput[]
+    OR?: TenantWhereInput[]
+    NOT?: TenantWhereInput | TenantWhereInput[]
+    id?: StringFilter<"Tenant"> | string
+    slug?: StringFilter<"Tenant"> | string
+    displayName?: StringFilter<"Tenant"> | string
+    template?: StringFilter<"Tenant"> | string
+    status?: StringFilter<"Tenant"> | string
+    vercelProjectId?: StringNullableFilter<"Tenant"> | string | null
+    appUrl?: StringNullableFilter<"Tenant"> | string | null
+    dbUrl?: StringNullableFilter<"Tenant"> | string | null
+    primaryColor?: StringFilter<"Tenant"> | string
+    secondaryColor?: StringFilter<"Tenant"> | string
+    metadata?: JsonFilter<"Tenant">
+    createdBy?: StringNullableFilter<"Tenant"> | string | null
+    createdAt?: DateTimeFilter<"Tenant"> | Date | string
+    updatedAt?: DateTimeFilter<"Tenant"> | Date | string
+  }
+
+  export type TenantOrderByWithRelationInput = {
+    id?: SortOrder
+    slug?: SortOrder
+    displayName?: SortOrder
+    template?: SortOrder
+    status?: SortOrder
+    vercelProjectId?: SortOrderInput | SortOrder
+    appUrl?: SortOrderInput | SortOrder
+    dbUrl?: SortOrderInput | SortOrder
+    primaryColor?: SortOrder
+    secondaryColor?: SortOrder
+    metadata?: SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TenantWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    slug?: string
+    AND?: TenantWhereInput | TenantWhereInput[]
+    OR?: TenantWhereInput[]
+    NOT?: TenantWhereInput | TenantWhereInput[]
+    displayName?: StringFilter<"Tenant"> | string
+    template?: StringFilter<"Tenant"> | string
+    status?: StringFilter<"Tenant"> | string
+    vercelProjectId?: StringNullableFilter<"Tenant"> | string | null
+    appUrl?: StringNullableFilter<"Tenant"> | string | null
+    dbUrl?: StringNullableFilter<"Tenant"> | string | null
+    primaryColor?: StringFilter<"Tenant"> | string
+    secondaryColor?: StringFilter<"Tenant"> | string
+    metadata?: JsonFilter<"Tenant">
+    createdBy?: StringNullableFilter<"Tenant"> | string | null
+    createdAt?: DateTimeFilter<"Tenant"> | Date | string
+    updatedAt?: DateTimeFilter<"Tenant"> | Date | string
+  }, "id" | "slug">
+
+  export type TenantOrderByWithAggregationInput = {
+    id?: SortOrder
+    slug?: SortOrder
+    displayName?: SortOrder
+    template?: SortOrder
+    status?: SortOrder
+    vercelProjectId?: SortOrderInput | SortOrder
+    appUrl?: SortOrderInput | SortOrder
+    dbUrl?: SortOrderInput | SortOrder
+    primaryColor?: SortOrder
+    secondaryColor?: SortOrder
+    metadata?: SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: TenantCountOrderByAggregateInput
+    _max?: TenantMaxOrderByAggregateInput
+    _min?: TenantMinOrderByAggregateInput
+  }
+
+  export type TenantScalarWhereWithAggregatesInput = {
+    AND?: TenantScalarWhereWithAggregatesInput | TenantScalarWhereWithAggregatesInput[]
+    OR?: TenantScalarWhereWithAggregatesInput[]
+    NOT?: TenantScalarWhereWithAggregatesInput | TenantScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Tenant"> | string
+    slug?: StringWithAggregatesFilter<"Tenant"> | string
+    displayName?: StringWithAggregatesFilter<"Tenant"> | string
+    template?: StringWithAggregatesFilter<"Tenant"> | string
+    status?: StringWithAggregatesFilter<"Tenant"> | string
+    vercelProjectId?: StringNullableWithAggregatesFilter<"Tenant"> | string | null
+    appUrl?: StringNullableWithAggregatesFilter<"Tenant"> | string | null
+    dbUrl?: StringNullableWithAggregatesFilter<"Tenant"> | string | null
+    primaryColor?: StringWithAggregatesFilter<"Tenant"> | string
+    secondaryColor?: StringWithAggregatesFilter<"Tenant"> | string
+    metadata?: JsonWithAggregatesFilter<"Tenant">
+    createdBy?: StringNullableWithAggregatesFilter<"Tenant"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
+  }
+
   export type AppPageCreateInput = {
     id?: string
     slug: string
@@ -33638,6 +35071,10 @@ export namespace Prisma {
   export type AppSettingCreateInput = {
     id?: string
     webSearchEnabled?: boolean
+    tenantSlug?: string
+    tenantDisplayName?: string
+    tenantTemplate?: string
+    tenantMetadata?: JsonNullValueInput | InputJsonValue
     brandLogoText?: string
     brandLogoUrl?: string
     brandPrimaryColor?: string
@@ -33648,6 +35085,10 @@ export namespace Prisma {
   export type AppSettingUncheckedCreateInput = {
     id?: string
     webSearchEnabled?: boolean
+    tenantSlug?: string
+    tenantDisplayName?: string
+    tenantTemplate?: string
+    tenantMetadata?: JsonNullValueInput | InputJsonValue
     brandLogoText?: string
     brandLogoUrl?: string
     brandPrimaryColor?: string
@@ -33658,6 +35099,10 @@ export namespace Prisma {
   export type AppSettingUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     webSearchEnabled?: BoolFieldUpdateOperationsInput | boolean
+    tenantSlug?: StringFieldUpdateOperationsInput | string
+    tenantDisplayName?: StringFieldUpdateOperationsInput | string
+    tenantTemplate?: StringFieldUpdateOperationsInput | string
+    tenantMetadata?: JsonNullValueInput | InputJsonValue
     brandLogoText?: StringFieldUpdateOperationsInput | string
     brandLogoUrl?: StringFieldUpdateOperationsInput | string
     brandPrimaryColor?: StringFieldUpdateOperationsInput | string
@@ -33668,6 +35113,10 @@ export namespace Prisma {
   export type AppSettingUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     webSearchEnabled?: BoolFieldUpdateOperationsInput | boolean
+    tenantSlug?: StringFieldUpdateOperationsInput | string
+    tenantDisplayName?: StringFieldUpdateOperationsInput | string
+    tenantTemplate?: StringFieldUpdateOperationsInput | string
+    tenantMetadata?: JsonNullValueInput | InputJsonValue
     brandLogoText?: StringFieldUpdateOperationsInput | string
     brandLogoUrl?: StringFieldUpdateOperationsInput | string
     brandPrimaryColor?: StringFieldUpdateOperationsInput | string
@@ -33678,6 +35127,10 @@ export namespace Prisma {
   export type AppSettingCreateManyInput = {
     id?: string
     webSearchEnabled?: boolean
+    tenantSlug?: string
+    tenantDisplayName?: string
+    tenantTemplate?: string
+    tenantMetadata?: JsonNullValueInput | InputJsonValue
     brandLogoText?: string
     brandLogoUrl?: string
     brandPrimaryColor?: string
@@ -33688,6 +35141,10 @@ export namespace Prisma {
   export type AppSettingUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     webSearchEnabled?: BoolFieldUpdateOperationsInput | boolean
+    tenantSlug?: StringFieldUpdateOperationsInput | string
+    tenantDisplayName?: StringFieldUpdateOperationsInput | string
+    tenantTemplate?: StringFieldUpdateOperationsInput | string
+    tenantMetadata?: JsonNullValueInput | InputJsonValue
     brandLogoText?: StringFieldUpdateOperationsInput | string
     brandLogoUrl?: StringFieldUpdateOperationsInput | string
     brandPrimaryColor?: StringFieldUpdateOperationsInput | string
@@ -33698,6 +35155,10 @@ export namespace Prisma {
   export type AppSettingUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     webSearchEnabled?: BoolFieldUpdateOperationsInput | boolean
+    tenantSlug?: StringFieldUpdateOperationsInput | string
+    tenantDisplayName?: StringFieldUpdateOperationsInput | string
+    tenantTemplate?: StringFieldUpdateOperationsInput | string
+    tenantMetadata?: JsonNullValueInput | InputJsonValue
     brandLogoText?: StringFieldUpdateOperationsInput | string
     brandLogoUrl?: StringFieldUpdateOperationsInput | string
     brandPrimaryColor?: StringFieldUpdateOperationsInput | string
@@ -34901,6 +36362,125 @@ export namespace Prisma {
     targetStaffCostPct?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
+  export type TenantCreateInput = {
+    id?: string
+    slug: string
+    displayName: string
+    template?: string
+    status?: string
+    vercelProjectId?: string | null
+    appUrl?: string | null
+    dbUrl?: string | null
+    primaryColor?: string
+    secondaryColor?: string
+    metadata?: JsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantUncheckedCreateInput = {
+    id?: string
+    slug: string
+    displayName: string
+    template?: string
+    status?: string
+    vercelProjectId?: string | null
+    appUrl?: string | null
+    dbUrl?: string | null
+    primaryColor?: string
+    secondaryColor?: string
+    metadata?: JsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    template?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    vercelProjectId?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    dbUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    primaryColor?: StringFieldUpdateOperationsInput | string
+    secondaryColor?: StringFieldUpdateOperationsInput | string
+    metadata?: JsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    template?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    vercelProjectId?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    dbUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    primaryColor?: StringFieldUpdateOperationsInput | string
+    secondaryColor?: StringFieldUpdateOperationsInput | string
+    metadata?: JsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantCreateManyInput = {
+    id?: string
+    slug: string
+    displayName: string
+    template?: string
+    status?: string
+    vercelProjectId?: string | null
+    appUrl?: string | null
+    dbUrl?: string | null
+    primaryColor?: string
+    secondaryColor?: string
+    metadata?: JsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    template?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    vercelProjectId?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    dbUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    primaryColor?: StringFieldUpdateOperationsInput | string
+    secondaryColor?: StringFieldUpdateOperationsInput | string
+    metadata?: JsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    template?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    vercelProjectId?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    dbUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    primaryColor?: StringFieldUpdateOperationsInput | string
+    secondaryColor?: StringFieldUpdateOperationsInput | string
+    metadata?: JsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -35715,6 +37295,10 @@ export namespace Prisma {
   export type AppSettingCountOrderByAggregateInput = {
     id?: SortOrder
     webSearchEnabled?: SortOrder
+    tenantSlug?: SortOrder
+    tenantDisplayName?: SortOrder
+    tenantTemplate?: SortOrder
+    tenantMetadata?: SortOrder
     brandLogoText?: SortOrder
     brandLogoUrl?: SortOrder
     brandPrimaryColor?: SortOrder
@@ -35725,6 +37309,9 @@ export namespace Prisma {
   export type AppSettingMaxOrderByAggregateInput = {
     id?: SortOrder
     webSearchEnabled?: SortOrder
+    tenantSlug?: SortOrder
+    tenantDisplayName?: SortOrder
+    tenantTemplate?: SortOrder
     brandLogoText?: SortOrder
     brandLogoUrl?: SortOrder
     brandPrimaryColor?: SortOrder
@@ -35735,6 +37322,9 @@ export namespace Prisma {
   export type AppSettingMinOrderByAggregateInput = {
     id?: SortOrder
     webSearchEnabled?: SortOrder
+    tenantSlug?: SortOrder
+    tenantDisplayName?: SortOrder
+    tenantTemplate?: SortOrder
     brandLogoText?: SortOrder
     brandLogoUrl?: SortOrder
     brandPrimaryColor?: SortOrder
@@ -36641,6 +38231,55 @@ export namespace Prisma {
     targetGuests?: SortOrder
     targetAvgSpend?: SortOrder
     targetStaffCostPct?: SortOrder
+  }
+
+  export type TenantCountOrderByAggregateInput = {
+    id?: SortOrder
+    slug?: SortOrder
+    displayName?: SortOrder
+    template?: SortOrder
+    status?: SortOrder
+    vercelProjectId?: SortOrder
+    appUrl?: SortOrder
+    dbUrl?: SortOrder
+    primaryColor?: SortOrder
+    secondaryColor?: SortOrder
+    metadata?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TenantMaxOrderByAggregateInput = {
+    id?: SortOrder
+    slug?: SortOrder
+    displayName?: SortOrder
+    template?: SortOrder
+    status?: SortOrder
+    vercelProjectId?: SortOrder
+    appUrl?: SortOrder
+    dbUrl?: SortOrder
+    primaryColor?: SortOrder
+    secondaryColor?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TenantMinOrderByAggregateInput = {
+    id?: SortOrder
+    slug?: SortOrder
+    displayName?: SortOrder
+    template?: SortOrder
+    status?: SortOrder
+    vercelProjectId?: SortOrder
+    appUrl?: SortOrder
+    dbUrl?: SortOrder
+    primaryColor?: SortOrder
+    secondaryColor?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type PageSectionCreateNestedManyWithoutPageInput = {

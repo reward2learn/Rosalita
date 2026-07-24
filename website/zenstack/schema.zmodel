@@ -309,15 +309,23 @@ model Secret {
   @@map("secrets")
 }
 
-/// Singleton app settings — chat flags, brand config, etc.
+/// Singleton app settings — chat flags, brand config, tenant identity, etc.
 model AppSetting {
-  id                 String   @id @default("default")
-  webSearchEnabled   Boolean  @default(false) @map("web_search_enabled")
-  brandLogoText      String   @default("") @map("brand_logo_text")
-  brandLogoUrl       String   @default("") @map("brand_logo_url")
-  brandPrimaryColor  String   @default("#eb3d28") @map("brand_primary_color")
-  brandSecondaryColor String  @default("#0af9fe") @map("brand_secondary_color")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  id                  String   @id @default("default")
+  webSearchEnabled    Boolean  @default(false) @map("web_search_enabled")
+  /// Tenant subdomain slug (e.g. "redrubybali" — used for URL derivation)
+  tenantSlug          String   @default("tokenizmyapp") @map("tenant_slug")
+  /// Human-readable business name (e.g. "Red Ruby Bali")
+  tenantDisplayName   String   @default("") @map("tenant_display_name")
+  /// Template category identifier (e.g. "nightclub-bar", "restaurant", "hotel")
+  tenantTemplate      String   @default("default") @map("tenant_template")
+  /// Arbitrary JSON metadata for tenant-specific configuration
+  tenantMetadata      Json     @default("{}") @map("tenant_metadata")
+  brandLogoText       String   @default("") @map("brand_logo_text")
+  brandLogoUrl        String   @default("") @map("brand_logo_url")
+  brandPrimaryColor   String   @default("#eb3d28") @map("brand_primary_color")
+  brandSecondaryColor String   @default("#0af9fe") @map("brand_secondary_color")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@allow('all', true)
   @@map("app_settings")
@@ -536,6 +544,41 @@ model MonthlyTarget {
 
   @@allow('all', true)
   @@map("monthly_targets")
+}
+
+// ── Tenant registry (root config app) ──
+
+/// A registered tenant application — created via the root config app wizard.
+model Tenant {
+  id              String   @id @default(cuid())
+  /// Subdomain slug — unique identifier (e.g. "redrubybali")
+  slug            String   @unique
+  /// Human-readable business name (e.g. "Red Ruby Bali")
+  displayName     String   @map("display_name")
+  /// Template category (e.g. "nightclub-bar", "restaurant", "hotel")
+  template        String   @default("default")
+  /// Status: "draft" | "deploying" | "live" | "error"
+  status          String   @default("draft")
+  /// Vercel project ID (populated after deploy)
+  vercelProjectId String?  @map("vercel_project_id")
+  /// Custom domain (e.g. "redrubybali.vercel.app")
+  appUrl          String?  @map("app_url")
+  /// Neon database URL for this tenant (if separate DB)
+  dbUrl           String?  @map("db_url")
+  /// Brand primary color (hex)
+  primaryColor    String   @default("#eb3d28") @map("primary_color")
+  /// Brand secondary color (hex)
+  secondaryColor  String   @default("#0af9fe") @map("secondary_color")
+  /// Arbitrary JSON metadata
+  metadata        Json     @default("{}")
+  /// Who created this tenant
+  createdBy       String?  @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
+  @@map("tenants")
 }
 
 // ── Access policies (ZenStack — enforce in P1 generate) ──
