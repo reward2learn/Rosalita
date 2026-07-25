@@ -25,6 +25,7 @@
     "postinstall": "node scripts/create_job_queue.mjs"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.20",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.1.1",
@@ -35,7 +36,9 @@
     "@prisma/client": "6.12.0",
     "@reduxjs/toolkit": "^2.6.0",
     "@sparticuz/chromium": "^133.0.0",
+    "@tenants/shared": "file:../packages/shared",
     "@zenstackhq/runtime": "2.22.3",
+    "ai": "^7.0.37",
     "chart.js": "^4.5.1",
     "jose": "^6.0.0",
     "next": "^16.0.0",
@@ -46,8 +49,7 @@
     "react-hook-form": "^7.54.0",
     "react-redux": "^9.2.0",
     "xlsx": "^0.18.5",
-    "zod": "^3.24.0",
-    "@tenants/shared": "file:../packages/shared"
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
@@ -61,6 +63,7 @@
     "@typescript-eslint/eslint-plugin": "^8.21.0",
     "@typescript-eslint/parser": "^8.21.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "dotenv": "^17.4.2",
     "eslint": "^9.18.0",
     "happy-dom": "^16.7.0",
     "prisma": "6.12.0",
