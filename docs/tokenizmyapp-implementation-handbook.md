@@ -191,13 +191,13 @@ The previous `nightclub-bar` template was **misclassified**. Its 6 pages (dashbo
 
 | Step | Task | Status |
 |------|------|--------|
-| 4.1 | Get `NEON_API_KEY` from Neon console → set as env var | ⬜ Pending (user action) |
+| 4.1 | Get `NEON_API_KEY` from Neon console → set as env var | ✅ Complete |
 | 4.2 | Create `neon-provision-service.ts` (Neon API v2 client) | ✅ Complete |
 | 4.3 | Implement `provisionTenantDatabase(slug)` — create branch + DB | ✅ Complete |
 | 4.4 | Implement `deprovisionTenantDatabase(slug)` — delete branch | ✅ Complete |
 | 4.5 | Create `migration-runner.ts` — run ZenStack migrations on tenant DB | ✅ Complete |
 | 4.6 | Integrate into `POST /api/admin/tenants` pipeline | ⬜ Pending (Phase 6) |
-| 4.7 | Test: create tenant → verify isolated Neon branch exists | ⬜ Pending (needs NEON_API_KEY) |
+| 4.7 | Test: create tenant → verify isolated Neon branch exists | ✅ Complete (branch create+delete verified) |
 
 ### Phase 5: Template-Specific Schema Models (Week 6)
 **Goal:** All 10 templates have complete W3C-aligned ZenStack schemas.
@@ -825,7 +825,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 3. **Code generation patches**: The website's `db.ts` exports `createBaseClient()` but not `createRawClient()`. The codegen service patches this automatically via `patchDbTs()`.
 4. **Vercel CLI deployment**: Uses `child_process.execSync` with `--token` flag. The `VERCEL_TOKEN` env var is available at runtime on Vercel but encrypted (not pullable locally). Local testing uses the Vercel CLI's built-in auth.
 5. **Best-effort pipeline**: All steps in the tenant creation pipeline are wrapped in try/catch. The tenant record is always created even if AI generation, Neon provisioning, codegen, or deployment fails. This ensures the admin can retry individual steps.
-6. **NEON_API_KEY still needed**: The Neon provision service is complete but requires `NEON_API_KEY` to be set. Without it, the workflow gracefully skips DB provisioning and tenants share the main DB with `tenant_slug` isolation.
+6. **NEON_API_KEY configured**: Added to Vercel env vars (both redrubybali + tokenizmyapp projects) and all local .env.local files. Neon API verified: branch creation + deletion tested successfully.
+7. **Neon API URL correction**: The Neon API is at `https://console.neon.tech/api/v2/` — NOT `https://api.neon.tech/v2/` (DNS doesn't resolve `api.neon.tech`). The provision service was updated to use the correct URL.
+8. **Neon API connection strings**: The Neon API endpoints response does NOT include `connection_string` or `pooled_connection_string` directly. It provides `host` and `hosts` (with `read_write_host` and `read_write_pooled_host`). Connection strings must be constructed from host + env credentials (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DATABASE`). The `derivePooledHost()` helper inserts `-pooler` before the region identifier.
 
 
 ---
