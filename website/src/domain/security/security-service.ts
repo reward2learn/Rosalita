@@ -28,8 +28,8 @@ export async function upsertUserAccount(
   input: { sub: string; email?: string | null; name?: string | null; tier: string; roleCode?: string | null },
 ): Promise<{ id: string; isActive: boolean }> {
   const result = await db.$queryRawUnsafe<{ id: string; is_active: boolean }[]>(
-    `INSERT INTO user_accounts (sub, email, name, tier, role_code, last_seen_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `INSERT INTO user_accounts (id, sub, email, name, tier, role_code, last_seen_at, updated_at)
+     VALUES (gen_random_uuid()::TEXT, $1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
      ON CONFLICT (sub) DO UPDATE
        SET email = COALESCE($2, user_accounts.email),
            name = COALESCE($3, user_accounts.name),
