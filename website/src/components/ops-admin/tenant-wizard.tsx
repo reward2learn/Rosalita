@@ -22,10 +22,14 @@ import StepLabel from '@mui/material/StepLabel';
 import Stepper from '@mui/material/Stepper';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import Divider from '@mui/material/Divider';
+import Avatar from '@mui/material/Avatar';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import TravelExploreIcon from '@mui/icons-material/TravelExplore';
+import PaletteIcon from '@mui/icons-material/Palette';
 import {
   getTemplate,
   listTemplates,
@@ -38,6 +42,19 @@ import {
 
 const STEPS = ['Business Info', 'Template', 'AI Description', 'Branding', 'Review'];
 
+interface ScrapedData {
+  businessName: string;
+  description: string;
+  logoBase64: string | null;
+  brandColors: { primary: string | null; secondary: string | null; allColors: string[] };
+  images: Array<{ url: string; alt: string }>;
+  socialLinks: Record<string, string>;
+  address: string | null;
+  emails: string[];
+  phoneNumbers: string[];
+  textContent: string;
+}
+
 interface WizardState {
   slug: string;
   displayName: string;
@@ -45,6 +62,8 @@ interface WizardState {
   prompt: string;
   primaryColor: string;
   secondaryColor: string;
+  logoBase64: string | null;
+  scrapeUrl: string;
 }
 
 const INITIAL_STATE: WizardState = {
@@ -54,6 +73,8 @@ const INITIAL_STATE: WizardState = {
   prompt: '',
   primaryColor: '#eb3d28',
   secondaryColor: '#0af9fe',
+  logoBase64: null,
+  scrapeUrl: '',
 };
 
 const PIPELINE_STEPS = [
@@ -70,15 +91,17 @@ export function TenantWizard() {
   const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>(INITIAL_STATE);
   const [slugError, setSlugError] = useState<string | null>(null);
+  const [scraped, setScraped] = useState<ScrapedData | null>(null);
+  const [scraping, setScraping] = useState(false);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
   const [createTenant, { isLoading, isError, error, isSuccess, data }] = useCreateTenantMutation();
 
-  const handleOpen = () => { setOpen(true); setStep(0); setState(INITIAL_STATE); };
+  const handleOpen = () => { setOpen(true); setStep(0); setState(INITIAL_STATE); setScraped(null); setScrapeError(null); };
   const handleClose = () => { if (!isLoading) { setOpen(false); setStep(0); } };
 
   const update = useCallback((patch: Partial<WizardState>) => {
     setState((prev) => {
       const next = { ...prev, ...patch };
-      // Auto-derive colors from template
       if (patch.template && !patch.primaryColor) {
         const tpl = getTemplate(patch.template);
         next.primaryColor = tpl.defaultColors.primary;
@@ -94,6 +117,95 @@ export function TenantWizard() {
     if (slug.length < 2) return 'Must be at least 2 characters';
     if (!isSlugAvailable(slug)) return 'This name is reserved or unavailable';
     return null;
+  };
+
+  // ── AI Scrape Handler ──────────────────────────────────
+  const handleScrape = async () => {
+    if (!state.scrapeUrl.trim()) return;
+    setScraping(true);
+    setScrapeError(null);
+    try {
+      const res = await fetch('/api/admin/tenants/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: state.scrapeUrl.trim() }),
+      });
+      const result = await res.json();
+      if (result.success && result.data) {
+        const s = result.data.scraped;
+        const scrapedData: ScrapedData = {
+          businessName: s.businessName || '',
+          description: s.description || '',
+          logoBase64: s.logoBase64 || null,
+          brandColors: s.brandColors || { primary: null, secondary: null, allColors: [] },
+          images: s.images || [],
+          socialLinks: s.socialLinks || {},
+          address: s.address || null,
+          emails: s.emails || [],
+          phoneNumbers: s.phoneNumbers || [],
+          textContent: s.textContent || '',
+        };
+        setScraped(scrapedData);
+
+        // Auto-fill fields from scraped data
+        const updates: Partial<WizardState> = {};
+
+        // Auto-fill display name
+        if (scrapedData.businessName && !state.displayName) {
+          updates.displayName = scrapedData.businessName;
+        }
+
+        // Auto-fill slug from business name
+        if (scrapedData.businessName && !state.slug) {
+          const autoSlug = scrapedData.businessName
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .slice(0, 30);
+          if (autoSlug && isSlugAvailable(autoSlug)) {
+            updates.slug = autoSlug;
+          }
+        }
+
+        // Auto-fill logo
+        if (scrapedData.logoBase64) {
+          updates.logoBase64 = scrapedData.logoBase64;
+        }
+
+        // Auto-fill brand colors
+        if (scrapedData.brandColors.primary) {
+          updates.primaryColor = scrapedData.brandColors.primary;
+        }
+        if (scrapedData.brandColors.secondary) {
+          updates.secondaryColor = scrapedData.brandColors.secondary;
+        }
+
+        // Auto-fill prompt
+        if (result.data.generatedPrompt) {
+          updates.prompt = result.data.generatedPrompt;
+        }
+
+        // Auto-select template
+        if (result.data.recommendedTemplate) {
+          const tpl = getTemplate(result.data.recommendedTemplate);
+          updates.template = tpl.id;
+          if (!scrapedData.brandColors.primary) {
+            updates.primaryColor = tpl.defaultColors.primary;
+            updates.secondaryColor = tpl.defaultColors.secondary;
+          }
+        }
+
+        if (Object.keys(updates).length > 0) {
+          setState((prev) => ({ ...prev, ...updates }));
+        }
+      } else {
+        setScrapeError(result.error || 'Scraping failed');
+      }
+    } catch (err) {
+      setScrapeError(err instanceof Error ? err.message : 'Unknown error');
+    }
+    setScraping(false);
   };
 
   const handleNext = () => {
@@ -118,14 +230,13 @@ export function TenantWizard() {
       prompt: state.prompt.trim() || undefined,
     }).unwrap();
     if (result.success) {
-      setStep(5); // Show success (step 5 = after 5 wizard steps)
+      setStep(5);
     }
   };
 
   const templates = listTemplates();
   const selectedTemplate = getTemplate(state.template);
 
-  // Generate a smart default prompt based on template + display name
   const generateDefaultPrompt = () => {
     const tpl = selectedTemplate;
     const name = state.displayName || 'my business';
@@ -147,7 +258,7 @@ export function TenantWizard() {
 
   return (
     <>
-      <Tooltip title="Create a new tenant application with AI-generated schema, branding, and deployment">
+      <Tooltip title="Create a new tenant application with AI-powered scraping, schema generation, and deployment">
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -158,12 +269,7 @@ export function TenantWizard() {
         </Button>
       </Tooltip>
 
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        maxWidth="md"
-        fullWidth
-      >
+      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
           <AutoFixHighIcon color="primary" />
           New Tenant App — AI-Powered Generation
@@ -175,13 +281,84 @@ export function TenantWizard() {
             ))}
           </Stepper>
 
-          {/* Step 0: Business Info */}
+          {/* Step 0: Business Info + AI Scrape */}
           {step === 0 ? (
             <Stack spacing={3}>
-              <Typography variant="body2" color="text.secondary">
-                Choose a unique business name for your application. This will be used as your subdomain
-                (e.g. <strong>mybusiness.vercel.app</strong>) and appears in page titles and headers.
-              </Typography>
+              {/* AI Scrape Section */}
+              <Paper variant="outlined" sx={{ p: 2.5, borderColor: 'primary.main', borderWidth: 1 }}>
+                <Stack spacing={2}>
+                  <Stack direction="row" sx={{ gap: 1, alignItems: "center" }}>
+                    <TravelExploreIcon color="primary" />
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                      AI Assist — Scrape Existing Business
+                    </Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Enter your business website URL or Instagram profile. The AI will extract your business name,
+                    logo, brand colors, and description automatically.
+                  </Typography>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                    <TextField
+                      placeholder="https://mybusiness.com or instagram.com/mybusiness"
+                      value={state.scrapeUrl}
+                      onChange={(e) => setState((p) => ({ ...p, scrapeUrl: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      helperText="Website URL or social media link"
+                    />
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      onClick={() => void handleScrape()}
+                      disabled={scraping || !state.scrapeUrl.trim()}
+                      startIcon={scraping ? <CircularProgress size={18} color="inherit" /> : <TravelExploreIcon />}
+                      sx={{ whiteSpace: 'nowrap', minWidth: 140 }}
+                    >
+                      {scraping ? 'Scraping...' : 'AI Scrape'}
+                    </Button>
+                  </Stack>
+                  {scrapeError ? (
+                    <Alert severity="warning" onClose={() => setScrapeError(null)}>
+                      {scrapeError}
+                    </Alert>
+                  ) : null}
+                  {scraped ? (
+                    <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+                      <Stack direction="row" sx={{ gap: 2, alignItems: "center" }}>
+                        {scraped.logoBase64 ? (
+                          <Avatar src={scraped.logoBase64} sx={{ width: 56, height: 56 }} />
+                        ) : (
+                          <Box sx={{ width: 56, height: 56, borderRadius: '50%', bgcolor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Typography variant="caption">No logo</Typography>
+                          </Box>
+                        )}
+                        <Stack spacing={0.5}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            ✅ {scraped.businessName || 'Business found'}
+                          </Typography>
+                          {scraped.brandColors.primary ? (
+                            <Stack direction="row" sx={{ gap: 0.5 }}>
+                              <Chip label={scraped.brandColors.primary} size="small" sx={{ bgcolor: scraped.brandColors.primary, color: '#fff' }} />
+                              {scraped.brandColors.secondary ? (
+                                <Chip label={scraped.brandColors.secondary} size="small" sx={{ bgcolor: scraped.brandColors.secondary, color: '#000' }} />
+                              ) : null}
+                            </Stack>
+                          ) : null}
+                          {scraped.socialLinks.instagram ? (
+                            <Typography variant="caption" color="text.secondary">
+                              Instagram: {scraped.socialLinks.instagram}
+                            </Typography>
+                          ) : null}
+                        </Stack>
+                      </Stack>
+                    </Paper>
+                  ) : null}
+                </Stack>
+              </Paper>
+
+              <Divider><Typography variant="caption" color="text.secondary">or enter manually</Typography></Divider>
+
+              {/* Manual entry */}
               <TextField
                 label="Business Slug"
                 placeholder="my-business-name"
@@ -197,16 +374,8 @@ export function TenantWizard() {
                 autoFocus
                 slotProps={{
                   input: {
-                    startAdornment: (
-                      <Typography variant="body2" color="text.disabled" sx={{ mr: 0.5 }}>
-                        https://
-                      </Typography>
-                    ),
-                    endAdornment: (
-                      <Typography variant="body2" color="text.disabled">
-                        .vercel.app
-                      </Typography>
-                    ),
+                    startAdornment: <Typography variant="body2" color="text.disabled" sx={{ mr: 0.5 }}>https://</Typography>,
+                    endAdornment: <Typography variant="body2" color="text.disabled">.vercel.app</Typography>,
                   },
                 }}
               />
@@ -221,16 +390,22 @@ export function TenantWizard() {
             </Stack>
           ) : null}
 
-          {/* Step 1: Template Selection */}
+          {/* Step 1: Template Selection with AI Recommendation */}
           {step === 1 ? (
             <Stack spacing={2}>
               <Typography variant="body2" color="text.secondary">
                 Select a template that matches your business type. Each template includes
                 pre-configured pages, navigation, W3C schema alignment, and schema.org structured data.
               </Typography>
+              {scraped ? (
+                <Alert severity="info" icon={<AutoFixHighIcon />}>
+                  AI analyzed your website and recommends: <strong>{getTemplate(selectedTemplate.id).label}</strong>
+                </Alert>
+              ) : null}
               <Grid container spacing={2}>
                 {templates.map((tpl) => {
                   const selected = state.template === tpl.id;
+                  const isRecommended = scraped && selected;
                   return (
                     <Grid key={tpl.id} size={{ xs: 12, sm: 6 }}>
                       <Card
@@ -243,22 +418,20 @@ export function TenantWizard() {
                       >
                         <CardActionArea onClick={() => update({ template: tpl.id })}>
                           <CardContent>
-                            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Stack direction="row" sx={{ gap: 0 }}>
                               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                                 {tpl.label}
                               </Typography>
-                              {selected ? (
-                                <CheckCircleIcon color="primary" fontSize="small" />
-                              ) : null}
+                              {selected ? <CheckCircleIcon color="primary" fontSize="small" /> : null}
                             </Stack>
                             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                               {tpl.description}
                             </Typography>
-                            <Stack direction="row" spacing={0.5} sx={{ mt: 1.5, flexWrap: 'wrap' }} useFlexGap>
+                            <Stack direction="row" sx={{ gap: 0.5, flexWrap: "wrap" }}>
                               <Chip label={tpl.schemaOrgType} size="small" variant="outlined" color="info" />
                               <Chip label={tpl.xsdStandard} size="small" variant="outlined" />
                             </Stack>
-                            <Stack direction="row" spacing={0.5} sx={{ mt: 1, flexWrap: 'wrap' }} useFlexGap>
+                            <Stack direction="row" sx={{ gap: 0.5, flexWrap: "wrap" }}>
                               {tpl.defaultPages.slice(0, 4).map((p) => (
                                 <Chip key={p.slug} label={p.title} size="small" variant="outlined" />
                               ))}
@@ -276,7 +449,7 @@ export function TenantWizard() {
             </Stack>
           ) : null}
 
-          {/* Step 2: AI Business Description (NEW) */}
+          {/* Step 2: AI Business Description */}
           {step === 2 ? (
             <Stack spacing={3}>
               <Box>
@@ -288,15 +461,20 @@ export function TenantWizard() {
                   💡 The more detail you provide, the better the AI can tailor the schema to your needs.
                 </Typography>
               </Box>
+              {scraped ? (
+                <Alert severity="success" icon={<CheckCircleIcon />}>
+                  AI pre-filled this description from your website. Review and edit as needed.
+                </Alert>
+              ) : null}
               <TextField
                 label="Business Description (for AI Schema Generation)"
-                placeholder="e.g., I run a restaurant in Bali with 20 tables, serving Indonesian and international cuisine. We have a menu with 50+ items across 5 categories. We take reservations by phone and online. We track daily covers, food costs, and revenue. We also integrate with GoFood for delivery orders."
+                placeholder="e.g., I run a restaurant in Bali with 20 tables, serving Indonesian and international cuisine..."
                 value={state.prompt}
                 onChange={(e) => setState((p) => ({ ...p, prompt: e.target.value }))}
                 fullWidth
                 multiline
                 rows={6}
-                helperText="This prompt is sent to the AI (via Vercel AI SDK) to generate your custom schema. Leave empty to use template defaults only."
+                helperText="This prompt is sent to the AI (via Vercel AI SDK) to generate your custom schema."
               />
               <Box>
                 <Button
@@ -325,12 +503,66 @@ export function TenantWizard() {
             </Stack>
           ) : null}
 
-          {/* Step 3: Branding */}
+          {/* Step 3: Branding with AI-extracted logo + colors */}
           {step === 3 ? (
             <Stack spacing={3}>
               <Typography variant="body2" color="text.secondary">
                 Customize the brand colors for your application. These are used for buttons, links, and accents.
               </Typography>
+
+              {/* AI-extracted logo preview */}
+              {state.logoBase64 ? (
+                <Paper variant="outlined" sx={{ p: 2, borderColor: 'primary.main' }}>
+                  <Stack direction="row" sx={{ gap: 2, alignItems: "center" }}>
+                    <Avatar src={state.logoBase64} sx={{ width: 64, height: 64 }} variant="rounded" />
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        ✅ Logo extracted from website
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        This logo will be used in the tenant app header
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ) : null}
+
+              {/* AI-suggested color palette */}
+              {scraped && scraped.brandColors.allColors.length > 0 ? (
+                <Paper variant="outlined" sx={{ p: 2 }}>
+                  <Stack direction="row" sx={{ gap: 1, alignItems: "center" }}>
+                    <PaletteIcon color="primary" fontSize="small" />
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      AI-Extracted Brand Colors
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" sx={{ gap: 1, flexWrap: "wrap" }}>
+                    {scraped.brandColors.allColors.slice(0, 8).map((color) => (
+                      <Tooltip key={color} title={color}>
+                        <Box
+                          onClick={() => update({ primaryColor: color })}
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 1,
+                            bgcolor: color,
+                            border: state.primaryColor === color ? '3px solid' : '1px solid',
+                            borderColor: state.primaryColor === color ? 'primary.main' : 'divider',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            '&:hover': { transform: 'scale(1.1)' },
+                          }}
+                        />
+                      </Tooltip>
+                    ))}
+                  </Stack>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    Click a color to set as primary. AI extracted these from your website CSS.
+                  </Typography>
+                </Paper>
+              ) : null}
+
+              {/* Manual color pickers */}
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <Box sx={{ flex: 1 }}>
                   <TextField
@@ -381,12 +613,16 @@ export function TenantWizard() {
                   </Box>
                 </Box>
               </Stack>
+
               {/* Preview */}
               <Paper variant="outlined" sx={{ p: 2.5, bgcolor: 'background.default' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
                   Preview
                 </Typography>
-                <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+                <Stack direction="row" sx={{ gap: 1.5 }}>
+                  {state.logoBase64 ? (
+                    <Avatar src={state.logoBase64} sx={{ width: 32, height: 32 }} variant="rounded" />
+                  ) : null}
                   <Box sx={{ px: 2, py: 1, borderRadius: 1, bgcolor: state.primaryColor, color: '#fff', fontSize: '0.8rem', fontWeight: 700 }}>
                     Primary Button
                   </Box>
@@ -422,6 +658,14 @@ export function TenantWizard() {
                       {selectedTemplate.label} — {selectedTemplate.schemaOrgType}
                     </Typography>
                   </Box>
+                  {state.logoBase64 ? (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Logo</Typography>
+                      <Box sx={{ mt: 0.5 }}>
+                        <Avatar src={state.logoBase64} sx={{ width: 48, height: 48 }} variant="rounded" />
+                      </Box>
+                    </Box>
+                  ) : null}
                   {state.prompt ? (
                     <Box>
                       <Typography variant="caption" color="text.secondary">AI Prompt</Typography>
@@ -435,31 +679,32 @@ export function TenantWizard() {
                       <Typography variant="body2" color="text.disabled">Not provided — using template defaults</Typography>
                     </Box>
                   )}
-                  <Stack direction="row" spacing={1}>
-                    <Chip
-                      size="small"
-                      label={`Primary: ${state.primaryColor}`}
-                      sx={{ bgcolor: state.primaryColor, color: '#fff' }}
-                    />
-                    <Chip
-                      size="small"
-                      label={`Secondary: ${state.secondaryColor}`}
-                      sx={{ bgcolor: state.secondaryColor, color: '#000' }}
-                    />
+                  <Stack direction="row" sx={{ gap: 1 }}>
+                    <Chip size="small" label={`Primary: ${state.primaryColor}`} sx={{ bgcolor: state.primaryColor, color: '#fff' }} />
+                    <Chip size="small" label={`Secondary: ${state.secondaryColor}`} sx={{ bgcolor: state.secondaryColor, color: '#000' }} />
                   </Stack>
+                  {scraped ? (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Scraped Data</Typography>
+                      <Stack direction="row" sx={{ gap: 0.5, flexWrap: "wrap" }}>
+                        {scraped.emails.length > 0 ? <Chip label={`📧 ${scraped.emails.length} emails`} size="small" /> : null}
+                        {scraped.phoneNumbers.length > 0 ? <Chip label={`📞 ${scraped.phoneNumbers.length} phones`} size="small" /> : null}
+                        {scraped.images.length > 0 ? <Chip label={`🖼️ ${scraped.images.length} images`} size="small" /> : null}
+                        {scraped.address ? <Chip label={`📍 Address found`} size="small" /> : null}
+                        {scraped.socialLinks.instagram ? <Chip label="📷 Instagram" size="small" /> : null}
+                      </Stack>
+                    </Box>
+                  ) : null}
                 </Stack>
               </Paper>
-              {/* Pipeline preview */}
               <Paper variant="outlined" sx={{ p: 2 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
                   Pipeline (runs automatically after creation):
                 </Typography>
                 <Stack spacing={0.5}>
                   {PIPELINE_STEPS.map((ps, idx) => (
-                    <Box key={ps.key} sx={{ display: "flex", flexDirection: "row", gap: 1, alignItems: "center" }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ width: 20 }}>
-                        {idx + 1}.
-                      </Typography>
+                    <Box key={ps.key} sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ width: 20 }}>{idx + 1}.</Typography>
                       <Typography variant="body2">{ps.label}</Typography>
                     </Box>
                   ))}
@@ -468,109 +713,36 @@ export function TenantWizard() {
             </Stack>
           ) : null}
 
-          {/* Step 5: Success + Pipeline Progress */}
+          {/* Step 5: Success */}
           {step === 5 ? (
             <Stack spacing={2} sx={{ textAlign: 'center', py: 3 }}>
               <CheckCircleIcon color="success" sx={{ fontSize: 64, mx: 'auto' }} />
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                Tenant Created!
-              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Tenant Created!</Typography>
               <Typography variant="body1" color="text.secondary">
                 <strong>{state.displayName}</strong> has been created with the <strong>{selectedTemplate.label}</strong> template.
               </Typography>
-
-              {/* Pipeline status */}
               <Paper variant="outlined" sx={{ p: 2, textAlign: 'left' }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5 }}>
-                  Pipeline Status:
-                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5 }}>Pipeline Status:</Typography>
                 <Stack spacing={1}>
                   {PIPELINE_STEPS.map((ps) => (
-                    <Box key={ps.key} sx={{ display: "flex", flexDirection: "row", gap: 1.5, alignItems: "center" }}>
-                      {isLoading ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : isSuccess ? (
-                        <CheckCircleIcon color="success" fontSize="small" />
-                      ) : (
-                        <Box sx={{ width: 16, height: 16, borderRadius: '50%', border: '1px solid', borderColor: 'divider' }} />
-                      )}
-                      <Typography variant="body2" color={isSuccess ? 'text.primary' : 'text.secondary'}>
-                        {ps.label}
-                      </Typography>
+                    <Box key={ps.key} sx={{ display: 'flex', flexDirection: 'row', gap: 1.5, alignItems: 'center' }}>
+                      {isLoading ? <CircularProgress size={16} color="inherit" /> : isSuccess ? <CheckCircleIcon color="success" fontSize="small" /> : <Box sx={{ width: 16, height: 16, borderRadius: '50%', border: '1px solid', borderColor: 'divider' }} />}
+                      <Typography variant="body2" color={isSuccess ? 'text.primary' : 'text.secondary'}>{ps.label}</Typography>
                     </Box>
                   ))}
                 </Stack>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
-                  💡 Some steps (Code Generation, Vercel CLI Deploy) may be skipped on Vercel serverless.
-                  The tenant is still created with Vercel API deployment as fallback.
-                </Typography>
               </Paper>
-
               {data?.data?.tenant ? (
-                <Chip
-                  label={data.data.tenant.status === 'live' ? 'Live — Ready to use' : `Status: ${data.data.tenant.status}`}
-                  size="small"
-                  color={data.data.tenant.status === 'live' ? 'success' : 'warning'}
-                />
+                <Chip label={data.data.tenant.status === 'live' ? 'Live — Ready to use' : `Status: ${data.data.tenant.status}`} size="small" color={data.data.tenant.status === 'live' ? 'success' : 'warning'} />
               ) : null}
-              <Paper variant="outlined" sx={{ p: 2, textAlign: 'left' }}>
-                <Stack spacing={1}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>What's been set up:</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    ✅ {selectedTemplate.defaultPages.length} pages ({selectedTemplate.defaultPages.map(p => p.title).join(', ')})
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    ✅ {selectedTemplate.defaultNavItems.length} navigation items
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    ✅ Brand colors: Primary {state.primaryColor}, Secondary {state.secondaryColor}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    ✅ W3C Schema: {selectedTemplate.schemaOrgType} ({selectedTemplate.xsdStandard})
-                  </Typography>
-                  {state.prompt ? (
-                    <Typography variant="body2" color="text.secondary">
-                      ✅ AI-generated schema from your business description
-                    </Typography>
-                  ) : null}
-                  <Typography variant="body2" color="text.secondary">
-                    ✅ Default security groups (platform-admin, ops-admin, finance, viewer)
-                  </Typography>
-                </Stack>
-              </Paper>
-              {data?.data?.tenant?.id ? (
-                <Typography variant="body2" color="text.secondary">
-                  Tenant ID: {data.data.tenant.id}
-                </Typography>
-              ) : null}
-              <Stack direction="row" spacing={1} sx={{ justifyContent: 'center', mt: 2 }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => { setStep(0); setState(INITIAL_STATE); }}
-                >
-                  Create Another
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={handleClose}
-                >
-                  View Tenant List
-                </Button>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  component="a"
-                  href={`https://${state.slug}.vercel.app`}
-                  target="_blank"
-                  endIcon={<OpenInNewIcon />}
-                >
-                  Open {state.slug}.vercel.app
-                </Button>
+              <Stack direction="row" sx={{ gap: 1 }}>
+                <Button variant="outlined" onClick={() => { setStep(0); setState(INITIAL_STATE); setScraped(null); }}>Create Another</Button>
+                <Button variant="contained" onClick={handleClose}>View Tenant List</Button>
+                <Button variant="contained" color="secondary" component="a" href={`https://${state.slug}.vercel.app`} target="_blank" endIcon={<OpenInNewIcon />}>Open {state.slug}.vercel.app</Button>
               </Stack>
             </Stack>
           ) : null}
 
-          {/* Error display */}
           {isError && error ? (
             <Alert severity="error" sx={{ mt: 2 }}>
               {'data' in error ? (error.data as { error?: string })?.error ?? 'Creation failed' : 'Creation failed'}
@@ -580,28 +752,12 @@ export function TenantWizard() {
 
         {step < 5 ? (
           <DialogActions>
-            {step > 0 ? (
-              <Button onClick={handleBack} disabled={isLoading}>
-                Back
-              </Button>
-            ) : (
-              <Button onClick={handleClose} disabled={isLoading}>
-                Cancel
-              </Button>
-            )}
+            {step > 0 ? <Button onClick={handleBack} disabled={isLoading}>Back</Button> : <Button onClick={handleClose} disabled={isLoading}>Cancel</Button>}
             <Box sx={{ flex: 1 }} />
             {step < 4 ? (
-              <Button variant="contained" onClick={handleNext}>
-                Continue
-              </Button>
+              <Button variant="contained" onClick={handleNext}>Continue</Button>
             ) : (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => void handleCreate()}
-                disabled={isLoading}
-                startIcon={isLoading ? <CircularProgress size={18} color="inherit" /> : <AutoFixHighIcon />}
-              >
+              <Button variant="contained" color="primary" onClick={() => void handleCreate()} disabled={isLoading} startIcon={isLoading ? <CircularProgress size={18} color="inherit" /> : <AutoFixHighIcon />}>
                 {isLoading ? 'Generating...' : 'Create with AI'}
               </Button>
             )}
