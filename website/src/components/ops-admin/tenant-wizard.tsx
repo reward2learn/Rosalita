@@ -243,7 +243,7 @@ export function TenantWizard() {
                       >
                         <CardActionArea onClick={() => update({ template: tpl.id })}>
                           <CardContent>
-                            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }} component="div">
+                            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                                 {tpl.label}
                               </Typography>
@@ -254,11 +254,11 @@ export function TenantWizard() {
                             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                               {tpl.description}
                             </Typography>
-                            <Stack direction="row" spacing={0.5} sx={{ mt: 1.5, flexWrap: 'wrap' }} useFlexGap component="div">
+                            <Stack direction="row" spacing={0.5} sx={{ mt: 1.5, flexWrap: 'wrap' }} useFlexGap>
                               <Chip label={tpl.schemaOrgType} size="small" variant="outlined" color="info" />
                               <Chip label={tpl.xsdStandard} size="small" variant="outlined" />
                             </Stack>
-                            <Stack direction="row" spacing={0.5} sx={{ mt: 1, flexWrap: 'wrap' }} useFlexGap component="div">
+                            <Stack direction="row" spacing={0.5} sx={{ mt: 1, flexWrap: 'wrap' }} useFlexGap>
                               {tpl.defaultPages.slice(0, 4).map((p) => (
                                 <Chip key={p.slug} label={p.title} size="small" variant="outlined" />
                               ))}
@@ -386,7 +386,7 @@ export function TenantWizard() {
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
                   Preview
                 </Typography>
-                <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }} component="div">
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                   <Box sx={{ px: 2, py: 1, borderRadius: 1, bgcolor: state.primaryColor, color: '#fff', fontSize: '0.8rem', fontWeight: 700 }}>
                     Primary Button
                   </Box>
@@ -435,7 +435,7 @@ export function TenantWizard() {
                       <Typography variant="body2" color="text.disabled">Not provided — using template defaults</Typography>
                     </Box>
                   )}
-                  <Stack direction="row" spacing={1} component="div">
+                  <Stack direction="row" spacing={1}>
                     <Chip
                       size="small"
                       label={`Primary: ${state.primaryColor}`}
@@ -543,7 +543,7 @@ export function TenantWizard() {
                   Tenant ID: {data.data.tenant.id}
                 </Typography>
               ) : null}
-              <Stack direction="row" spacing={1} sx={{ justifyContent: 'center', mt: 2 }} component="div">
+              <Stack direction="row" spacing={1} sx={{ justifyContent: 'center', mt: 2 }}>
                 <Button
                   variant="outlined"
                   onClick={() => { setStep(0); setState(INITIAL_STATE); }}
