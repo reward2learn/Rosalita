@@ -552,7 +552,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/iliashapiro/RedRuby-FPA/tokenizmyapp/src/generated/prisma",
+      "value": "/Users/iliashapiro/RedRuby-FPA/website/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -570,7 +570,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/iliashapiro/RedRuby-FPA/tokenizmyapp/zenstack/prisma/schema.prisma",
+    "sourceFilePath": "/Users/iliashapiro/RedRuby-FPA/website/zenstack/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -584,7 +584,6 @@ const config = {
   ],
   "activeProvider": "postgresql",
   "postinstall": false,
-  "ciName": "Vercel",
   "inlineDatasources": {
     "db": {
       "url": {

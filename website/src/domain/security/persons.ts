@@ -56,6 +56,13 @@ export const PERSONS: Person[] = [
     roleCode: 'compliance',
     roleName: 'Compliance / Permits',
   },
+  {
+    sub: 'alex',
+    name: 'Alex Shapiro',
+    roleCode: 'platform-admin',
+    roleName: 'Platform Admin',
+    isPlatformAdmin: true,
+  },
 ];
 
 /** Resolve a person by `sub` (lowercased). */

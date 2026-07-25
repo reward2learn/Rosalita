@@ -23,7 +23,7 @@ export default function OpsTrackingPage() {
 
   return (
     <AuthGate requiredTier="google" fallback={<SignInPanelGate requiredTier="google" />}>
-      <Box sx={{ maxWidth: 960, mx: 'auto', px: 3, py: 3 }}>
+      <Box sx={{   mx: 'auto', px: 3, py: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
           Financial Tracking
         </Typography>

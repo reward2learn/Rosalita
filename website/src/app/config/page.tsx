@@ -72,7 +72,7 @@ function ConfigPageInner() {
 
   return (
     <AuthGate requiredTier="pin" fallback={<SignInPanelGate requiredTier="pin" />}>
-      <Box sx={{ maxWidth: 960, mx: 'auto', px: 3, py: 3 }}>
+      <Box sx={{  mx: 'auto', px: 3, py: 3 }}>
         <Stack spacing={3}>
           <Typography variant="h4" sx={{ fontWeight: 800 }}>
             Config
