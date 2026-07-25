@@ -36,6 +36,7 @@ const createSchema = z.object({
   authTier: z.enum(['public', 'pin', 'google']).optional(),
   requiredGroups: z.string().max(500).optional(),
   isVisible: z.boolean().optional(),
+  // isDynamic is accepted but ignored — admin-created items are always dynamic
   isDynamic: z.boolean().optional(),
 });
 
@@ -109,15 +110,15 @@ export async function POST(request: Request): Promise<NextResponse> {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return jsonError('Validation error: ' + JSON.stringify(parsed.error.flatten()), 400);
 
-  const { parentId, title, path, icon, authTier, requiredGroups, isVisible, isDynamic } = parsed.data;
+  const { parentId, title, path, icon, authTier, requiredGroups, isVisible } = parsed.data;
 
   const prisma = getClient();
   try {
     await ensureNavigationTable(prisma);
     await prisma.$executeRawUnsafe(
       `INSERT INTO navigation_items (id, parent_id, sort_order, title, path, icon, auth_tier, required_groups, is_visible, is_dynamic)
-       VALUES (gen_random_uuid()::text, $1, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM navigation_items WHERE parent_id IS NULL), $2, $3, $4, $5, $6, $7, $8)`,
-      parentId ?? null, title, path ?? '', icon ?? '', authTier ?? 'public', requiredGroups ?? '', isVisible ?? true, isDynamic ?? false,
+       VALUES (gen_random_uuid()::text, $1, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM navigation_items WHERE parent_id IS NULL), $2, $3, $4, $5, $6, $7, TRUE)`,
+      parentId ?? null, title, path ?? '', icon ?? '', authTier ?? 'public', requiredGroups ?? '', isVisible ?? true,
     );
     return jsonOk({ created: true });
   } catch (err) {
@@ -151,7 +152,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
       if (item.title !== undefined) { sets.push(`title = $${idx++}`); params.push(item.title); }
       if (item.path !== undefined) { sets.push(`path = $${idx++}`); params.push(item.path); }
       if (item.icon !== undefined) { sets.push(`icon = $${idx++}`); params.push(item.icon); }
-      if (item.authTier !== undefined) { sets.push(`auth_tier = $${idx++}`); params.push(item.authTier); }
+      if (item.authTier !== undefined) { sets.push(`auth_tier = CAST($${idx++} AS "AuthTier")`); params.push(item.authTier); }
       if (item.requiredGroups !== undefined) { sets.push(`required_groups = $${idx++}`); params.push(item.requiredGroups); }
       if (item.isVisible !== undefined) { sets.push(`is_visible = $${idx++}`); params.push(item.isVisible); }
       if (item.isDynamic !== undefined) { sets.push(`is_dynamic = $${idx++}`); params.push(item.isDynamic); }
@@ -187,6 +188,15 @@ export async function DELETE(request: Request): Promise<NextResponse> {
   if (!idsParam) return jsonError('Query param "ids" required (comma-separated)', 400);
   const ids = idsParam.split(',').map((s) => s.trim()).filter(Boolean);
   if (ids.length === 0) return jsonError('No valid IDs provided', 400);
+
+  // Fix 4: Block deletion of static infrastructure items
+  const staticIds = ids.filter(id => id.startsWith('static-'));
+  if (staticIds.length > 0) {
+    return jsonError(
+      `Cannot delete static infrastructure items: ${staticIds.join(', ')}. Static items are managed by the page catalog.`,
+      400,
+    );
+  }
 
   const prisma = getClient();
   try {

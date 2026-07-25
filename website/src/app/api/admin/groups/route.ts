@@ -34,8 +34,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     // Ensure tables exist but don't backfill — that would re-create
     // user_account rows that an admin has deliberately deleted.
     await ensureSecurityTables(db);
-  } catch {
-    return jsonError('Database unavailable', 503);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[admin/groups] ensureSecurityTables error:', msg);
+    return jsonError('Database unavailable: ' + msg.slice(0, 200), 503);
   }
 
   try {
@@ -64,8 +66,9 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     return jsonOk({ groups, defaults: DEFAULT_SECURITY_GROUPS.map((g) => g.code) });
   } catch (err) {
-    console.error('[admin/groups] GET error:', err);
-    return jsonError('Failed to load groups', 500);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[admin/groups] GET error:', msg);
+    return jsonError('Failed to load groups: ' + msg.slice(0, 200), 500);
   }
 }
 
@@ -99,8 +102,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     db = createBaseClient();
     await ensureSecurityTables(db);
-  } catch {
-    return jsonError('Database unavailable', 503);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[admin/groups] ensureSecurityTables error:', msg);
+    return jsonError('Database unavailable: ' + msg.slice(0, 200), 503);
   }
 
   try {
@@ -147,8 +152,10 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   try {
     db = createBaseClient();
     await ensureSecurityTables(db);
-  } catch {
-    return jsonError('Database unavailable', 503);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[admin/groups] ensureSecurityTables error:', msg);
+    return jsonError('Database unavailable: ' + msg.slice(0, 200), 503);
   }
 
   try {

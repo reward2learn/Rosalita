@@ -232,8 +232,8 @@ export async function ensureSecurityTables(
   await withRetry(async () => {
     for (const g of DEFAULT_SECURITY_GROUPS) {
       await raw.$executeRawUnsafe(
-        `INSERT INTO security_groups (code, name, description, is_system, permissions)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO security_groups (id, code, name, description, is_system, permissions)
+         VALUES (gen_random_uuid()::TEXT, $1, $2, $3, $4, $5)
          ON CONFLICT (code) DO UPDATE
            SET name = $2, description = $3, is_system = $4, permissions = $5;`,
         g.code, g.name, g.description, g.isSystem, g.permissions,
@@ -299,8 +299,8 @@ export async function ensureSecurityTables(
   // groups and are assigned by a platform admin via the User Accounts page.
   await withRetry(async () => {
     await raw.$executeRawUnsafe(
-      `INSERT INTO user_groups (user_id, group_id)
-       SELECT ua.id, sg.id FROM user_accounts ua
+      `INSERT INTO user_groups (id, user_id, group_id)
+       SELECT gen_random_uuid()::TEXT, ua.id, sg.id FROM user_accounts ua
        CROSS JOIN security_groups sg
        WHERE sg.code IN ('ops-admin', 'finance')
          AND NOT EXISTS (

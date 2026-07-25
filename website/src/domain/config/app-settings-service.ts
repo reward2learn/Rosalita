@@ -51,12 +51,27 @@ export async function ensureAppSettingsTable(db: DbClient): Promise<void> {
       // column may already exist — ignore
     }
   }
+
+  // Ensure index on tenant_slug for multi-tenant lookups
+  try {
+    await db.$executeRawUnsafe(
+      'CREATE INDEX IF NOT EXISTS idx_app_settings_tenant_slug ON app_settings(tenant_slug);'
+    );
+  } catch {
+    // index may already exist
+  }
 }
 
-export async function getAppSettings(db: DbClient): Promise<AppSettingsDto> {
+/**
+ * Get app settings for a specific tenant.
+ * @param tenantSlug - tenant slug used as the row ID. Falls back to 'default' if not provided.
+ */
+export async function getAppSettings(db: DbClient, tenantSlug?: string): Promise<AppSettingsDto> {
   await ensureAppSettingsTable(db);
 
-  const existing = await db.appSetting.findUnique({ where: { id: APP_SETTINGS_ID } });
+  const id = tenantSlug ?? APP_SETTINGS_ID;
+
+  const existing = await db.appSetting.findUnique({ where: { id } });
   if (existing) {
     const ex = existing as Record<string, unknown>;
     return {
@@ -73,8 +88,9 @@ export async function getAppSettings(db: DbClient): Promise<AppSettingsDto> {
     };
   }
 
+  // Create a new row for this tenant
   const created = await db.appSetting.create({
-    data: { id: APP_SETTINGS_ID },
+    data: { id, tenantSlug: tenantSlug ?? 'tokenizmyapp' },
   });
   const cr = created as Record<string, unknown>;
 
@@ -105,8 +121,11 @@ export async function updateAppSettings(
     brandPrimaryColor?: string;
     brandSecondaryColor?: string;
   },
+  tenantSlug?: string,
 ): Promise<AppSettingsDto> {
   await ensureAppSettingsTable(db);
+
+  const id = tenantSlug ?? APP_SETTINGS_ID;
 
   // Use raw SQL so we don't depend on Prisma types for the new columns
   const sets: string[] = [];
@@ -150,17 +169,30 @@ export async function updateAppSettings(
     params.push(patch.brandSecondaryColor);
   }
 
-  if (sets.length > 0) {
-    sets.push(`updated_at = CURRENT_TIMESTAMP`);
-    const sql = `UPDATE app_settings SET ${sets.join(', ')} WHERE id = $${idx}`;
-    params.push(APP_SETTINGS_ID);
-    await db.$executeRawUnsafe(sql, ...params);
+  // UPSERT: insert row if it doesn't exist, then update
+  if (sets.length === 0) {
+    // Nothing to update — just read back
+    return getAppSettings(db, tenantSlug);
   }
+
+  sets.push(`updated_at = CURRENT_TIMESTAMP`);
+
+  // First ensure a row exists for this tenant
+  await db.$executeRawUnsafe(
+    `INSERT INTO app_settings (id, tenant_slug) VALUES ($1, COALESCE($2, $1))
+     ON CONFLICT (id) DO NOTHING;`,
+    id, tenantSlug ?? null,
+  );
+
+  // Then update
+  const sql = `UPDATE app_settings SET ${sets.join(', ')} WHERE id = $${idx}`;
+  params.push(id);
+  await db.$executeRawUnsafe(sql, ...params);
 
   // Read back the full row
   const row = await db.$queryRawUnsafe<Record<string, unknown>[]>(
     `SELECT web_search_enabled, tenant_slug, tenant_display_name, tenant_template, tenant_metadata, brand_logo_text, brand_logo_url, brand_primary_color, brand_secondary_color, updated_at FROM app_settings WHERE id = $1`,
-    APP_SETTINGS_ID,
+    id,
   );
 
   return {

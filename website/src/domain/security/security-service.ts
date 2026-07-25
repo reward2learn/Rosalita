@@ -84,8 +84,8 @@ export async function backfillKnownAccounts(
 ): Promise<void> {
   for (const k of known) {
     await db.$queryRawUnsafe(
-      `INSERT INTO user_accounts (sub, name, tier, role_code, last_seen_at, updated_at)
-       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `INSERT INTO user_accounts (id, sub, name, tier, role_code, last_seen_at, updated_at)
+       VALUES (gen_random_uuid()::TEXT, $1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
        ON CONFLICT (sub) DO UPDATE
          SET name = COALESCE($2, user_accounts.name),
              tier = $3,

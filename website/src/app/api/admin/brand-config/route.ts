@@ -23,6 +23,7 @@ import { requireWriteAuth } from '@/lib/auth/guards';
 import { sessionIsPlatformAdmin } from '@/lib/auth/jwt';
 import { jsonError, jsonOk } from '@/lib/api/response';
 import { getAppSettings, updateAppSettings } from '@/domain/config/app-settings-service';
+import { getTenantConfig } from '@shared/lib/config/tenant';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -44,8 +45,9 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (!guard.ok) return guard.response;
   if (!sessionIsPlatformAdmin(guard.session)) return jsonError('Platform admin only', 403);
 
+  const envTenant = getTenantConfig();
   const db = createClient();
-  const settings = await getAppSettings(db);
+  const settings = await getAppSettings(db, envTenant.slug);
 
   return jsonOk({
     tenantSlug: settings.tenantSlug,
@@ -141,16 +143,26 @@ export async function PUT(request: Request): Promise<NextResponse> {
     }
   }
 
+  const envTenant = getTenantConfig();
   const db = createClient();
-  const settings = await updateAppSettings(db, {
-    ...(tenantSlug !== undefined ? { tenantSlug } : {}),
-    ...(tenantDisplayName !== undefined ? { tenantDisplayName } : {}),
-    ...(tenantTemplate !== undefined ? { tenantTemplate } : {}),
-    ...(brandLogoText !== undefined ? { brandLogoText } : {}),
-    ...(brandLogoUrl !== undefined ? { brandLogoUrl } : {}),
-    ...(brandPrimaryColor !== undefined ? { brandPrimaryColor } : {}),
-    ...(brandSecondaryColor !== undefined ? { brandSecondaryColor } : {}),
-  });
+  let settings;
+  try {
+    settings = await updateAppSettings(db, {
+      ...(tenantSlug !== undefined ? { tenantSlug } : {}),
+      ...(tenantDisplayName !== undefined ? { tenantDisplayName } : {}),
+      ...(tenantTemplate !== undefined ? { tenantTemplate } : {}),
+      ...(brandLogoText !== undefined ? { brandLogoText } : {}),
+      ...(brandLogoUrl !== undefined ? { brandLogoUrl } : {}),
+      ...(brandPrimaryColor !== undefined ? { brandPrimaryColor } : {}),
+      ...(brandSecondaryColor !== undefined ? { brandSecondaryColor } : {}),
+    }, envTenant.slug);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return new NextResponse(
+      JSON.stringify({ success: false, error: msg, stack: err instanceof Error ? err.stack : undefined }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
 
   return jsonOk({
     tenantSlug: settings.tenantSlug,

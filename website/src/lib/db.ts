@@ -22,6 +22,12 @@ function getPostgresUrl(): string {
   if (!url) {
     throw new Error('POSTGRES_URL is not set');
   }
+  // Append PgBouncer params if not already present — disables prepared statements
+  // which avoids "cached plan must not change result type" on Neon pooler.
+  if (!url.includes('pgbouncer=')) {
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}pgbouncer=true&connection_limit=1`;
+  }
   return url;
 }
 

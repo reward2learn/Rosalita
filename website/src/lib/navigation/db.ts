@@ -24,6 +24,15 @@ CREATE TABLE IF NOT EXISTS navigation_items (
 
 export async function ensureNavigationTable(prisma: PrismaClient): Promise<void> {
   await prisma.$executeRawUnsafe(NAV_DDL);
+  // Ensure updated_at has a default so raw inserts don't fail on NOT NULL
+  try {
+    await prisma.$executeRawUnsafe(
+      "ALTER TABLE navigation_items ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP"
+    );
+  } catch {
+    /* column may not exist yet if table was just created */
+  }
+
   for (const col of [
     'ADD COLUMN IF NOT EXISTS is_dynamic BOOLEAN NOT NULL DEFAULT FALSE',
     'ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT FALSE',
@@ -45,13 +54,20 @@ interface CatalogPage {
   requiredGroups?: string[];
 }
 
+/**
+ * Slugs that are always-present infrastructure pages.
+ * These are seeded from the page catalog regardless of tenant template.
+ * All other nav items come from the tenant template (app_pages).
+ */
+const STATIC_NAV_SLUGS = new Set(['admin', 'config', 'ops-chat']);
+
 async function deriveNavItemsFromCatalog(): Promise<
   { id: string; title: string; path: string; authTier: string }[]
 > {
   const { getFullCatalog } = await import('@/lib/page-catalog');
   const catalog = getFullCatalog();
   return Object.entries(catalog)
-    .filter(([, p]) => (p as CatalogPage).showInNav !== false)
+    .filter(([slug, p]) => STATIC_NAV_SLUGS.has(slug) && (p as CatalogPage).showInNav !== false)
     .map(([slug, page]) => {
       const p = page as CatalogPage;
       return {
@@ -64,24 +80,26 @@ async function deriveNavItemsFromCatalog(): Promise<
 }
 
 /**
- * Idempotently insert any page-catalog / app_pages rows missing from navigation_items.
- * Returns the number of rows inserted.
+ * Idempotently insert static infrastructure nav items from the page catalog.
+ * Template-driven pages are NOT seeded here — they come from the tenant template
+ * via app_pages. Returns the number of rows inserted.
  */
 export async function seedMissingNavigationFromCatalog(prisma: PrismaClient): Promise<number> {
-  const existing = await prisma.$queryRawUnsafe<{ id: string }[]>(
-    `SELECT id FROM navigation_items`,
+  const existing = await prisma.$queryRawUnsafe<{ id: string; path: string }[]>(
+    `SELECT id, path FROM navigation_items`,
   );
   const existingIds = new Set(existing.map((r) => r.id));
+  const existingPaths = new Set(existing.map((r) => r.path));
 
   const catalogItems = await deriveNavItemsFromCatalog();
   let inserted = 0;
 
   const insertIfMissing = async (id: string, title: string, path: string, authTier: string) => {
-    if (existingIds.has(id)) return;
+    if (existingIds.has(id) || existingPaths.has(path)) return;
     try {
       await prisma.$executeRawUnsafe(
-        `INSERT INTO navigation_items (id, parent_id, sort_order, title, path, icon, auth_tier, required_groups, is_visible, is_dynamic)
-         VALUES ($1, NULL, $2, $3, $4, '', $5, '', TRUE, FALSE)`,
+        `INSERT INTO navigation_items (id, parent_id, sort_order, title, path, icon, auth_tier, required_groups, is_visible, is_dynamic, updated_at)
+         VALUES ($1, NULL, $2, $3, $4, '', CAST($5 AS "AuthTier"), '', TRUE, FALSE, NOW())`,
         id,
         inserted,
         title,
@@ -97,20 +115,6 @@ export async function seedMissingNavigationFromCatalog(prisma: PrismaClient): Pr
 
   for (const item of catalogItems) {
     await insertIfMissing(item.id, item.title, item.path, item.authTier);
-  }
-
-  try {
-    const dbPages = await prisma.$queryRawUnsafe<
-      { slug: string; title: string; auth_tier: string }[]
-    >(`SELECT slug, title, auth_tier FROM app_pages ORDER BY sort_order ASC`);
-    for (const dbp of dbPages) {
-      const navId = `static-${dbp.slug}`;
-      if (!existingIds.has(navId)) {
-        await insertIfMissing(navId, dbp.title, `/${dbp.slug}`, dbp.auth_tier);
-      }
-    }
-  } catch {
-    /* app_pages may not exist yet */
   }
 
   return inserted;

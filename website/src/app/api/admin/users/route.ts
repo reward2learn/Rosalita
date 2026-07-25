@@ -34,8 +34,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     // Ensure tables exist but don't backfill known accounts here — that
     // would re-create users that an admin has deliberately deleted.
     await ensureSecurityTables(db);
-  } catch {
-    return jsonError('Database unavailable', 503);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[admin/users] ensureSecurityTables error:', msg);
+    return jsonError('Database unavailable: ' + msg.slice(0, 200), 503);
   }
 
   try {
@@ -72,8 +74,9 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     return jsonOk({ users });
   } catch (err) {
-    console.error('[admin/users] GET error:', err);
-    return jsonError('Failed to load users', 500);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[admin/users] GET error:', msg);
+    return jsonError('Failed to load users: ' + msg.slice(0, 200), 500);
   }
 }
 
@@ -126,8 +129,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     db = createBaseClient();
     await ensureSecurityTables(db);
-  } catch {
-    return jsonError('Database unavailable', 503);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[admin/users] ensureSecurityTables error:', msg);
+    return jsonError('Database unavailable: ' + msg.slice(0, 200), 503);
   }
 
   try {
@@ -150,8 +155,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       await db.$executeRawUnsafe(`DELETE FROM user_groups WHERE user_id = $1;`, id);
       for (const code of groupCodes) {
         await db.$executeRawUnsafe(
-          `INSERT INTO user_groups (user_id, group_id)
-           SELECT $1, sg.id FROM security_groups sg WHERE sg.code = $2
+          `INSERT INTO user_groups (id, user_id, group_id)
+           SELECT gen_random_uuid()::TEXT, $1, sg.id FROM security_groups sg WHERE sg.code = $2
            ON CONFLICT (user_id, group_id) DO NOTHING;`,
           id,
           code,

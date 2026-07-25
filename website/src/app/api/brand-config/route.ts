@@ -14,7 +14,7 @@ import { getTenantConfig } from '@shared/lib/config/tenant';
 export const dynamic = 'force-dynamic';
 
 export async function GET(): Promise<NextResponse> {
-  // Env-based fallback (always available, even without DB)
+  // Determine which tenant's config to read from env vars
   const envTenant = getTenantConfig();
 
   // Graceful fallback when no DB is configured (local dev, demo mode)
@@ -32,7 +32,8 @@ export async function GET(): Promise<NextResponse> {
 
   try {
     const db = createClient();
-    const settings = await getAppSettings(db);
+    // Pass tenant slug so each deployed app gets its own brand config
+    const settings = await getAppSettings(db, envTenant.slug);
     return NextResponse.json({
       tenantSlug: settings.tenantSlug || envTenant.slug,
       tenantDisplayName: settings.tenantDisplayName || envTenant.displayName,

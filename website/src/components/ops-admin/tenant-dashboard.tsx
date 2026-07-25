@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Tooltip from '@mui/material/Tooltip';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -14,12 +15,19 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import Tooltip from '@mui/material/Tooltip';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Divider from '@mui/material/Divider';
+import Snackbar from '@mui/material/Snackbar';
 import Typography from '@mui/material/Typography';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import BuildIcon from '@mui/icons-material/Build';
 import {
   useListTenantsQuery,
   useDeleteTenantMutation,
@@ -38,8 +46,43 @@ export function TenantDashboard() {
   const { data, isLoading, isError, refetch } = useListTenantsQuery();
   const [deleteTenant, { isLoading: isDeleting }] = useDeleteTenantMutation();
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<{ slug: string; el: HTMLElement } | null>(null);
+  const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
 
   const tenants = data?.data?.tenants ?? [];
+
+  const handleMenuOpen = (slug: string, el: HTMLElement) => setMenuAnchor({ slug, el });
+  const handleMenuClose = () => setMenuAnchor(null);
+
+  const handleSeed = async (slug: string) => {
+    handleMenuClose();
+    try {
+      const res = await fetch(`/api/admin/tenants/${slug}/seed`, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        setSnackbar({ message: 'Tenant seeded successfully', severity: 'success' });
+      } else {
+        setSnackbar({ message: data.error || 'Failed to seed tenant', severity: 'error' });
+      }
+    } catch {
+      setSnackbar({ message: 'Failed to seed tenant', severity: 'error' });
+    }
+  };
+
+  const handleMigrate = async (slug: string) => {
+    handleMenuClose();
+    try {
+      const res = await fetch(`/api/admin/tenants/${slug}/migrate`, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        setSnackbar({ message: 'Tenant migration completed', severity: 'success' });
+      } else {
+        setSnackbar({ message: data.error || 'Failed to migrate tenant', severity: 'error' });
+      }
+    } catch {
+      setSnackbar({ message: 'Failed to migrate tenant', severity: 'error' });
+    }
+  };
 
   const handleDelete = async (slug: string) => {
     setDeleting(slug);
@@ -154,18 +197,33 @@ export function TenantDashboard() {
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
-                      <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'flex-end' }}>
-                        <Tooltip title="Delete tenant">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            disabled={isDeleting && deleting === t.slug}
-                            onClick={() => void handleDelete(t.slug)}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleMenuOpen(t.slug, e.currentTarget)}
+                      >
+                        <MoreVertIcon fontSize="small" />
+                      </IconButton>
+                      <Menu
+                        anchorEl={menuAnchor?.slug === t.slug ? menuAnchor.el : null}
+                        open={menuAnchor?.slug === t.slug}
+                        onClose={handleMenuClose}
+                        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                      >
+                        <MenuItem onClick={() => void handleSeed(t.slug)}>
+                          <ListItemIcon><PlayArrowIcon fontSize="small" /></ListItemIcon>
+                          <ListItemText>Seed</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => void handleMigrate(t.slug)}>
+                          <ListItemIcon><BuildIcon fontSize="small" /></ListItemIcon>
+                          <ListItemText>Migrate</ListItemText>
+                        </MenuItem>
+                        <Divider />
+                        <MenuItem onClick={() => { handleMenuClose(); void handleDelete(t.slug); }} disabled={isDeleting && deleting === t.slug}>
+                          <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
+                          <ListItemText sx={{ color: 'error.main' }}>Delete</ListItemText>
+                        </MenuItem>
+                      </Menu>
                     </TableCell>
                   </TableRow>
                 );
@@ -174,6 +232,14 @@ export function TenantDashboard() {
           </Table>
         )}
       </Paper>
+
+      {/* Feedback Snackbar */}
+      <Snackbar
+        open={Boolean(snackbar)}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(null)}
+        message={snackbar?.message}
+      />
     </Stack>
   );
 }
