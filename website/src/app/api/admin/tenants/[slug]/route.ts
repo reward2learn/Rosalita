@@ -105,11 +105,8 @@ export async function DELETE(
     const existing = await db.tenant.findUnique({ where: { slug } });
     if (!existing) return jsonError('Tenant not found', 404);
 
-    // Soft-delete: set status to 'error' instead of hard delete
-    await db.tenant.update({
-      where: { slug },
-      data: { status: 'error' },
-    });
+    // Hard delete — permanently remove the tenant row
+    await db.tenant.delete({ where: { slug } });
 
     return jsonOk({ deleted: true });
   } catch (err) {

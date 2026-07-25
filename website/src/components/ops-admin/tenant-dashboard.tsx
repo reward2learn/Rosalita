@@ -7,6 +7,11 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -49,6 +54,9 @@ export function TenantDashboard() {
   const [menuAnchor, setMenuAnchor] = useState<{ slug: string; el: HTMLElement } | null>(null);
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
 
+  // Delete confirmation dialog state
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
   const tenants = data?.data?.tenants ?? [];
 
   const handleMenuOpen = (slug: string, el: HTMLElement) => setMenuAnchor({ slug, el });
@@ -85,9 +93,21 @@ export function TenantDashboard() {
   };
 
   const handleDelete = async (slug: string) => {
+    handleMenuClose();
+    setConfirmDelete(null);
     setDeleting(slug);
-    await deleteTenant(slug).unwrap();
-    setDeleting(null);
+    try {
+      await deleteTenant(slug).unwrap();
+      setSnackbar({ message: 'Tenant deleted successfully', severity: 'success' });
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'data' in err
+          ? String((err as { data: { error?: string } }).data?.error ?? 'Unknown error')
+          : 'Failed to delete tenant';
+      setSnackbar({ message: msg, severity: 'error' });
+    } finally {
+      setDeleting(null);
+    }
   };
 
   return (
@@ -219,7 +239,10 @@ export function TenantDashboard() {
                           <ListItemText>Migrate</ListItemText>
                         </MenuItem>
                         <Divider />
-                        <MenuItem onClick={() => { handleMenuClose(); void handleDelete(t.slug); }} disabled={isDeleting && deleting === t.slug}>
+                        <MenuItem
+                          onClick={() => { handleMenuClose(); setConfirmDelete(t.slug); }}
+                          disabled={isDeleting && deleting === t.slug}
+                        >
                           <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
                           <ListItemText sx={{ color: 'error.main' }}>Delete</ListItemText>
                         </MenuItem>
@@ -232,6 +255,31 @@ export function TenantDashboard() {
           </Table>
         )}
       </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={Boolean(confirmDelete)}
+        onClose={() => setConfirmDelete(null)}
+      >
+        <DialogTitle>Delete Tenant?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to permanently delete tenant <strong>{confirmDelete}</strong>?
+            This action cannot be undone. All data associated with this tenant will be removed.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDelete(null)}>Cancel</Button>
+          <Button
+            onClick={() => confirmDelete && handleDelete(confirmDelete)}
+            color="error"
+            variant="contained"
+            disabled={isDeleting && deleting === confirmDelete}
+          >
+            {isDeleting && deleting === confirmDelete ? 'Deleting…' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Feedback Snackbar */}
       <Snackbar
