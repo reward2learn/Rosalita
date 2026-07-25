@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { AuthGate } from '@/components/auth/auth-gate';
 import { SignInPanelGate } from '@/components/auth/sign-in-panel';
@@ -61,7 +62,9 @@ export default async function SlugPage({ params }: SlugPageProps) {
 
   return (
     <AuthGate requiredTier={page.authTier} fallback={<SignInPanelGate requiredTier={page.authTier} />}>
-      <DynamicPage page={page} />
+      <Suspense fallback={null}>
+        <DynamicPage page={page} />
+      </Suspense>
     </AuthGate>
   );
 }

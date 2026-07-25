@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { AuthGate } from '@/components/auth/auth-gate';
 import { SignInPanelGate } from '@/components/auth/sign-in-panel';
 import { DynamicPage } from '@/components/dynamic/dynamic-page';
@@ -12,7 +13,9 @@ export default function ReviewPage() {
 
   return (
     <AuthGate requiredTier={page.authTier} fallback={<SignInPanelGate requiredTier={page.authTier} />}>
-      <DynamicPage page={page} />
+      <Suspense fallback={null}>
+        <DynamicPage page={page} />
+      </Suspense>
     </AuthGate>
   );
 }
