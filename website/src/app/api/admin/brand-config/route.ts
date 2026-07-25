@@ -158,9 +158,10 @@ export async function PUT(request: Request): Promise<NextResponse> {
     }, envTenant.slug);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return new NextResponse(
-      JSON.stringify({ success: false, error: msg, stack: err instanceof Error ? err.stack : undefined }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } },
+    console.error('brand-config PUT error:', msg, err instanceof Error ? err.stack : '');
+    return NextResponse.json(
+      { success: false, error: msg },
+      { status: 500 },
     );
   }
 
