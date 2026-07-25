@@ -64,6 +64,536 @@ The tenant wizard (Phase 9) already captures the business URL and template. The 
 
 ---
 
+## 0.5. AI Agent Architecture — The Central Orchestrator
+
+> **This is the most important aspect of the application.** The AI assistant is not just a chatbot — it is an **agentic AI with tool-use capabilities** that can modify the application itself based on platform administrator prompts, be parameterized per-tenant, and respect the security policy of the app's data.
+
+### 0.5.1 Design Principles
+
+1. **AI has knowledge of the application** — The AI's system prompt includes the app's schema (models, fields, relationships), page catalog, navigation structure, brand configuration, tenant settings, and capability matrix. The AI knows what the app is and what it can do.
+
+2. **AI can change the application** — The platform administrator can prompt the AI to modify the app: create pages, update navigation, add products, edit content, configure features, manage users, send notifications, update branding, schedule tasks, and more. Each action is executed via a **tool call** that validates input, enforces security policy, and logs the action.
+
+3. **AI is parameterized per-tenant** — Each tenant configures which AI tools are enabled, what auth tier the AI operates at, what data the AI can access, rate limits on AI actions, and whether the AI can make destructive changes (delete) or only create/update. This is stored in the `AiAgentConfig` model and enforced by the `AiSecurityPolicy` engine.
+
+4. **AI respects security policy of app data** — Every AI tool call passes through a security policy engine that enforces ZenStack `@@allow` policies, security group memberships, auth tier restrictions, data isolation (tenant-specific data only), and capability checks. The AI cannot access data or perform actions that the configured security policy prohibits.
+
+5. **AI actions are auditable** — Every AI-initiated change is logged in `AiActionLog` with the prompt that triggered it, the tool called, the parameters, the result, the user who initiated it, and the timestamp. This provides a complete audit trail for compliance and debugging.
+
+### 0.5.2 AI Agent System Prompt Architecture
+
+The AI's system prompt is dynamically constructed from multiple sources:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    AI System Prompt                          │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Base Instructions                                         │
+│    - Role: "You are the AI assistant for {tenantName}..."    │
+│    - Capabilities: "You can manage pages, products,..."      │
+│    - Constraints: "Always confirm before destructive..."     │
+│    - Tone: configured per tenant (professional, casual, etc) │
+├─────────────────────────────────────────────────────────────┤
+│ 2. App Structure Knowledge                                   │
+│    - Schema summary (models, fields, relationships)          │
+│    - Page catalog (existing pages, their blocks)             │
+│    - Navigation structure (menu items, hierarchy)            │
+│    - Block types available                                   │
+│    - Template type and configured features                   │
+├─────────────────────────────────────────────────────────────┤
+│ 3. Tenant Configuration                                      │
+│    - Brand config (name, colors, logo)                       │
+│    - Template ID and sector                                  │
+│    - Enabled/disabled features                               │
+│    - AI capability matrix (what tools are enabled)           │
+│    - Security policy summary (what data the AI can access)   │
+├─────────────────────────────────────────────────────────────┤
+│ 4. Knowledge Base                                            │
+│    - Existing knowledge snippets (business review, etc.)     │
+│    - AI findings (previously saved insights)                 │
+│    - Business context (from scraped data, if available)      │
+├─────────────────────────────────────────────────────────────┤
+│ 5. Available Tools                                           │
+│    - Tool definitions (name, description, parameters)        │
+│    - Only tools enabled in AiAgentConfig are included        │
+│    - Security constraints per tool                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 0.5.3 AI Tool Registry
+
+The tool registry defines all possible actions the AI can take. Each tool is a structured function with input validation (Zod schema), security policy enforcement, and audit logging.
+
+#### Content & Page Management Tools
+
+| Tool | Description | Parameters | Security |
+|------|-------------|------------|----------|
+| `create_page` | Create a new page in the app | `slug`, `title`, `authTier`, `blocks[]` | `content:write` |
+| `update_page` | Update an existing page's blocks or config | `slug`, `blocks[]` | `content:write` |
+| `delete_page` | Delete a page (requires confirmation) | `slug`, `confirm: true` | `content:write` + `allowDelete` |
+| `update_navigation` | Modify the navigation menu (add, reorder, remove items) | `items[]` | `navigation:write` |
+| `update_content_page` | Edit legal/custom content page (terms, privacy, custom) | `slug`, `body`, `format` | `content:write` |
+| `create_content_page` | Create a new content page | `slug`, `title`, `body`, `format` | `content:write` |
+
+#### Commerce Tools
+
+| Tool | Description | Parameters | Security |
+|------|-------------|------------|----------|
+| `create_product` | Add a product/service to the catalog | `name`, `price`, `category`, `description`, `imageUrl` | `commerce:write` |
+| `update_product` | Update a product's details, price, or availability | `productId`, `fields{}` | `commerce:write` |
+| `delete_product` | Remove a product (requires confirmation) | `productId`, `confirm: true` | `commerce:write` + `allowDelete` |
+| `update_order_status` | Change order fulfillment or payment status | `orderId`, `status` | `commerce:write` |
+| `create_booking` | Create a booking/appointment | `productId`, `date`, `time`, `customerName`, `customerEmail` | `commerce:write` |
+| `update_booking_status` | Confirm, cancel, or mark booking as completed | `bookingId`, `status` | `commerce:write` |
+
+#### Marketing Tools
+
+| Tool | Description | Parameters | Security |
+|------|-------------|------------|----------|
+| `create_blog_post` | Create a blog article | `title`, `slug`, `body`, `category`, `tags[]` | `marketing:write` |
+| `update_blog_post` | Update a blog article | `slug`, `fields{}` | `marketing:write` |
+| `publish_blog_post` | Publish a draft blog post | `slug` | `marketing:write` |
+| `send_email_campaign` | Broadcast email to subscribers | `subject`, `body`, `segment?` | `marketing:write` + `allowEmailSend` |
+| `create_lead` | Manually create a lead | `name`, `email`, `message`, `type` | `marketing:write` |
+| `update_lead_status` | Update lead pipeline status | `leadId`, `status` | `marketing:write` |
+
+#### Admin & Configuration Tools
+
+| Tool | Description | Parameters | Security |
+|------|-------------|------------|----------|
+| `update_brand_config` | Change brand colors, logo, display name | `primaryColor?`, `secondaryColor?`, `logoUrl?`, `displayName?` | `settings:write` |
+| `create_user_account` | Create a new user account | `email`, `name`, `tier`, `roleCode?` | `users:write` |
+| `update_user_role` | Change a user's role | `userSub`, `roleCode` | `users:write` |
+| `assign_user_group` | Add user to a security group | `userSub`, `groupCode` | `groups:write` |
+| `create_security_group` | Create a new security group | `code`, `label`, `permissions[]` | `groups:write` |
+| `update_app_setting` | Change an app setting (web search, etc.) | `key`, `value` | `settings:write` |
+
+#### Media Tools
+
+| Tool | Description | Parameters | Security |
+|------|-------------|------------|----------|
+| `upload_media` | Upload an image or video (from URL or base64) | `url` or `base64`, `filename`, `mimeType`, `altText?` | `media:write` |
+| `delete_media` | Delete a media asset | `mediaId`, `confirm: true` | `media:write` + `allowDelete` |
+
+#### Notification & Task Tools
+
+| Tool | Description | Parameters | Security |
+|------|-------------|------------|----------|
+| `send_notification` | Send in-app notification to a user | `userSub`, `title`, `body`, `linkUrl?` | `notifications:write` |
+| `broadcast_notification` | Send notification to all users | `title`, `body`, `linkUrl?` | `notifications:write` + `allowBroadcast` |
+| `create_user_task` | Create an AI task for a user | `userSub`, `name`, `instruction`, `type`, `schedule?` | `tasks:write` |
+| `update_user_task` | Update/pause/resume an AI task | `taskId`, `fields{}` | `tasks:write` |
+| `run_user_task` | Manually trigger an AI task run | `taskId` | `tasks:write` |
+
+#### Analytics & Query Tools
+
+| Tool | Description | Parameters | Security |
+|------|-------------|------------|----------|
+| `query_analytics` | Get analytics metrics (page views, conversions, top pages) | `metric`, `dateRange`, `groupBy?` | `analytics:read` |
+| `query_orders` | Query orders with filters | `status?`, `dateRange?`, `limit?` | `commerce:read` |
+| `query_customers` | Query customer list with order history | `search?`, `limit?` | `commerce:read` |
+| `query_leads` | Query leads with filters | `status?`, `type?`, `limit?` | `marketing:read` |
+| `query_subscribers` | Query subscriber list with stats | `status?`, `limit?` | `marketing:read` |
+| `query_knowledge` | Search the knowledge base | `query`, `category?` | `conversations:read` |
+
+#### Knowledge Base Tools
+
+| Tool | Description | Parameters | Security |
+|------|-------------|------------|----------|
+| `save_to_knowledge` | Save a finding to the knowledge base | `key`, `content`, `category` | `conversations:write` |
+| `update_knowledge` | Update an existing knowledge snippet | `key`, `content` | `conversations:write` |
+| `delete_knowledge` | Delete a knowledge snippet | `key`, `confirm: true` | `conversations:write` + `allowDelete` |
+
+### 0.5.4 New Schema Models for AI Agent
+
+#### AiAgentConfig (Per-tenant AI capability configuration)
+
+```zenstack
+/// Per-tenant AI agent configuration.
+/// Defines which tools are enabled, what the AI can access, and rate limits.
+/// Managed by platform admin via the Admin → AI Config tab.
+model AiAgentConfig {
+  id              String   @id @default("default")
+  /// Whether the AI agent is enabled at all for this tenant
+  enabled         Boolean  @default(true)
+  /// AI auth tier: what permission level the AI operates at
+  /// "pin" = ops admin level, "google" = full admin level, "custom" = per-tool config
+  aiTier          String   @default("pin") @map("ai_tier")
+  /// Which tool categories are enabled (JSON array of tool names)
+  /// e.g. ["create_page", "update_navigation", "create_product", ...]
+  /// If empty array, AI is chat-only (no app modification)
+  enabledTools    Json     @default("[]") @map("enabled_tools")
+  /// Which tool categories are explicitly disabled (overrides enabledTools)
+  /// e.g. ["delete_page", "delete_product"] — prevents destructive actions
+  disabledTools   Json     @default("[]") @map("disabled_tools")
+  /// Whether the AI can make destructive changes (delete records)
+  allowDelete     Boolean  @default(false) @map("allow_delete")
+  /// Whether the AI can send email campaigns
+  allowEmailSend  Boolean  @default(false) @map("allow_email_send")
+  /// Whether the AI can broadcast notifications to all users
+  allowBroadcast  Boolean  @default(false) @map("allow_broadcast")
+  /// Whether the AI can manage user accounts and security groups
+  allowUserManagement Boolean @default(false) @map("allow_user_management")
+  /// Max AI tool calls per conversation (rate limit)
+  maxToolCallsPerConversation Int @default(20) @map("max_tool_calls_per_conversation")
+  /// Max AI tool calls per hour (rate limit)
+  maxToolCallsPerHour Int    @default(100) @map("max_tool_calls_per_hour")
+  /// Whether AI actions require human confirmation before execution
+  requireConfirmation Boolean @default(true) @map("require_confirmation")
+  /// Which data models the AI can read (JSON array of model names)
+  /// e.g. ["Product", "Order", "BlogPost", "Subscriber", "Lead"]
+  readableModels  Json     @default("[]") @map("readable_models")
+  /// Which data models the AI can modify (JSON array of model names)
+  writableModels  Json     @default("[]") @map("writable_models")
+  /// Custom system prompt addition (appended to base instructions)
+  customPrompt    String?  @db.Text @map("custom_prompt")
+  /// AI tone: "professional" | "casual" | "friendly" | "formal"
+  tone            String   @default("professional")
+  /// AI model to use (overrides default): "gpt-4o" | "gpt-4o-mini" | etc.
+  model           String?  @map("ai_model")
+  /// Whether web search is enabled for the AI
+  webSearchEnabled Boolean @default(false) @map("web_search_enabled")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('update', auth().tier == pin || auth().tier == google)
+  @@map("ai_agent_config")
+}
+```
+
+#### AiActionLog (Audit trail of AI-initiated changes)
+
+```zenstack
+/// Audit log of every AI tool call — what was asked, what was done, by whom.
+/// Provides complete traceability for compliance and debugging.
+model AiActionLog {
+  id          String   @id @default(cuid())
+  /// User who initiated the conversation that triggered this action
+  userSub     String   @map("user_sub")
+  /// Conversation ID (links to Conversation model)
+  conversationId Int?  @map("conversation_id")
+  /// The user's prompt that triggered this tool call
+  prompt      String   @db.Text
+  /// Tool name that was called (e.g. "create_page", "update_product")
+  toolName    String   @map("tool_name")
+  /// Tool parameters (JSON — the arguments passed to the tool)
+  parameters  Json
+  /// Result status: "success" | "failed" | "denied" | "pending_confirmation"
+  result      String   @default("success")
+  /// Result data (JSON — what the tool returned)
+  resultData  Json     @default("{}") @map("result_data")
+  /// Error message (if result is "failed" or "denied")
+  error       String?  @db.Text
+  /// Security policy check result: "allowed" | "denied:tier" | "denied:capability" | "denied:rate_limit"
+  policyCheck String   @default("allowed") @map("policy_check")
+  /// Whether the action was confirmed by a human (if requireConfirmation is true)
+  confirmedBy String?  @map("confirmed_by")
+  confirmedAt DateTime? @map("confirmed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userSub, createdAt])
+  @@index([toolName])
+  @@index([result])
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('create', true)   // System creates action logs
+  @@map("ai_action_logs")
+}
+```
+
+#### AiToolPending (Pending AI actions awaiting human confirmation)
+
+```zenstack
+/// When requireConfirmation is true in AiAgentConfig, AI tool calls
+/// that modify data are stored here until a human confirms or rejects them.
+model AiToolPending {
+  id          String   @id @default(cuid())
+  /// User whose conversation triggered this pending action
+  userSub     String   @map("user_sub")
+  /// Conversation ID
+  conversationId Int?  @map("conversation_id")
+  /// Tool name to execute
+  toolName    String   @map("tool_name")
+  /// Tool parameters (JSON)
+  parameters  Json
+  /// AI's explanation of what it wants to do and why
+  explanation String   @db.Text
+  /// Status: "pending" | "confirmed" | "rejected" | "expired"
+  status      String   @default("pending")
+  /// Who confirmed/rejected
+  reviewedBy  String?  @map("reviewed_by")
+  reviewedAt  DateTime? @map("reviewed_at")
+  /// Result of execution (after confirmation)
+  result      String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  /// Auto-expire after 24 hours
+  expiresAt   DateTime @default(now() + 24 * 60 * 60 * 1000) @map("expires_at")
+
+  @@index([userSub, status])
+  @@index([status, expiresAt])
+  @@allow('read', auth().sub == userSub || auth().tier == pin || auth().tier == google)
+  @@allow('update', auth().tier == pin || auth().tier == google)
+  @@map("ai_tool_pending")
+}
+```
+
+### 0.5.5 AI Security Policy Engine
+
+The `AiSecurityPolicy` engine is the gatekeeper for every AI tool call. It runs **before** any tool executes:
+
+```
+AI Tool Call Flow:
+┌──────────┐    ┌──────────────────┐    ┌─────────────────┐    ┌──────────┐
+│ AI calls │───▶│ AiSecurityPolicy │───▶│ Tool Executor   │───▶│ Audit    │
+│ tool()   │    │ .check()         │    │ .execute()      │    │ .log()   │
+└──────────┘    └──────────────────┘    └─────────────────┘    └──────────┘
+                       │
+                       ▼
+              ┌────────────────────┐
+              │ Policy Checks:     │
+              │ 1. Is AI enabled?  │
+              │ 2. Tool enabled?   │
+              │ 3. Tool disabled?  │
+              │ 4. Tier check      │
+              │ 5. Capability check│
+              │ 6. Model access    │
+              │ 7. Rate limit      │
+              │ 8. Delete allowed? │
+              │ 9. Confirmation?   │
+              └────────────────────┘
+```
+
+**Policy checks in order:**
+
+1. **AI enabled** — Is `AiAgentConfig.enabled` true? If false, deny all tool calls.
+2. **Tool enabled** — Is the tool in `AiAgentConfig.enabledTools`? If `enabledTools` is empty, AI is chat-only.
+3. **Tool disabled** — Is the tool in `AiAgentConfig.disabledTools`? If yes, deny.
+4. **Tier check** — Does the AI's configured tier (`aiTier`) have access to this action? `pin` = ops-level, `google` = full admin, `custom` = per-tool config.
+5. **Capability check** — Does the AI's tier have the required capability (e.g., `content:write`, `commerce:write`)? Maps to existing `CAPABILITY_AREAS`.
+6. **Model access** — Is the target data model in `AiAgentConfig.readableModels` (for query tools) or `writableModels` (for mutation tools)?
+7. **Rate limit** — Has the AI exceeded `maxToolCallsPerConversation` or `maxToolCallsPerHour`? Count from `AiActionLog`.
+8. **Delete allowed** — If the tool is destructive (delete_*), is `AiAgentConfig.allowDelete` true?
+9. **Confirmation required** — If `AiAgentConfig.requireConfirmation` is true and the tool is a mutation, create `AiToolPending` entry and return "pending_confirmation" instead of executing.
+
+**Denial reasons:**
+- `denied:ai_disabled` — AI agent is disabled for this tenant
+- `denied:tool_not_enabled` — Tool is not in the enabled tools list
+- `denied:tool_disabled` — Tool is explicitly disabled
+- `denied:tier` — AI's tier doesn't have access to this action
+- `denied:capability` — AI lacks the required capability
+- `denied:model_access` — AI doesn't have access to the target data model
+- `denied:rate_limit` — Rate limit exceeded
+- `denied:delete_not_allowed` — Destructive action not permitted
+- `pending_confirmation` — Action queued for human review
+
+### 0.5.6 AI Knowledge Base — App Structure Awareness
+
+The AI needs to know the app's own structure to make intelligent modifications. The `AiKnowledgeBuilder` service constructs this context dynamically:
+
+```typescript
+// src/domain/ai/ai-knowledge-builder.ts
+
+export class AiKnowledgeBuilder {
+  constructor(private readonly db: DbClient) {}
+
+  async buildAppStructureContext(): Promise<string> {
+    const [pages, navigation, products, blogPosts, settings, aiConfig] = await Promise.all([
+      this.db.appPage.findMany({ include: { sections: true } }),
+      this.db.navigationItem.findMany({ orderBy: { sortOrder: 'asc' } }),
+      this.db.product.findMany({ where: { isActive: true }, take: 50 }),
+      this.db.blogPost.findMany({ where: { status: 'published' }, take: 20 }),
+      this.db.appSetting.findUnique({ where: { id: 'default' } }),
+      this.db.aiAgentConfig.findUnique({ where: { id: 'default' } }),
+    ]);
+
+    return [
+      '## Application Structure',
+      '',
+      '### Pages',
+      pages.map(p => `- /${p.slug} (${p.title}, ${p.sections.length} sections)`).join('\n'),
+      '',
+      '### Navigation',
+      navigation.map(n => `- ${n.label} → /${n.slug}`).join('\n'),
+      '',
+      '### Products/Services',
+      products.map(p => `- ${p.name} (${p.category}, ${p.price} ${p.currency})`).join('\n'),
+      '',
+      '### Blog Posts',
+      blogPosts.map(b => `- ${b.title} (/${b.slug})`).join('\n'),
+      '',
+      '### Tenant Configuration',
+      `- Name: ${settings?.tenantDisplayName}`,
+      `- Template: ${settings?.tenantTemplate}`,
+      `- Brand: ${settings?.brandPrimaryColor} / ${settings?.brandSecondaryColor}`,
+      '',
+      '### AI Capabilities',
+      `- Enabled tools: ${JSON.stringify(aiConfig?.enabledTools ?? [])}`,
+      `- Allow delete: ${aiConfig?.allowDelete ?? false}`,
+      `- Require confirmation: ${aiConfig?.requireConfirmation ?? true}`,
+    ].join('\n');
+  }
+
+  async buildSchemaContext(): Promise<string> {
+    // Read the schema.zmodel file and summarize models, fields, relationships
+    // This gives the AI knowledge of the data structure
+  }
+}
+```
+
+### 0.5.7 AI Tool Executor
+
+The `AiToolExecutor` service handles the actual execution of tool calls after security checks pass:
+
+```typescript
+// src/domain/ai/ai-tool-executor.ts
+
+export class AiToolExecutor {
+  constructor(
+    private readonly db: DbClient,
+    private readonly securityPolicy: AiSecurityPolicy,
+    private readonly auditLog: AiAuditService,
+  ) {}
+
+  async executeTool(
+    toolName: string,
+    parameters: Record<string, unknown>,
+    context: AiToolContext,
+  ): Promise<AiToolResult> {
+    // 1. Security policy check
+    const policyResult = await this.securityPolicy.check(toolName, parameters, context);
+    if (!policyResult.allowed) {
+      await this.auditLog.log({ toolName, parameters, result: 'denied', policyCheck: policyResult.reason });
+      return { success: false, error: policyResult.message };
+    }
+
+    // 2. If confirmation required, queue the action
+    if (policyResult.requiresConfirmation) {
+      const pending = await this.db.aiToolPending.create({ data: { ... } });
+      await this.auditLog.log({ toolName, parameters, result: 'pending_confirmation' });
+      return { success: true, pendingId: pending.id, message: 'Action queued for confirmation.' };
+    }
+
+    // 3. Execute the tool
+    try {
+      const result = await this.dispatchTool(toolName, parameters, context);
+      await this.auditLog.log({ toolName, parameters, result: 'success', resultData: result });
+      return { success: true, data: result };
+    } catch (err) {
+      await this.auditLog.log({ toolName, parameters, result: 'failed', error: err.message });
+      return { success: false, error: err.message };
+    }
+  }
+
+  private async dispatchTool(toolName: string, params: any, ctx: AiToolContext): Promise<any> {
+    switch (toolName) {
+      case 'create_page': return this.createPage(params, ctx);
+      case 'update_navigation': return this.updateNavigation(params, ctx);
+      case 'create_product': return this.createProduct(params, ctx);
+      case 'update_brand_config': return this.updateBrandConfig(params, ctx);
+      case 'create_blog_post': return this.createBlogPost(params, ctx);
+      case 'send_notification': return this.sendNotification(params, ctx);
+      // ... all registered tools
+      default: throw new Error(`Unknown tool: ${toolName}`);
+    }
+  }
+}
+```
+
+### 0.5.8 AI Config Admin UI
+
+A new admin tab "AI Configuration" allows the platform admin to parameterize the AI:
+
+| Config Field | UI Control | Default |
+|-------------|------------|---------|
+| AI Enabled | Toggle switch | On |
+| AI Tier | Dropdown (pin, google, custom) | pin |
+| Enabled Tools | Multi-select checklist (grouped by category) | All non-destructive tools |
+| Disabled Tools | Multi-select checklist | delete_* tools |
+| Allow Delete | Toggle switch | Off |
+| Allow Email Send | Toggle switch | Off |
+| Allow Broadcast | Toggle switch | Off |
+| Allow User Management | Toggle switch | Off |
+| Require Confirmation | Toggle switch | On |
+| Max Tool Calls/Conversation | Number input | 20 |
+| Max Tool Calls/Hour | Number input | 100 |
+| Readable Models | Multi-select (model names) | All |
+| Writable Models | Multi-select (model names) | All non-system |
+| Custom Prompt | Textarea | Empty |
+| AI Tone | Dropdown | professional |
+| AI Model | Dropdown (gpt-4o, gpt-4o-mini, etc.) | Default |
+| Web Search | Toggle switch | Off |
+
+### 0.5.9 AI Action Review Queue
+
+When `requireConfirmation` is true, AI mutations go to a review queue. The admin sees:
+
+- **Pending actions** — List of `AiToolPending` entries with status "pending"
+- Each entry shows: tool name, parameters, AI's explanation, timestamp, expires in
+- **Approve** button → executes the tool, logs to `AiActionLog`
+- **Reject** button → marks as rejected, logs to `AiActionLog`
+- **Auto-expire** — Pending actions expire after 24 hours if not reviewed
+
+### 0.5.10 AI Action Audit Log Viewer
+
+A new admin sub-tab "AI Audit Log" shows the complete history of AI actions:
+
+- Filterable by: date range, tool name, result, user
+- Each entry shows: timestamp, user, prompt, tool, parameters, result, policy check
+- Export to CSV for compliance reporting
+- Searchable by prompt text
+
+### 0.5.11 New API Routes for AI Agent
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/ai-agent/config` | GET | Get AI agent configuration |
+| `/api/ai-agent/config` | PUT | Update AI agent configuration (admin) |
+| `/api/ai-agent/tools` | GET | List all available tools with enabled/disabled status |
+| `/api/ai-agent/execute` | POST | Execute a tool call (called by chat route internally) |
+| `/api/ai-agent/pending` | GET | List pending actions awaiting confirmation |
+| `/api/ai-agent/pending/[id]/approve` | POST | Approve and execute a pending action |
+| `/api/ai-agent/pending/[id]/reject` | POST | Reject a pending action |
+| `/api/ai-agent/audit` | GET | Query AI action audit log (filterable) |
+| `/api/ai-agent/knowledge` | GET | Get AI knowledge base context (app structure) |
+
+### 0.5.12 New Domain Services for AI Agent
+
+| Service | Purpose |
+|---------|---------|
+| `src/domain/ai/ai-knowledge-builder.ts` | Builds the AI system prompt with app structure, schema, config, knowledge base |
+| `src/domain/ai/ai-tool-registry.ts` | Registry of all available AI tools with schemas, descriptions, security requirements |
+| `src/domain/ai/ai-security-policy.ts` | Security policy engine — checks all 9 policy rules before tool execution |
+| `src/domain/ai/ai-tool-executor.ts` | Executes tool calls after security checks, dispatches to specific tool handlers |
+| `src/domain/ai/ai-audit-service.ts` | Logs all AI actions to `AiActionLog` for audit trail |
+| `src/domain/ai/ai-confirmation-service.ts` | Manages pending actions queue (create, approve, reject, expire) |
+
+### 0.5.13 Chat Route Integration
+
+The existing `/api/chat/route.ts` is updated to integrate the AI agent:
+
+1. **System prompt** — Now built by `AiKnowledgeBuilder` (includes app structure + tools)
+2. **Tool definitions** — Now includes all enabled tools from `AiToolRegistry` (not just session tools)
+3. **Tool execution** — When AI calls a tool, `AiToolExecutor.executeTool()` is called
+4. **Security** — Every tool call passes through `AiSecurityPolicy.check()`
+5. **Audit** — Every tool call is logged to `AiActionLog`
+6. **Confirmation** — If `requireConfirmation` is true, mutations return "pending" and AI informs the user
+
+### 0.5.14 New Capability Areas
+
+Add to `CAPABILITY_AREAS` in `src/domain/security/capabilities.ts`:
+
+```typescript
+// NEW capability areas for AI agent tools
+{ area: 'content', label: 'Content & Pages', accesses: ['read', 'write'] },
+{ area: 'commerce', label: 'Commerce (Products, Orders, Bookings)', accesses: ['read', 'write'] },
+{ area: 'marketing', label: 'Marketing (Blog, Newsletter, Leads)', accesses: ['read', 'write'] },
+{ area: 'media', label: 'Media Upload & Management', accesses: ['read', 'write'] },
+{ area: 'notifications', label: 'Notifications', accesses: ['write'] },
+{ area: 'analytics', label: 'Analytics & Reporting', accesses: ['read'] },
+{ area: 'ai_config', label: 'AI Agent Configuration', accesses: ['read', 'write'] },
+```
+
+---
+
 ## 1. Current State Audit
 
 ### 1.1 What EXISTS in website/ (current implicit base template)
@@ -115,6 +645,13 @@ The tenant wizard (Phase 9) already captures the business URL and template. The 
 | **Social media integration** | ❌ Missing | No share buttons, no embedded feeds, no social link management |
 | **Analytics dashboard** | ❌ Missing | No page view tracking, no conversion funnel, no engagement metrics |
 | **Email campaign sender** | ❌ Missing | No email broadcast, no template editor, no send history |
+| **AI agent tool-use (app modification)** | ❌ Missing | AI has only session tools (new/clear/save chat) — no tools to create pages, products, content, etc. |
+| **AI agent parameterization** | ❌ Missing | No AiAgentConfig model — can't enable/disable tools per tenant |
+| **AI security policy engine** | ❌ Missing | No policy enforcement on AI actions — AI operates at user's tier with no per-tool checks |
+| **AI action audit log** | ❌ Missing | No AiActionLog model — no traceability of AI-initiated changes |
+| **AI knowledge of app structure** | ❌ Missing | AI system prompt only includes business review snippets — no schema, pages, navigation, or config awareness |
+| **AI confirmation queue** | ❌ Missing | No AiToolPending model — no human-in-the-loop review for AI mutations |
+| **AI config admin UI** | ❌ Missing | No admin tab for configuring AI capabilities per tenant |
 
 ### 1.3 What the codegen service currently copies
 
@@ -258,6 +795,15 @@ tokenizmyapp/templates/base/
 │   │       └── analytics/          # NEW: Analytics tracking
 │   │           ├── route.ts        # GET dashboard metrics
 │   │           └── track/route.ts  # POST page view / conversion event
+│   │       └── ai-agent/           # NEW: AI Agent APIs
+│   │           ├── config/route.ts # GET/PUT AI agent config
+│   │           ├── tools/route.ts  # GET available tools
+│   │           ├── execute/route.ts # POST execute tool call
+│   │           ├── pending/route.ts # GET pending actions
+│   │           ├── pending/[id]/approve/route.ts # POST approve
+│   │           ├── pending/[id]/reject/route.ts  # POST reject
+│   │           ├── audit/route.ts  # GET audit log
+│   │           └── knowledge/route.ts # GET AI knowledge context
 │   ├── components/
 │   │   ├── auth/                   # AuthGate, SignInPanel, PlatformAdminGate
 │   │   ├── layout/                 # AppShell, AppDrawer, AppHeader
@@ -295,6 +841,12 @@ tokenizmyapp/templates/base/
 │   │   │   ├── lead-list.tsx       # Admin: lead inbox
 │   │   │   ├── email-composer.tsx  # Admin: email campaign composer
 │   │   │   └── analytics-dashboard.tsx # Marketing analytics dashboard
+│   │   ├── ai-agent/               # NEW: AI Agent admin components
+│   │   │   ├── ai-config-tab.tsx   # Admin: AI capability configuration
+│   │   │   ├── ai-tool-checklist.tsx # Enable/disable individual tools
+│   │   │   ├── ai-pending-queue.tsx # Admin: pending action review queue
+│   │   │   ├── ai-audit-log.tsx    # Admin: AI action audit log viewer
+│   │   │   └── ai-knowledge-viewer.tsx # Admin: view AI knowledge context
 │   │   ├── dynamic/                # DynamicPage renderer
 │   │   └── providers/              # ReduxProvider, ThemeProvider
 │   ├── domain/
@@ -319,6 +871,13 @@ tokenizmyapp/templates/base/
 │   │   │   ├── email-service.ts    # Email broadcast (via Vercel/Resend/SendGrid)
 │   │   │   ├── social-service.ts   # Social media link management, feed embedding
 │   │   │   └── analytics-service.ts # Page view tracking, conversion funnels
+│   │   ├── ai/                     # NEW: AI Agent domain services
+│   │   │   ├── ai-knowledge-builder.ts # Builds AI system prompt with app structure
+│   │   │   ├── ai-tool-registry.ts # Registry of all available AI tools
+│   │   │   ├── ai-security-policy.ts # Security policy engine (9 checks)
+│   │   │   ├── ai-tool-executor.ts # Executes tool calls after security checks
+│   │   │   ├── ai-audit-service.ts # Logs all AI actions to AiActionLog
+│   │   │   └── ai-confirmation-service.ts # Manages pending actions queue
 │   ├── lib/
 │   │   ├── db.ts                   # ZenStack createClient
 │   │   ├── crypto.ts               # AES-256-GCM
@@ -348,6 +907,7 @@ tokenizmyapp/templates/base/
 │   │       ├── commerce-api.ts     # NEW: Products, orders, cart, bookings
 │   │       ├── marketing-api.ts    # NEW: Subscribers, blog, leads, campaigns
 │   │       ├── analytics-api.ts    # NEW: Page views, conversions, engagement
+│   │       ├── ai-agent-api.ts     # NEW: AI config, tools, pending, audit
 │   │       └── tenant-api.ts
 │   └── theme/
 │       ├── theme.ts                # MUI theme
@@ -1093,6 +1653,7 @@ model AnalyticsEvent {
 | `commerce-api.ts` | `useListProductsQuery`, `useGetProductQuery`, `useCreateProductMutation`, `useUpdateProductMutation`, `useDeleteProductMutation`, `useGetCartQuery`, `useAddToCartMutation`, `useClearCartMutation`, `useCreateOrderMutation`, `useListOrdersQuery`, `useUpdateOrderStatusMutation`, `useCreateBookingMutation`, `useListBookingsQuery`, `useListCustomersQuery` |
 | `marketing-api.ts` | `useListBlogPostsQuery`, `useGetBlogPostQuery`, `useCreateBlogPostMutation`, `useUpdateBlogPostMutation`, `useDeleteBlogPostMutation`, `useSubscribeMutation`, `useListSubscribersQuery`, `useCreateLeadMutation`, `useListLeadsQuery`, `useUpdateLeadMutation`, `useListCampaignsQuery`, `useCreateCampaignMutation`, `useSendEmailCampaignMutation` |
 | `analytics-api.ts` | `useTrackEventMutation`, `useGetAnalyticsQuery` |
+| `ai-agent-api.ts` | `useGetAiConfigQuery`, `useUpdateAiConfigMutation`, `useListAiToolsQuery`, `useListPendingActionsQuery`, `useApprovePendingMutation`, `useRejectPendingMutation`, `useGetAiAuditLogQuery`, `useGetAiKnowledgeQuery` |
 
 ### 2.6 New Domain Services
 
@@ -1117,6 +1678,12 @@ model AnalyticsEvent {
 | `src/domain/marketing/email-service.ts` | Email broadcast (Vercel/Resend/SendGrid), template rendering |
 | `src/domain/marketing/social-service.ts` | Social media link management, feed embedding, share URLs |
 | `src/domain/marketing/analytics-service.ts` | Page view tracking, conversion funnels, dashboard aggregation |
+| `src/domain/ai/ai-knowledge-builder.ts` | Builds AI system prompt with app structure (schema, pages, navigation, config) |
+| `src/domain/ai/ai-tool-registry.ts` | Registry of 30+ AI tools with Zod schemas, descriptions, security requirements |
+| `src/domain/ai/ai-security-policy.ts` | 9-check security policy engine (enabled, tool, tier, capability, model, rate, delete, confirmation) |
+| `src/domain/ai/ai-tool-executor.ts` | Executes tool calls after security checks, dispatches to handlers |
+| `src/domain/ai/ai-audit-service.ts` | Logs all AI actions to AiActionLog for audit trail |
+| `src/domain/ai/ai-confirmation-service.ts` | Manages pending actions queue (create, approve, reject, expire) |
 
 ### 2.7 New Block Types
 
@@ -1197,6 +1764,13 @@ enum BlockType {
 | 22 | Analytics dashboard | `AnalyticsEvent` ❌ | `/api/analytics` ❌ | `AnalyticsDashboard` ❌ | **NEW** |
 | 23 | Email campaign sender | `Subscriber` ❌ | `/api/marketing/email/send` ❌ | `EmailComposer` ❌ | **NEW** |
 | 24 | Payment integration | — | `/api/commerce/orders` ❌ | `CheckoutForm` ❌ | **NEW** |
+| 25 | AI agent tool-use (modify app via prompt) | `AiAgentConfig`, `AiActionLog`, `AiToolPending` ❌ | `/api/ai-agent/execute` ❌ | `AiConfigTab`, `AiPendingQueue` ❌ | **NEW** |
+| 26 | AI agent parameterization (per-tenant) | `AiAgentConfig` ❌ | `/api/ai-agent/config` ❌ | `AiToolChecklist` ❌ | **NEW** |
+| 27 | AI security policy engine | — | `AiSecurityPolicy` ❌ | — | **NEW** |
+| 28 | AI action audit log | `AiActionLog` ❌ | `/api/ai-agent/audit` ❌ | `AiAuditLog` ❌ | **NEW** |
+| 29 | AI knowledge of app structure | — | `AiKnowledgeBuilder` ❌ | `AiKnowledgeViewer` ❌ | **NEW** |
+| 30 | AI confirmation queue (human-in-the-loop) | `AiToolPending` ❌ | `/api/ai-agent/pending` ❌ | `AiPendingQueue` ❌ | **NEW** |
+| 31 | AI config admin UI | — | — | `AiConfigTab` ❌ | **NEW** |
 
 ### 3.2 Summary
 
@@ -1204,7 +1778,8 @@ enum BlockType {
 - **NEW — Core (10 items):** Content pages (legal CRUD), media (video+image), notifications, user profile, AI task scheduling, ops-chat route
 - **NEW — Commerce (5 items):** Product catalog, cart+checkout, order management, customer management, booking scheduling
 - **NEW — Marketing (8 items):** Landing page builder, newsletter, blog/CMS, lead capture, campaign tracking, social media, analytics, email campaigns
-- **Total NEW: 23 items**
+- **NEW — AI Agent (7 items):** Tool-use (app modification), parameterization, security policy, audit log, app structure knowledge, confirmation queue, config UI
+- **Total NEW: 30 items**
 
 ---
 
@@ -1322,6 +1897,39 @@ enum BlockType {
 10. Add analytics tracking beacon to app layout (page views, conversions)
 11. Seed default blog content from template catalog (e.g., restaurant: "Our Story", "Menu Guide")
 
+### Phase 10I: AI Agent — Tool-Use, Parameterization, Security (Week 6) — CRITICAL
+
+**Goal:** The AI assistant can modify the application based on platform admin prompts, with per-tenant parameterization and security policy enforcement.
+
+**This is the most important phase — it transforms the AI from a chatbot into an agentic system that can manage the entire application.**
+
+1. Add `AiAgentConfig`, `AiActionLog`, `AiToolPending` models to schema
+2. Add new capability areas to `capabilities.ts`: `content`, `commerce`, `marketing`, `media`, `notifications`, `analytics`, `ai_config`
+3. Create AI agent domain services:
+   - `ai-knowledge-builder.ts` — Builds system prompt with app structure (schema, pages, navigation, config, knowledge base)
+   - `ai-tool-registry.ts` — Registry of 30+ tools (content, commerce, marketing, admin, media, notifications, tasks, analytics, knowledge) with Zod schemas
+   - `ai-security-policy.ts` — 9-check policy engine (enabled, tool enabled, tool disabled, tier, capability, model access, rate limit, delete, confirmation)
+   - `ai-tool-executor.ts` — Executes tool calls after security checks, dispatches to handlers
+   - `ai-audit-service.ts` — Logs all AI actions to `AiActionLog`
+   - `ai-confirmation-service.ts` — Manages pending actions queue (create, approve, reject, expire)
+4. Create `/api/ai-agent/*` API routes (config, tools, execute, pending, audit, knowledge)
+5. Create AI agent admin components:
+   - `AiConfigTab` — AI capability configuration (enable/disable tools, tier, rate limits, confirmation)
+   - `AiToolChecklist` — Grouped checklist of all tools with enable/disable toggles
+   - `AiPendingQueue` — Pending action review queue (approve/reject)
+   - `AiAuditLog` — AI action audit log viewer (filterable, searchable, exportable)
+   - `AiKnowledgeViewer` — View what the AI knows about the app structure
+6. Add "AI Configuration" and "AI Audit Log" tabs to admin page
+7. Update `/api/chat/route.ts` to integrate AI agent:
+   - System prompt now built by `AiKnowledgeBuilder` (includes app structure + tools)
+   - Tool definitions now include all enabled tools from `AiToolRegistry`
+   - Tool execution routes through `AiToolExecutor` with security checks
+   - All tool calls logged to `AiActionLog`
+   - Mutations queue to `AiToolPending` if `requireConfirmation` is true
+8. Add `ai-agent-api.ts` RTK Query API
+9. Seed default `AiAgentConfig` with safe defaults (non-destructive, confirmation required)
+10. Test: Platform admin prompts "Add a new page called 'About Us' with a hero section" → AI calls `create_page` tool → security check passes → page created → audit log entry written
+
 ---
 
 ## 5. Dependencies
@@ -1400,6 +2008,7 @@ const COPY_DIRS = [
   'src/app/api/commerce',       // Commerce APIs (NEW)
   'src/app/api/marketing',      // Marketing APIs (NEW)
   'src/app/api/analytics',      // Analytics APIs (NEW)
+  'src/app/api/ai-agent',       // AI Agent APIs (NEW)
   'src/components/ops-admin',   // Admin components
   'src/components/config',      // Config components
   'src/components/chat',        // Chat components
@@ -1411,6 +2020,7 @@ const COPY_DIRS = [
   'src/components/profile',     // Profile components (NEW)
   'src/components/commerce',    // Commerce components (NEW)
   'src/components/marketing',   // Marketing components (NEW)
+  'src/components/ai-agent',    // AI Agent admin components (NEW)
   'src/domain/knowledge',       // Knowledge service
   'src/domain/security',        // Security services
   'src/domain/content',         // Content services (NEW)
@@ -1420,6 +2030,7 @@ const COPY_DIRS = [
   'src/domain/user-activity',   // User activity services (NEW)
   'src/domain/commerce',        // Commerce services (NEW)
   'src/domain/marketing',       // Marketing services (NEW)
+  'src/domain/ai',              // AI Agent services (NEW)
   'legal',                      // Default legal page templates
 ];
 ```
@@ -1450,7 +2061,8 @@ const BASE_TEMPLATE_DIR = process.env.TENANT_BASE_TEMPLATE_DIR
 | 10F | Ops chat route | ~2 | navigation seed | 2h |
 | 10G | Commerce (catalog, cart, checkout, bookings) | ~25 | schema.zmodel, package.json, admin page | 20h |
 | 10H | Marketing (blog, newsletter, leads, campaigns, analytics) | ~25 | schema.zmodel, package.json, admin page | 20h |
-| **Total** | | **~100 new files** | **~10 modified** | **~82h** |
+| 10I | **AI Agent (tool-use, parameterization, security, audit)** | **~20** | **schema.zmodel, chat route, capabilities, admin page** | **24h** |
+| **Total** | | **~120 new files** | **~12 modified** | **~106h** |
 
 ---
 
@@ -1468,6 +2080,10 @@ const BASE_TEMPLATE_DIR = process.env.TENANT_BASE_TEMPLATE_DIR
 | Analytics event volume | DB bloat from high-traffic sites | Add TTL cleanup job (Inngest daily) — delete events older than 90 days |
 | Payment PCI compliance | Stripe handles card data — no PCI scope | Never store card numbers — use Stripe Checkout (redirect) |
 | Blog Markdown injection | XSS via malicious Markdown | Use `sanitize-html` with strict allowlist before rendering |
+| AI agent executes destructive action | Data loss from AI delete tool | `allowDelete` defaults to false; `requireConfirmation` defaults to true; all AI actions logged to `AiActionLog` |
+| AI agent accesses unauthorized data | Security breach via AI tool | 9-check security policy engine enforces tier, capability, model access, and rate limits before every tool call |
+| AI agent goes rogue (runaway tool calls) | App destabilization from excessive AI actions | Rate limits (`maxToolCallsPerConversation`, `maxToolCallsPerHour`) enforced; AI can be disabled instantly via `AiAgentConfig.enabled = false` |
+| AI agent prompt injection | Malicious user tricks AI into calling tools | Tool parameters validated with Zod schemas; security policy checks run regardless of prompt content; confirmation queue catches suspicious mutations |
 
 ---
 
