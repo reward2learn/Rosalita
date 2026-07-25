@@ -127,84 +127,31 @@ export async function updateAppSettings(
 
   const id = tenantSlug ?? APP_SETTINGS_ID;
 
-  // Use raw SQL so we don't depend on Prisma types for the new columns
-  const sets: string[] = [];
-  const params: unknown[] = [];
-  let idx = 1;
+  // Build Prisma update data — map camelCase patch keys to Prisma model field names
+  const data: Record<string, unknown> = {};
 
-  if (patch.webSearchEnabled !== undefined) {
-    sets.push(`web_search_enabled = $${idx++}`);
-    params.push(patch.webSearchEnabled);
-  }
-  if (patch.tenantSlug !== undefined) {
-    sets.push(`tenant_slug = $${idx++}`);
-    params.push(patch.tenantSlug);
-  }
-  if (patch.tenantDisplayName !== undefined) {
-    sets.push(`tenant_display_name = $${idx++}`);
-    params.push(patch.tenantDisplayName);
-  }
-  if (patch.tenantTemplate !== undefined) {
-    sets.push(`tenant_template = $${idx++}`);
-    params.push(patch.tenantTemplate);
-  }
-  if (patch.tenantMetadata !== undefined) {
-    sets.push(`tenant_metadata = $${idx++}`);
-    params.push(JSON.stringify(patch.tenantMetadata));
-  }
-  if (patch.brandLogoText !== undefined) {
-    sets.push(`brand_logo_text = $${idx++}`);
-    params.push(patch.brandLogoText);
-  }
-  if (patch.brandLogoUrl !== undefined) {
-    sets.push(`brand_logo_url = $${idx++}`);
-    params.push(patch.brandLogoUrl);
-  }
-  if (patch.brandPrimaryColor !== undefined) {
-    sets.push(`brand_primary_color = $${idx++}`);
-    params.push(patch.brandPrimaryColor);
-  }
-  if (patch.brandSecondaryColor !== undefined) {
-    sets.push(`brand_secondary_color = $${idx++}`);
-    params.push(patch.brandSecondaryColor);
-  }
+  if (patch.webSearchEnabled !== undefined) data.webSearchEnabled = patch.webSearchEnabled;
+  if (patch.tenantSlug !== undefined) data.tenantSlug = patch.tenantSlug;
+  if (patch.tenantDisplayName !== undefined) data.tenantDisplayName = patch.tenantDisplayName;
+  if (patch.tenantTemplate !== undefined) data.tenantTemplate = patch.tenantTemplate;
+  if (patch.tenantMetadata !== undefined) data.tenantMetadata = patch.tenantMetadata;
+  if (patch.brandLogoText !== undefined) data.brandLogoText = patch.brandLogoText;
+  if (patch.brandLogoUrl !== undefined) data.brandLogoUrl = patch.brandLogoUrl;
+  if (patch.brandPrimaryColor !== undefined) data.brandPrimaryColor = patch.brandPrimaryColor;
+  if (patch.brandSecondaryColor !== undefined) data.brandSecondaryColor = patch.brandSecondaryColor;
 
-  // UPSERT: insert row if it doesn't exist, then update
-  if (sets.length === 0) {
+  if (Object.keys(data).length === 0) {
     // Nothing to update — just read back
     return getAppSettings(db, tenantSlug);
   }
 
-  sets.push(`updated_at = CURRENT_TIMESTAMP`);
+  // Ensure a row exists (upsert via Prisma)
+  await db.appSetting.upsert({
+    where: { id },
+    create: { id, tenantSlug: tenantSlug ?? 'tokenizmyapp' },
+    update: data,
+  });
 
-  // First ensure a row exists for this tenant
-  await db.$executeRawUnsafe(
-    `INSERT INTO app_settings (id, tenant_slug) VALUES ($1, COALESCE($2, $1))
-     ON CONFLICT (id) DO NOTHING;`,
-    id, tenantSlug ?? null,
-  );
-
-  // Then update
-  const sql = `UPDATE app_settings SET ${sets.join(', ')} WHERE id = $${idx}`;
-  params.push(id);
-  await db.$executeRawUnsafe(sql, ...params);
-
-  // Read back the full row
-  const row = await db.$queryRawUnsafe<Record<string, unknown>[]>(
-    `SELECT web_search_enabled, tenant_slug, tenant_display_name, tenant_template, tenant_metadata, brand_logo_text, brand_logo_url, brand_primary_color, brand_secondary_color, updated_at FROM app_settings WHERE id = $1`,
-    id,
-  );
-
-  return {
-    webSearchEnabled: Boolean(row[0]?.web_search_enabled ?? false),
-    tenantSlug: String(row[0]?.tenant_slug ?? 'tokenizmyapp'),
-    tenantDisplayName: String(row[0]?.tenant_display_name ?? ''),
-    tenantTemplate: String(row[0]?.tenant_template ?? 'default'),
-    tenantMetadata: (row[0]?.tenant_metadata ?? {}) as Record<string, unknown>,
-    brandLogoText: String(row[0]?.brand_logo_text ?? ''),
-    brandLogoUrl: String(row[0]?.brand_logo_url ?? ''),
-    brandPrimaryColor: String(row[0]?.brand_primary_color ?? '#eb3d28'),
-    brandSecondaryColor: String(row[0]?.brand_secondary_color ?? '#0af9fe'),
-    updatedAt: new Date(row[0]?.updated_at as string ?? Date.now()),
-  };
+  // Read back the full row via Prisma model (not raw SQL)
+  return getAppSettings(db, tenantSlug);
 }
