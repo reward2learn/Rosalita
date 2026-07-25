@@ -800,6 +800,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 | 2026-07-25 | Phase 3 | ✅ Complete | WASM Engineer | 60KB binary, 30 tests passed |
 | 2026-07-25 | Phase 4 | ✅ Complete | Neon Provisioner | Service created, needs NEON_API_KEY |
 | 2026-07-25 | Phase 5 | ✅ Complete | Schema Architect | 8 templates, all 10 registered |
+| 2026-07-25 | Phase 6 | ✅ Complete | General Agent | codegen-service + vercel-cli-service + pipeline |
+| 2026-07-25 | Phase 7 | ✅ Complete | General Agent | JSON-LD generator + 10 template generators + React component |
+| 2026-07-25 | Phase 8 | ✅ Complete | General Agent | Inngest 4.13.0 + 7-step durable workflow |
 
 ### Key Decisions
 
@@ -814,6 +817,16 @@ export async function POST(request: Request): Promise<NextResponse> {
 ### Lessons Learned
 
 > Add entries as agents encounter and resolve issues.
+
+### Architecture Findings (Phase 6-8)
+
+1. **Inngest v4 API breaking change**: `createFunction` uses 2-arg form with `triggers` inside options, not the 3-arg v3 form. `step.sendEvent` requires `(id, payload)` for deduplication.
+2. **Website vs Orchestrator separation**: The Inngest workflow references orchestrator-only services (tenant-seed-service, vercel-deploy-service, createRawClient). The website (tenant app) gets a stub workflow; the real workflow runs in tokenizmyapp.
+3. **Code generation patches**: The website's `db.ts` exports `createBaseClient()` but not `createRawClient()`. The codegen service patches this automatically via `patchDbTs()`.
+4. **Vercel CLI deployment**: Uses `child_process.execSync` with `--token` flag. The `VERCEL_TOKEN` env var is available at runtime on Vercel but encrypted (not pullable locally). Local testing uses the Vercel CLI's built-in auth.
+5. **Best-effort pipeline**: All steps in the tenant creation pipeline are wrapped in try/catch. The tenant record is always created even if AI generation, Neon provisioning, codegen, or deployment fails. This ensures the admin can retry individual steps.
+6. **NEON_API_KEY still needed**: The Neon provision service is complete but requires `NEON_API_KEY` to be set. Without it, the workflow gracefully skips DB provisioning and tenants share the main DB with `tenant_slug` isolation.
+
 
 ---
 
@@ -876,4 +889,4 @@ export async function POST(request: Request): Promise<NextResponse> {
 ---
 
 *Last updated: 2026-07-25*
-*Next update: After Phase 6 completion*
+*Next update: Post-implementation review*
