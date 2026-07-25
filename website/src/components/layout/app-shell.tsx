@@ -403,12 +403,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Button>
           ) : (
             <Button
-              component="a"
-              href="/api/auth?action=logout"
               variant="outlined"
               size="small"
               color="inherit"
               fullWidth
+              onClick={() => {
+                // Clear PIN user preference so user must re-select on next sign-in.
+                try { localStorage.removeItem('lastPinUser'); } catch {}
+                window.location.href = '/api/auth?action=logout';
+              }}
             >
               Sign out
             </Button>

@@ -45,13 +45,25 @@ export function SignInPanel({ requiredTier }: SignInPanelProps) {
   const searchParams = useSearchParams();
   const [pin, setPin] = useState('');
   const personOptions = usePinUsers();
-  const [personName, setPersonName] = useState(personOptions[0]?.value ?? '');
-  // Sync selected person when options resolve (e.g. after fetch completes).
-  useEffect(() => {
-    if (personOptions.length > 0 && !personOptions.some((o) => o.value === personName)) {
-      setPersonName(personOptions[0].value);
+    const [personName, setPersonName] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('lastPinUser');
+      if (saved) return saved;
     }
-  }, [personOptions, personName]);
+    return '';
+  });
+  // Sync selected person from localStorage when options resolve
+  useEffect(() => {
+    if (personOptions.length > 0) {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('lastPinUser') : null;
+      if (saved && personOptions.some((o) => o.value === saved)) {
+        setPersonName(saved);
+      } else if (!personName || !personOptions.some((o) => o.value === personName)) {
+        setPersonName(personOptions[0].value);
+      }
+    }
+  }, [personOptions]);
+
   const [verifyPin, { isLoading, isError, error }] = useVerifyPinMutation();
   const { refetch: refetchSession } = useGetSessionQuery();
 
@@ -65,6 +77,10 @@ export function SignInPanel({ requiredTier }: SignInPanelProps) {
     // Send the person's name so the endpoint can resolve the sub from PERSONS.
     const result = await verifyPin({ name: personName, pin: pin.trim() });
     if ('data' in result && result.data?.ok) {
+      // Persist selected PIN user so they don't have to re-select on return.
+      try {
+        localStorage.setItem('lastPinUser', personName);
+      } catch {}
       // Cookie is set on the verify-pin response; force a session refetch so
       // AuthProvider updates Redux state and the gate reveals admin content.
       await refetchSession();
