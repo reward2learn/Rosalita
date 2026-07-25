@@ -40,6 +40,7 @@
     "@zenstackhq/runtime": "2.22.3",
     "ai": "^7.0.37",
     "chart.js": "^4.5.1",
+    "inngest": "^4.13.0",
     "jose": "^6.0.0",
     "next": "^16.0.0",
     "puppeteer-core": "^24.43.1",
