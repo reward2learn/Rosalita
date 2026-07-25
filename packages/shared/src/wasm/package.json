@@ -1,0 +1,15 @@
+{
+  "name": "schema-validator",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "schema_validator_bg.wasm",
+    "schema_validator.js",
+    "schema_validator.d.ts"
+  ],
+  "main": "schema_validator.js",
+  "types": "schema_validator.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

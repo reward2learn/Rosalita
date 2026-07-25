@@ -172,14 +172,50 @@ The previous `nightclub-bar` template was **misclassified**. Its 6 pages (dashbo
 ### Phase 3: WASM Validation Engine (Week 4)
 **Goal:** Rust-compiled WASM validates schemas in <1ms.
 **Noticeable Progress:** Schema validation runs in microseconds via WASM.
+**Agent:** `wasm-engineer` | **Skill:** `wasm-schema-validation`
+
+| Step | Task | Status |
+|------|------|--------|
+| 3.1 | Install Rust toolchain (`brew install rust wasm-pack`) | ⬜ Pending |
+| 3.2 | Create Rust validator project (`wasm/validator/`) | ⬜ Pending |
+| 3.3 | Write `validate_schema()` in Rust with wasm-bindgen | ⬜ Pending |
+| 3.4 | Compile: `wasm-pack build --target web` | ⬜ Pending |
+| 3.5 | Create `useWasmValidator` React hook | ⬜ Pending |
+| 3.6 | Integrate into DynamicForm submit validation | ⬜ Pending |
+| 3.7 | Benchmark WASM vs JS validation (<1ms target) | ⬜ Pending |
 
 ### Phase 4: Neon Database Provisioning (Week 5)
 **Goal:** Per-tenant isolated Neon database branches.
 **Noticeable Progress:** Creating a tenant provisions a real isolated database.
+**Agent:** `neon-provisioner` | **Skill:** `neon-provisioning`
+
+| Step | Task | Status |
+|------|------|--------|
+| 4.1 | Get `NEON_API_KEY` from Neon console → set as env var | ⬜ Pending |
+| 4.2 | Create `neon-provision-service.ts` (Neon API v2 client) | ⬜ Pending |
+| 4.3 | Implement `provisionTenantDatabase(slug)` — create branch + DB | ⬜ Pending |
+| 4.4 | Implement `deprovisionTenantDatabase(slug)` — delete branch | ⬜ Pending |
+| 4.5 | Create `migration-runner.ts` — run ZenStack migrations on tenant DB | ⬜ Pending |
+| 4.6 | Integrate into `POST /api/admin/tenants` pipeline | ⬜ Pending |
+| 4.7 | Test: create tenant → verify isolated Neon branch exists | ⬜ Pending |
 
 ### Phase 5: Template-Specific Schema Models (Week 6)
 **Goal:** All 10 templates have complete W3C-aligned ZenStack schemas.
 **Noticeable Progress:** All sectors have complete definitions.
+**Agent:** `schema-architect` | **Skill:** `w3c-schema-authoring`
+
+| Step | Task | Status |
+|------|------|--------|
+| 5.1 | Create `hotel.ts` (OTA standard, schema.org Hotel) | ⬜ Pending |
+| 5.2 | Create `ecommerce-retail.ts` (UBL, schema.org Store/Product) | ⬜ Pending |
+| 5.3 | Create `healthcare.ts` (HL7/CDA, schema.org MedicalOrganization) | ⬜ Pending |
+| 5.4 | Create `supply-chain.ts` (UBL shipping, schema.org DeliveryEvent) | ⬜ Pending |
+| 5.5 | Create `real-estate.ts` (RETS, schema.org RealEstateAgent) | ⬜ Pending |
+| 5.6 | Create `education.ts` (IMS Global, schema.org EducationalOrganization) | ⬜ Pending |
+| 5.7 | Create `professional-services.ts` (UBL billing, schema.org ProfessionalService) | ⬜ Pending |
+| 5.8 | Create `manufacturing.ts` (B2MML, schema.org Manufacturer) | ⬜ Pending |
+| 5.9 | Register all 8 in `registry.ts` | ⬜ Pending |
+| 5.10 | Verify all 10 templates resolve via `getTemplateSchema()` | ⬜ Pending |
 
 ### Phase 6: Code Generation & Vercel CLI Deployment (Week 7)
 **Goal:** Generate per-tenant code and deploy via Vercel CLI.
