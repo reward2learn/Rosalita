@@ -235,7 +235,8 @@ async function resolveSessionGroups(input: {
   }
   // Always attempt to upsert the user account.
   try {
-    await upsertUserAccount(db, input);
+    const account = await upsertUserAccount(db, input);
+    console.log('[auth/resolveSessionGroups] upsertUserAccount succeeded:', JSON.stringify({ id: account.id, sub: input.sub, name: input.name, tier: input.tier }));
   } catch (err) {
     console.error('[auth/resolveSessionGroups] upsertUserAccount failed:', err instanceof Error ? err.stack : err);
   }
