@@ -134,6 +134,7 @@ export function buildGoogleAuthUrl(
     scope: params.scope ?? 'openid email profile',
     state: params.state,
     access_type: 'offline',
+    prompt: 'select_account',
   });
   return `${authEndpoint}?${search.toString()}`;
 }
