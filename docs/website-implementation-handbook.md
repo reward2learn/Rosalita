@@ -439,6 +439,8 @@ export default function SchemaPreviewPage() {
 | 2026-07-25 | Phase 0 | ✅ Complete | Project Manager | Template catalog updated, block categorization |
 | 2026-07-25 | Phase 1 | ✅ Complete | Project Manager | DynamicFormBlock, schema types, MUI registry |
 | 2026-07-25 | Phase 2 | ✅ Complete | Project Manager | AI schema gen, preview page, generate-schema API |
+| 2026-07-25 | Phase 9 | ✅ Complete | General Agent | AI-assisted wizard with URL scraping (copied from tokenizmyapp) |
+| 2026-07-26 | Phase 9+ | ✅ Complete | General Agent | JSX syntax fix (sx double braces), deployed to Vercel |
 | — | Phase 3 | ⬜ Pending | — | WASM validation integration |
 | — | Phase 5 | ⬜ Pending | — | Template-specific blocks & pages |
 
@@ -447,10 +449,14 @@ export default function SchemaPreviewPage() {
 1. **Block categorization:** 6 shared blocks + 10 financial-analytics-specific blocks (2026-07-25)
 2. **DynamicFormBlock:** New block type `dynamic_form` renders any schema model as a form (planned)
 3. **Schema preview page:** `/admin/schema-preview` for testing AI-generated schemas (planned)
+4. **URL scraper ported from tokenizmyapp:** `url-scraper-service.ts` is self-contained (zero imports), trivially copied between apps (2026-07-25)
+5. **MUI v9 Stack type workaround:** Use `sx={{ gap: N, alignItems: "center" }}` instead of `spacing` + `alignItems` props on `Stack direction="row"` (2026-07-26)
 
 ### Lessons Learned
 
-> Add entries as agents encounter and resolve issues.
+1. **MUI v9 Stack type strictness**: Website's MUI v9 has stricter `Stack` types — `Stack direction="row"` with `spacing` + `alignItems` props causes type errors. Fix: use `sx={{ gap: N, alignItems: "center" }}` instead.
+2. **Turbopack SWC parser stricter than tsc**: `sx={gap: N}` (single braces) passes `tsc --noEmit` but fails Turbopack's SWC parser during `next build`. Always use `sx={{ gap: N }}` (double braces).
+3. **URL scraper is self-contained**: `url-scraper-service.ts` has zero imports — uses only Node.js built-in `https` module. Portable between apps by simple file copy.
 
 ---
 
@@ -484,6 +490,9 @@ export default function SchemaPreviewPage() {
 | 5 | `src/components/blocks/restaurant/*.tsx` | Restaurant-specific blocks |
 | 5 | `src/components/blocks/hotel/*.tsx` | Hotel-specific blocks |
 | 7 | `src/lib/seo/jsonld-generator.ts` | JSON-LD structured data |
+| 9 | `src/domain/ai/url-scraper-service.ts` | URL/Instagram scraper (ported from tokenizmyapp) |
+| 9 | `src/app/api/admin/tenants/scrape/route.ts` | Scrape API endpoint |
+| 9 | `src/components/ops-admin/tenant-wizard.tsx` | 5-step AI-assisted wizard (769 lines) |
 
 ---
 
@@ -505,5 +514,5 @@ export default function SchemaPreviewPage() {
 
 ---
 
-*Last updated: 2026-07-25*
+*Last updated: 2026-07-26*
 *Next update: After Phase 3 completion*

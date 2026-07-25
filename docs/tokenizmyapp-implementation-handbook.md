@@ -229,6 +229,35 @@ The previous `nightclub-bar` template was **misclassified**. Its 6 pages (dashbo
 **Goal:** Durable multi-step tenant provisioning via Inngest.
 **Noticeable Progress:** Tenant creation runs as monitored workflow.
 
+### Phase 9: AI-Assisted Tenant Wizard with URL Scraping (Week 10)
+**Goal:** Admin enters a business URL or Instagram → AI auto-fills wizard fields.
+**Noticeable Progress:** Wizard auto-extracts business name, logo, brand colors, description, social links.
+**Status:** ✅ Complete — both apps deployed and live.
+
+**What was built:**
+- `url-scraper-service.ts` (677 lines): Fetches HTML, extracts business name, logo (base64), brand colors (from CSS), images, social links, emails, phone numbers, address
+- `scrapeInstagram()`: Extracts profile data from Instagram pages
+- `recommendTemplate()`: AI template recommendation from scraped content keywords
+- `generatePromptFromScraped()`: Auto-generates business description prompt from scraped data
+- `POST /api/admin/tenants/scrape`: API endpoint (auth-guarded)
+- 5-step wizard with AI assist at every step:
+  - Step 0: URL/Instagram input → auto-fills slug, display name, logo, colors, prompt
+  - Step 1: Template selection with AI recommendation badge
+  - Step 2: AI pre-filled business description from scraped content
+  - Step 3: AI-extracted logo preview + clickable brand color palette
+  - Step 4: Review with scraped data summary
+
+### Phase 10: Vercel API File-Based Deployment (Week 11) — PLANNED
+**Goal:** Deploy generated tenant apps via Vercel API (not CLI) from serverless.
+**Noticeable Progress:** Tenant creation deploys real code without local CLI.
+**Status:** Not started.
+
+**What needs to be built:**
+- Bundle minimal base template in `tokenizmyapp/templates/base/` (not `join(cwd, '..', website')`)
+- Create `vercel-api-deploy-service.ts` for file-based deployment via Vercel API
+- Replace `vercel-cli-service.ts` (which requires `vercel` binary not available on serverless)
+- Use Vercel API v13 deployments endpoint with file upload
+
 ---
 
 ## 5. Code Instructions Per Phase
@@ -803,6 +832,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 | 2026-07-25 | Phase 6 | ✅ Complete | General Agent | codegen-service + vercel-cli-service + pipeline |
 | 2026-07-25 | Phase 7 | ✅ Complete | General Agent | JSON-LD generator + 10 template generators + React component |
 | 2026-07-25 | Phase 8 | ✅ Complete | General Agent | Inngest 4.13.0 + 7-step durable workflow |
+| 2026-07-25 | Phase 9 | ✅ Complete | General Agent | AI-assisted wizard with URL/social media scraping |
+| 2026-07-26 | Phase 9+ | ✅ Complete | General Agent | JSX syntax fix (sx double braces), both apps deployed |
 
 ### Key Decisions
 
@@ -828,6 +859,11 @@ export async function POST(request: Request): Promise<NextResponse> {
 6. **NEON_API_KEY configured**: Added to Vercel env vars (both redrubybali + tokenizmyapp projects) and all local .env.local files. Neon API verified: branch creation + deletion tested successfully.
 7. **Neon API URL correction**: The Neon API is at `https://console.neon.tech/api/v2/` — NOT `https://api.neon.tech/v2/` (DNS doesn't resolve `api.neon.tech`). The provision service was updated to use the correct URL.
 8. **Neon API connection strings**: The Neon API endpoints response does NOT include `connection_string` or `pooled_connection_string` directly. It provides `host` and `hosts` (with `read_write_host` and `read_write_pooled_host`). Connection strings must be constructed from host + env credentials (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DATABASE`). The `derivePooledHost()` helper inserts `-pooler` before the region identifier.
+9. **MUI v9 Stack type strictness**: Website's MUI v9 has stricter `Stack` types — `Stack direction="row"` with `spacing` + `alignItems` props causes type errors. Fix: use `sx={{ gap: N, alignItems: "center" }}` instead. The `spacing` prop is only valid on vertical Stack.
+10. **Turbopack SWC parser stricter than tsc**: `sx={gap: N}` (single braces) passes `tsc --noEmit` but fails Turbopack's SWC parser during `next build`. Always use `sx={{ gap: N }}` (double braces) — the outer braces are JSX expression delimiters, the inner braces are the object literal.
+11. **URL scraper is self-contained**: `url-scraper-service.ts` has zero imports — uses only Node.js built-in `https` module. This makes it trivially portable between apps (just copy the file).
+12. **Vercel project rootDirectory**: tokenizmyapp Vercel project has `rootDirectory: tokenizmyapp/` set in project settings. Deploy from the parent repo (`/Users/iliashapiro/RedRuby-FPA/`), NOT from inside `tokenizmyapp/` — deploying from inside causes a path doubling error.
+13. **User accounts fix**: `upsertUserAccount` was missing `id` in INSERT — Prisma's `@default(cuid())` is app-level, not DB-level. Fixed by adding `gen_random_uuid()::TEXT` as DB-level default. PERSONS union in GET /api/admin/users removed per user request — only real user_accounts rows shown.
 
 
 ---
@@ -870,6 +906,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 | 6 | `src/domain/tenant/vercel-cli-service.ts` | Vercel CLI execution |
 | 8 | `src/lib/inngest.ts` | Inngest client |
 | 8 | `src/domain/workflows/tenant-provisioning.ts` | Provisioning workflow |
+| 9 | `src/domain/ai/url-scraper-service.ts` | URL/Instagram scraper (677 lines, self-contained) |
+| 9 | `src/app/api/admin/tenants/scrape/route.ts` | Scrape API endpoint |
+| 9 | `src/components/ops-admin/tenant-wizard.tsx` | 5-step AI-assisted wizard (769 lines) |
+| 9 | `src/store/apis/tenant-api.ts` | RTK Query with `prompt?` field added |
 
 ---
 
@@ -890,5 +930,5 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 ---
 
-*Last updated: 2026-07-25*
-*Next update: Post-implementation review*
+*Last updated: 2026-07-26*
+*Next update: Post-Phase 10 implementation*
