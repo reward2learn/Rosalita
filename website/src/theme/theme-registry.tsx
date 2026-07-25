@@ -71,11 +71,13 @@ export function ThemeRegistry({ children }: { children: ReactNode }) {
     fetch('/api/brand-config')
       .then((r) => r.json())
       .then((d) => {
-        const primary = d.brandPrimaryColor && /^#[0-9a-fA-F]{6}$/.test(d.brandPrimaryColor)
-          ? d.brandPrimaryColor
+        // Handle both wrapped ({ success, data }) and unwrapped responses
+        const config = d?.data ?? d;
+        const primary = config.brandPrimaryColor && /^#[0-9a-fA-F]{6}$/.test(config.brandPrimaryColor)
+          ? config.brandPrimaryColor
           : FALLBACK_COLORS.primary;
-        const secondary = d.brandSecondaryColor && /^#[0-9a-fA-F]{6}$/.test(d.brandSecondaryColor)
-          ? d.brandSecondaryColor
+        const secondary = config.brandSecondaryColor && /^#[0-9a-fA-F]{6}$/.test(config.brandSecondaryColor)
+          ? config.brandSecondaryColor
           : FALLBACK_COLORS.secondary;
         setBrand({ primary, secondary });
       })
