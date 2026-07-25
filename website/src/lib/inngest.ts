@@ -46,4 +46,19 @@ export interface TenantEvents {
       step: string;
     };
   };
+  'tenant.template.amended': {
+    data: {
+      slug: string;
+      previousTemplate: string;
+      newTemplate: string;
+      delta: {
+        addedPages?: string[];
+        removedPages?: string[];
+        colorsChanged?: boolean;
+        blockTypesAdded?: string[];
+        summary: string;
+      };
+      metadata?: Record<string, unknown>;
+    };
+  };
 }

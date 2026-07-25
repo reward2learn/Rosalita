@@ -7,6 +7,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -33,12 +34,20 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import BuildIcon from '@mui/icons-material/Build';
+import EditIcon from '@mui/icons-material/Edit';
+import CloseIcon from '@mui/icons-material/Close';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {
   useListTenantsQuery,
   useDeleteTenantMutation,
+  useUpdateTenantMutation,
+  type TenantEntry,
 } from '@/store/apis/tenant-api';
 import { getTemplate } from '@/domain/tenant/template-catalog';
-import { TenantWizard } from '@/components/ops-admin/tenant-wizard';
+import { TenantWizard, PIPELINE_STEPS, TemplateSelector } from '@/components/ops-admin/tenant-wizard';
+import { useAppDispatch } from '@/store/hooks';
+import { setThemeColors } from '@/store/ui-slice';
 
 const STATUS_COLORS: Record<string, 'info' | 'warning' | 'success' | 'error'> = {
   draft: 'info',
@@ -56,6 +65,17 @@ export function TenantDashboard() {
 
   // Delete confirmation dialog state
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  // Edit and Deploy states for existing tenants
+  const [updateTenant, { isLoading: isUpdating }] = useUpdateTenantMutation();
+  const dispatch = useAppDispatch();
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingTenant, setEditingTenant] = useState<TenantEntry | null>(null);
+  const [editTemplate, setEditTemplate] = useState<string>('financial-analytics');
+  const [editPrimaryColor, setEditPrimaryColor] = useState<string>('#eb3d28');
+  const [editSecondaryColor, setEditSecondaryColor] = useState<string>('#0af9fe');
+  const [deployingSlug, setDeployingSlug] = useState<string | null>(null);
+  const [deployProgress, setDeployProgress] = useState<number>(0);
 
   const tenants = data?.data?.tenants ?? [];
 
@@ -108,10 +128,103 @@ export function TenantDashboard() {
     } finally {
       setDeleting(null);
     }
+   };
+
+  const handleEditOpen = (tenant: TenantEntry) => {
+    setEditingTenant(tenant);
+    setEditTemplate(tenant.template || 'financial-analytics');
+    const tpl = getTemplate(tenant.template || 'financial-analytics');
+    setEditPrimaryColor(tenant.primaryColor || tpl.defaultColors.primary);
+    setEditSecondaryColor(tenant.secondaryColor || tpl.defaultColors.secondary);
+    setEditOpen(true);
+    handleMenuClose();
+  };
+
+  const handleEditClose = () => {
+    setEditOpen(false);
+    setEditingTenant(null);
+    setDeployingSlug(null);
+    setDeployProgress(0);
+  };
+
+  const handleTemplateSelectForEdit = (id: string) => {
+    setEditTemplate(id);
+    const tpl = getTemplate(id);
+    // Reuse logic from TenantWizard update callback
+    setEditPrimaryColor((prev) => prev || tpl.defaultColors.primary); // preserve if customized
+    setEditSecondaryColor((prev) => prev || tpl.defaultColors.secondary);
+  };
+
+  const handleColorsChange = (primary: string, secondary: string) => {
+    setEditPrimaryColor(primary);
+    setEditSecondaryColor(secondary);
+  };
+
+  const handleDeployToVercel = async () => {
+    if (!editingTenant) return;
+
+    const previousTemplate = editingTenant.template;
+    setDeployingSlug(editingTenant.slug);
+    setDeployProgress(0);
+
+    try {
+      // Show progress similar to wizard PIPELINE_STEPS (simulated for UX; real pipeline via backend SSE/polling)
+      const interval = setInterval(() => {
+        setDeployProgress((p) => {
+          if (p >= PIPELINE_STEPS.length - 1) {
+            clearInterval(interval);
+            return PIPELINE_STEPS.length;
+          }
+          return p + 1;
+        });
+      }, 350);
+
+      await updateTenant({
+        slug: editingTenant.slug,
+        template: editTemplate,
+        primaryColor: editPrimaryColor,
+        secondaryColor: editSecondaryColor,
+        status: 'deploying',
+        metadata: {
+          previousTemplate,
+          updatedVia: 'tenant-dashboard-edit',
+          redRubyCompatible: editTemplate === 'financial-analytics',
+        },
+      }).unwrap();
+
+      clearInterval(interval);
+      setDeployProgress(PIPELINE_STEPS.length);
+
+      // Integrate uiSlice for theme if colors changed (affects RedRubyBali financial-analytics template)
+      dispatch(
+        setThemeColors({
+          primary: editPrimaryColor,
+          secondary: editSecondaryColor,
+        })
+      );
+
+      setSnackbar({
+        message: `Deployed ${editingTenant.displayName} with ${getTemplate(editTemplate).label} template. Status updated and theme synced via uiSlice.`,
+        severity: 'success',
+      });
+
+      refetch(); // invalidate RTK tags via mutation already handled in api
+      handleEditClose();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'data' in err
+          ? String((err as { data: { error?: string } }).data?.error ?? 'Deploy failed')
+          : 'Failed to update and deploy tenant';
+      setSnackbar({ message: msg, severity: 'error' });
+    } finally {
+      setDeployingSlug(null);
+      setDeployProgress(0);
+    }
   };
 
   return (
     <Stack spacing={3}>
+
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Stack direction="row" sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }}>
           <Box>
@@ -223,30 +336,35 @@ export function TenantDashboard() {
                       >
                         <MoreVertIcon fontSize="small" />
                       </IconButton>
-                      <Menu
-                        anchorEl={menuAnchor?.slug === t.slug ? menuAnchor.el : null}
-                        open={menuAnchor?.slug === t.slug}
-                        onClose={handleMenuClose}
-                        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                      >
-                        <MenuItem onClick={() => void handleSeed(t.slug)}>
-                          <ListItemIcon><PlayArrowIcon fontSize="small" /></ListItemIcon>
-                          <ListItemText>Seed</ListItemText>
-                        </MenuItem>
-                        <MenuItem onClick={() => void handleMigrate(t.slug)}>
-                          <ListItemIcon><BuildIcon fontSize="small" /></ListItemIcon>
-                          <ListItemText>Migrate</ListItemText>
-                        </MenuItem>
-                        <Divider />
-                        <MenuItem
-                          onClick={() => { handleMenuClose(); setConfirmDelete(t.slug); }}
-                          disabled={isDeleting && deleting === t.slug}
-                        >
-                          <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
-                          <ListItemText sx={{ color: 'error.main' }}>Delete</ListItemText>
-                        </MenuItem>
-                      </Menu>
+                       <Menu
+                         anchorEl={menuAnchor?.slug === t.slug ? menuAnchor.el : null}
+                         open={menuAnchor?.slug === t.slug}
+                         onClose={handleMenuClose}
+                         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                       >
+                         <MenuItem onClick={() => handleEditOpen(t)}>
+                           <ListItemIcon><EditIcon fontSize="small" color="primary" /></ListItemIcon>
+                           <ListItemText>Edit Template + Deploy to Vercel</ListItemText>
+                         </MenuItem>
+                         <MenuItem onClick={() => void handleSeed(t.slug)}>
+                           <ListItemIcon><PlayArrowIcon fontSize="small" /></ListItemIcon>
+                           <ListItemText>Seed</ListItemText>
+                         </MenuItem>
+                         <MenuItem onClick={() => void handleMigrate(t.slug)}>
+                           <ListItemIcon><BuildIcon fontSize="small" /></ListItemIcon>
+                           <ListItemText>Migrate</ListItemText>
+                         </MenuItem>
+                         <Divider />
+                         <MenuItem
+                           onClick={() => { handleMenuClose(); setConfirmDelete(t.slug); }}
+                           disabled={isDeleting && deleting === t.slug}
+                         >
+                           <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
+                           <ListItemText sx={{ color: 'error.main' }}>Delete</ListItemText>
+                         </MenuItem>
+                       </Menu>
+
                     </TableCell>
                   </TableRow>
                 );
@@ -281,10 +399,113 @@ export function TenantDashboard() {
         </DialogActions>
       </Dialog>
 
+      {/* Edit Tenant Dialog with TemplateSelector, Delta Preview, Colors, Pages/Nav, and Prominent Deploy Button */}
+      <Dialog
+        open={editOpen}
+        onClose={handleEditClose}
+        maxWidth="lg"
+        fullWidth
+        aria-labelledby="edit-tenant-dialog-title"
+      >
+        <DialogTitle id="edit-tenant-dialog-title" sx={{ display: 'flex', alignItems: 'center', gap: 2, fontWeight: 700, pr: 6 }}>
+          <EditIcon color="primary" />
+          Edit &amp; Deploy — {editingTenant?.displayName || 'Tenant'}
+          <IconButton
+            onClick={handleEditClose}
+            sx={{ position: 'absolute', right: 16, top: 16 }}
+            aria-label="close"
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: { xs: 2, md: 3 } }}>
+          {editingTenant && (
+            <TemplateSelector
+              selectedId={editTemplate}
+              currentId={editingTenant.template}
+              onSelect={handleTemplateSelectForEdit}
+              primaryColor={editPrimaryColor}
+              secondaryColor={editSecondaryColor}
+              onColorsChange={handleColorsChange}
+              showPreviewDelta={true}
+            />
+          )}
+
+          {deployingSlug === editingTenant?.slug && deployProgress > 0 && (
+            <Paper variant="outlined" sx={{ mt: 4, p: 3, borderColor: 'warning.main' }}>
+              <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <RocketLaunchIcon color="warning" /> Deploy Pipeline Progress (similar to TenantWizard)
+              </Typography>
+              <Stack spacing={2.5}>
+                {PIPELINE_STEPS.map((step, idx) => (
+                  <Stack
+                    key={step.key}
+                    direction="row"
+                    spacing={2}
+                    sx={{ alignItems: 'center' }}
+                  >
+                    {idx < deployProgress ? (
+                      <CheckCircleIcon color="success" sx={{ fontSize: 20 }} />
+                    ) : idx === deployProgress ? (
+                      <CircularProgress size={20} color="warning" />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: '50%',
+                          border: '2px solid',
+                          borderColor: 'divider',
+                        }}
+                      />
+                    )}
+                    <Typography variant="body2" sx={{ flex: 1 }}>
+                      {step.label}
+                    </Typography>
+                    {idx < deployProgress && <Chip label="Done" size="small" color="success" />}
+                  </Stack>
+                ))}
+              </Stack>
+              <LinearProgress
+                variant="determinate"
+                value={(deployProgress / PIPELINE_STEPS.length) * 100}
+                color="warning"
+                sx={{ mt: 4, height: 8, borderRadius: 4 }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+                Updating tenant record, invalidating RTK cache, syncing uiSlice theme for RedRubyBali compatibility
+              </Typography>
+            </Paper>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2.5, gap: 2 }}>
+          <Button onClick={handleEditClose} disabled={!!deployingSlug}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={() => void handleDeployToVercel()}
+            disabled={isUpdating || !!deployingSlug || !editingTenant}
+            startIcon={
+              isUpdating || deployingSlug ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <RocketLaunchIcon />
+              )
+            }
+            sx={{ fontWeight: 700, minWidth: 220 }}
+          >
+            {deployingSlug ? 'DEPLOYING TO VERCEL...' : 'DEPLOY TO VERCEL'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Feedback Snackbar */}
       <Snackbar
         open={Boolean(snackbar)}
-        autoHideDuration={4000}
+        autoHideDuration={6000}
         onClose={() => setSnackbar(null)}
         message={snackbar?.message}
       />

@@ -34,7 +34,6 @@ import {
   getTemplate,
   listTemplates,
   isSlugAvailable,
-  type TemplateDefinition,
 } from '@/domain/tenant/template-catalog';
 import {
   useCreateTenantMutation,
@@ -77,7 +76,7 @@ const INITIAL_STATE: WizardState = {
   scrapeUrl: '',
 };
 
-const PIPELINE_STEPS = [
+export const PIPELINE_STEPS = [
   { label: 'AI Schema Generation', key: 'schema' },
   { label: 'Neon Database Branch', key: 'neon' },
   { label: 'Database Migrations', key: 'migrations' },
@@ -402,12 +401,12 @@ export function TenantWizard() {
                   AI analyzed your website and recommends: <strong>{getTemplate(selectedTemplate.id).label}</strong>
                 </Alert>
               ) : null}
-              <Grid container spacing={2}>
-                {templates.map((tpl) => {
-                  const selected = state.template === tpl.id;
-                  const isRecommended = scraped && selected;
-                  return (
-                    <Grid key={tpl.id} size={{ xs: 12, sm: 6 }}>
+               <Grid container spacing={2}>
+                 {templates.map((tpl) => {
+                   const selected = state.template === tpl.id;
+                   return (
+                     <Grid key={tpl.id} size={{ xs: 12, sm: 6 }}>
+
                       <Card
                         variant="outlined"
                         sx={{
@@ -763,7 +762,264 @@ export function TenantWizard() {
             )}
           </DialogActions>
         ) : null}
-      </Dialog>
-    </>
+       </Dialog>
+     </>
+   );
+ }
+
+export interface TemplateSelectorProps {
+  selectedId: string;
+  onSelect: (id: string) => void;
+  currentId?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  onColorsChange?: (primary: string, secondary: string) => void;
+  showPreviewDelta?: boolean;
+}
+
+/**
+ * Reusable MUI v9 TemplateSelector with cards, preview delta (pages/nav/colors),
+ * color pickers. Used in TenantWizard and TenantDashboard for edit/deploy.
+ * WCAG compliant, keyboard accessible via CardActionArea.
+ */
+export function TemplateSelector({
+  selectedId,
+  onSelect,
+  currentId,
+  primaryColor,
+  secondaryColor,
+  onColorsChange,
+  showPreviewDelta = false,
+}: TemplateSelectorProps) {
+  const templates = listTemplates();
+  const selected = getTemplate(selectedId);
+  const current = currentId ? getTemplate(currentId) : null;
+  const hasDelta = showPreviewDelta && current && current.id !== selected.id;
+
+  const handleColorChange = (type: 'primary' | 'secondary', value: string) => {
+    if (onColorsChange) {
+      const p = type === 'primary' ? value : (primaryColor ?? selected.defaultColors.primary);
+      const s = type === 'secondary' ? value : (secondaryColor ?? selected.defaultColors.secondary);
+      onColorsChange(p, s);
+    }
+  };
+
+  return (
+    <Stack spacing={3}>
+      <Box>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          Template Selector
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Cards show business-specific templates with schema.org alignment. Select to preview delta in pages, nav, and colors.
+        </Typography>
+      </Box>
+
+      <Grid container spacing={2}>
+        {templates.map((tpl) => {
+          const isSelected = selectedId === tpl.id;
+          const isCurrent = currentId === tpl.id;
+          return (
+            <Grid key={tpl.id} size={{ xs: 12, sm: 6, md: 4 }}>
+              <Card
+                variant="outlined"
+                sx={{
+                  height: '100%',
+                  borderColor: isSelected
+                    ? 'primary.main'
+                    : isCurrent
+                    ? 'success.main'
+                    : 'divider',
+                  borderWidth: isSelected || isCurrent ? 2 : 1,
+                  bgcolor: isSelected ? 'rgba(235,61,40,0.06)' : undefined,
+                  '&:hover': { boxShadow: 3 },
+                }}
+              >
+                <CardActionArea
+                  onClick={() => onSelect(tpl.id)}
+                  sx={{ height: '100%', p: 0.5 }}
+                >
+                  <CardContent>
+                    <Stack
+                      direction="row"
+                      sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                        {tpl.label}
+                      </Typography>
+                      {isSelected && <CheckCircleIcon color="primary" fontSize="small" />}
+                      {isCurrent && !isSelected && (
+                        <Chip label="CURRENT" size="small" color="success" />
+                      )}
+                    </Stack>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 2, minHeight: 48 }}
+                    >
+                      {tpl.description.length > 90
+                        ? `${tpl.description.substring(0, 87)}...`
+                        : tpl.description}
+                    </Typography>
+                    <Stack direction="row" sx={{ gap: 0.5, flexWrap: 'wrap' }}>
+                      <Chip
+                        label={Array.isArray(tpl.schemaOrgType) ? tpl.schemaOrgType[0] : tpl.schemaOrgType}
+                        size="small"
+                        variant="outlined"
+                        color="info"
+                      />
+                      <Chip label={`${tpl.defaultPages.length}p`} size="small" variant="outlined" />
+                      <Chip label={tpl.xsdStandard.split(',')[0]} size="small" variant="outlined" />
+                    </Stack>
+                  </CardContent>
+                </CardActionArea>
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
+
+      {/* Live Preview with Delta */}
+      <Paper variant="outlined" sx={{ p: 3, bgcolor: 'background.default' }}>
+        <Stack
+          direction="row"
+          sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            Live Preview — {selected.label}
+          </Typography>
+          {hasDelta && (
+            <Chip
+              label="TEMPLATE CHANGE — DELTA DETECTED"
+              color="warning"
+              size="small"
+            />
+          )}
+        </Stack>
+
+        {/* Colors Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 1.5 }}>
+            THEME COLORS (updates uiSlice theme on save if applicable)
+          </Typography>
+          <Stack direction="row" sx={{ gap: 4 }}>
+            <Stack spacing={1} sx={{ alignItems: 'center' }}>
+              <Typography variant="caption">Primary</Typography>
+              <Box
+                sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 2,
+                  bgcolor: primaryColor || selected.defaultColors.primary,
+                  border: '3px solid',
+                  borderColor: 'background.paper',
+                  boxShadow: 2,
+                }}
+              />
+              {onColorsChange && (
+                <>
+                  <input
+                    type="color"
+                    value={primaryColor || selected.defaultColors.primary}
+                    onChange={(e) => handleColorChange('primary', e.target.value)}
+                    style={{
+                      width: '80px',
+                      height: '32px',
+                      padding: 0,
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                    {primaryColor || selected.defaultColors.primary}
+                  </Typography>
+                </>
+              )}
+            </Stack>
+
+            <Stack spacing={1} sx={{ alignItems: 'center' }}>
+              <Typography variant="caption">Secondary</Typography>
+              <Box
+                sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 2,
+                  bgcolor: secondaryColor || selected.defaultColors.secondary,
+                  border: '3px solid',
+                  borderColor: 'background.paper',
+                  boxShadow: 2,
+                }}
+              />
+              {onColorsChange && (
+                <>
+                  <input
+                    type="color"
+                    value={secondaryColor || selected.defaultColors.secondary}
+                    onChange={(e) => handleColorChange('secondary', e.target.value)}
+                    style={{
+                      width: '80px',
+                      height: '32px',
+                      padding: 0,
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                    {secondaryColor || selected.defaultColors.secondary}
+                  </Typography>
+                </>
+              )}
+            </Stack>
+          </Stack>
+        </Box>
+
+        {/* Pages and Nav */}
+        <Stack spacing={3}>
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 1, display: 'block' }}>
+              DEFAULT PAGES ({selected.defaultPages.length})
+            </Typography>
+            <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
+              {selected.defaultPages.map((p) => (
+                <Chip key={p.slug} label={p.title} size="small" variant="outlined" />
+              ))}
+            </Stack>
+            {hasDelta && current && (
+              <Alert severity="info" sx={{ mt: 1 }}>
+                Delta: Replacing {current.defaultPages.length} pages with {selected.defaultPages.length} new ones (including financial-analytics compatibility for RedRubyBali).
+              </Alert>
+            )}
+          </Box>
+
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 1, display: 'block' }}>
+              NAVIGATION ({selected.defaultNavItems.length})
+            </Typography>
+            <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
+              {selected.defaultNavItems.slice(0, 6).map((item, index) => (
+                <Chip
+                  key={index}
+                  label={item.title}
+                  size="small"
+                  variant="outlined"
+                  color="secondary"
+                />
+              ))}
+              {selected.defaultNavItems.length > 6 && (
+                <Chip label={`+${selected.defaultNavItems.length - 6}`} size="small" />
+              )}
+            </Stack>
+            {hasDelta && current && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                Nav delta: {selected.defaultNavItems.length - current.defaultNavItems.length} items
+              </Typography>
+            )}
+          </Box>
+        </Stack>
+      </Paper>
+    </Stack>
   );
 }
+

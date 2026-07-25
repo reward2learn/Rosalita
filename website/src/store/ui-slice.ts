@@ -11,6 +11,8 @@ export interface UiState {
   chartScenario: ForecastScenarioKey;
   selectedMonthLabel: string | null;
   selectedMonthPeriod: string | null;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 const initialState: UiState = {
@@ -21,6 +23,8 @@ const initialState: UiState = {
   chartScenario: 'conservative',
   selectedMonthLabel: null,
   selectedMonthPeriod: null,
+  primaryColor: '#eb3d28',
+  secondaryColor: '#0af9fe',
 };
 
 export const uiSlice = createSlice({
@@ -49,6 +53,13 @@ export const uiSlice = createSlice({
       state.selectedMonthLabel = action.payload.label;
       state.selectedMonthPeriod = action.payload.period;
     },
+    setThemeColors(
+      state,
+      action: { payload: { primary: string; secondary: string } }
+    ) {
+      state.primaryColor = action.payload.primary;
+      state.secondaryColor = action.payload.secondary;
+    },
   },
 });
 
@@ -59,4 +70,5 @@ export const {
   setChartKpi,
   setChartScenario,
   setSelectedMonth,
+  setThemeColors,
 } = uiSlice.actions;

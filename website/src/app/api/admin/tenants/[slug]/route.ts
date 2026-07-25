@@ -7,7 +7,8 @@ import { z } from 'zod';
 import { createClient } from '@/lib/db';
 import { requireWriteAuth } from '@/lib/auth/guards';
 import { jsonError, jsonOk } from '@/lib/api/response';
-import { ensureTenantsTable } from '@/domain/tenant/tenant-service';
+import { ensureTenantsTable, updateTenantTemplate } from '@/domain/tenant/tenant-service';
+import { inngest } from '@/lib/inngest';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +48,9 @@ export async function GET(
 }
 
 // ── PUT /api/admin/tenants/[slug] ────────────────────
+// Enhanced for template amendments: captures previousTemplate via service,
+// computes delta (incremental only) using getTemplate(), stores in metadata,
+// sets status=deploying on template change, emits Inngest tenant.template.amended
 
 export async function PUT(
   request: Request,
@@ -69,22 +73,55 @@ export async function PUT(
 
   const db = createClient();
   try {
-    await ensureTenantsTable(db);
-    const existing = await db.tenant.findUnique({ where: { slug } });
-    if (!existing) return jsonError('Tenant not found', 404);
+    const { template, ...restUpdates } = parsed.data;
+    let responseData: Record<string, unknown> = {};
 
-    const tenant = await db.tenant.update({
-      where: { slug },
-      data: {
-        ...parsed.data,
-        metadata: parsed.data.metadata as never,
-      },
-    });
+    if (template !== undefined) {
+      // Delta-aware template change using service
+      const result = await updateTenantTemplate(db, slug, {
+        template,
+        ...restUpdates,
+        metadata: restUpdates.metadata || {},
+      });
+      responseData = { tenant: result.tenant, delta: result.delta };
 
-    return jsonOk({ tenant });
-  } catch (err) {
+      // Emit Inngest event for orchestration (delta-aware provisioning)
+      if (result.delta) {
+        await inngest.send({
+          name: 'tenant.template.amended',
+          data: {
+            slug,
+            previousTemplate: result.previousTemplate!,
+            newTemplate: template,
+            delta: result.delta,
+            metadata: result.tenant.metadata as Record<string, unknown>,
+          },
+        }).catch((err) => {
+          console.warn(`[tenants] Failed to emit tenant.template.amended:`, err);
+          // Non-blocking — update succeeded
+        });
+      }
+    } else {
+      // Regular non-template update (backward compat)
+      await ensureTenantsTable(db);
+      const existing = await db.tenant.findUnique({ where: { slug } });
+      if (!existing) return jsonError('Tenant not found', 404);
+
+      const tenant = await db.tenant.update({
+        where: { slug },
+        data: {
+          ...parsed.data,
+          metadata: parsed.data.metadata as never,
+        },
+      });
+      responseData = { tenant };
+    }
+
+    return jsonOk(responseData);
+  } catch (err: unknown) {
     console.error(`[tenants] PUT /${slug} error:`, err);
-    return jsonError('Failed to update tenant', 500);
+    const message = err instanceof Error ? err.message : 'Failed to update tenant';
+    return jsonError(message, 500);
   }
 }
 
