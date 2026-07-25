@@ -594,6 +594,868 @@ Add to `CAPABILITY_AREAS` in `src/domain/security/capabilities.ts`:
 
 ---
 
+## 0.6. WhatsApp Integration (OpenWA) — Bali Business Operations
+
+> **In Bali, most day-to-day business is administered in WhatsApp Groups.** Orders come in via WhatsApp, supplier coordination happens in WhatsApp groups, staff schedules are shared in WhatsApp, and customer relationships are maintained through WhatsApp chats. The base template must integrate with WhatsApp so the AI assistant can participate in these business workflows natively.
+
+### 0.6.1 What OpenWA Provides
+
+[OpenWA](https://openwa.dev/) is an open-source WhatsApp API library that allows programmatic access to WhatsApp via a headless WhatsApp Web session. It enables:
+
+- **Send messages** — Text, images, documents, audio, video, contacts, location
+- **Receive messages** — Listen to incoming messages in real-time via webhook/event
+- **Group management** — Create groups, add/remove participants, manage group settings
+- **Read group chats** — Fetch message history from groups the account is a member of
+- **Send to groups** — Post messages to WhatsApp groups (e.g., daily specials, order confirmations)
+- **QR code authentication** — Scan QR once, session persists (like WhatsApp Web)
+- **Multi-session** — Multiple WhatsApp numbers per tenant (e.g., orders line, support line)
+
+### 0.6.2 Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    Tenant App (Vercel)                        │
+│                                                              │
+│  ┌─────────────┐    ┌──────────────┐    ┌─────────────────┐  │
+│  │ AI Chat     │───▶│ WhatsApp     │───▶│ OpenWA Server   │  │
+│  │ Assistant   │    │ Bridge       │    │ (separate       │  │
+│  │ (tool call) │    │ (API route)  │    │  microservice)  │  │
+│  └─────────────┘    └──────────────┘    └─────────────────┘  │
+│                            │                       │         │
+│                            ▼                       ▼         │
+│                     ┌──────────────┐    ┌─────────────────┐  │
+│                     │ Webhook      │◀───│ WhatsApp        │  │
+│                     │ Receiver     │    │ Cloud (Meta)    │  │
+│                     │ (API route)  │    │ or OpenWA WS    │  │
+│                     └──────────────┘    └─────────────────┘  │
+│                            │                                 │
+│                            ▼                                 │
+│                     ┌──────────────┐                         │
+│                     │ AI Auto-     │                         │
+│                     │ Responder    │                         │
+│                     │ (routes WA   │                         │
+│                     │  msgs to AI) │                         │
+│                     └──────────────┘                         │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Why a separate OpenWA server (not in Vercel serverless)?**
+
+OpenWA maintains a persistent WebSocket connection to WhatsApp servers — this requires a long-running process, not a serverless function that cold-starts and dies. The architecture uses:
+
+1. **OpenWA Server** — A small Node.js process running on a VPS (Railway, Render, Fly.io, or a $5 VPS). Maintains the WhatsApp Web session, exposes a REST API for sending messages, and pushes incoming messages via webhook to the tenant app.
+2. **WhatsApp Bridge (in tenant app)** — API routes that proxy send/receive requests to the OpenWA server. The AI agent calls these via tool calls.
+3. **Webhook Receiver (in tenant app)** — Receives incoming WhatsApp messages from the OpenWA server, stores them, and optionally routes them to the AI auto-responder.
+
+### 0.6.3 New Schema Models for WhatsApp
+
+#### WhatsAppSession (WhatsApp number/session configuration)
+
+```zenstack
+/// A WhatsApp session connected via OpenWA.
+/// A tenant can have multiple WhatsApp numbers (orders, support, marketing).
+model WhatsAppSession {
+  id              String   @id @default(cuid())
+  /// Label for this number (e.g., "Orders Line", "Customer Support")
+  label           String
+  /// Phone number in international format (e.g., "6281234567890")
+  phoneNumber     String   @unique @map("phone_number")
+  /// OpenWA server URL (where the headless session runs)
+  serverUrl       String   @map("server_url")
+  /// OpenWA session ID (internal identifier on the OpenWA server)
+  sessionId       String   @unique @map("session_id")
+  /// Connection status: "qr_pending" | "connected" | "disconnected" | "banned"
+  status          String   @default("qr_pending")
+  /// QR code data (base64 image) for initial authentication
+  qrCode          String?  @db.Text @map("qr_code")
+  /// Whether AI auto-responder is enabled for this number
+  autoRespondEnabled Boolean @default(false) @map("auto_respond_enabled")
+  /// AI system prompt for WhatsApp auto-responses (different from web chat)
+  aiPrompt        String?  @db.Text @map("ai_prompt")
+  /// Which WhatsApp groups this session monitors
+  monitoredGroups Json     @default("[]") @map("monitored_groups")
+  /// Whether to auto-reply in groups (vs only DMs)
+  autoReplyInGroups Boolean @default(false) @map("auto_reply_in_groups")
+  /// Webhook secret for verifying incoming messages from OpenWA server
+  webhookSecret   String   @map("webhook_secret")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
+  @@map("whatsapp_sessions")
+}
+```
+
+#### WhatsAppMessage (Incoming and outgoing messages)
+
+```zenstack
+/// A WhatsApp message (incoming from customer or outgoing from business).
+model WhatsAppMessage {
+  id          String   @id @default(cuid())
+  /// Session this message belongs to
+  sessionId   String   @map("session_id")
+  session     WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// Direction: "incoming" | "outgoing"
+  direction   String
+  /// WhatsApp chat ID (phone number or group ID)
+  chatId      String   @map("chat_id")
+  /// Chat name (contact name or group name)
+  chatName    String?  @map("chat_name")
+  /// Whether this is a group message
+  isGroup     Boolean  @default(false) @map("is_group")
+  /// Sender phone (for group messages — who sent it)
+  senderPhone String?  @map("sender_phone")
+  /// Sender name (for group messages)
+  senderName  String?  @map("sender_name")
+  /// Message type: "text" | "image" | "document" | "audio" | "video" | "location" | "contact"
+  type        String   @default("text")
+  /// Message body (text content or caption)
+  body        String   @db.Text
+  /// Media URL (if image/document/audio/video — stored in MediaAsset)
+  mediaUrl    String?  @map("media_url")
+  /// Media filename
+  mediaFilename String? @map("media_filename")
+  /// Whether the AI auto-responder handled this message
+  aiHandled   Boolean  @default(false) @map("ai_handled")
+  /// AI response (if auto-responder replied)
+  aiResponse  String?  @db.Text @map("ai_response")
+  /// Whether the message was read by the business
+  isRead      Boolean  @default(false) @map("is_read")
+  /// WhatsApp message ID (for delivery status tracking)
+  waMessageId String?  @map("wa_message_id")
+  /// AI action log ID (if this message triggered an AI tool call)
+  aiActionLogId String? @map("ai_action_log_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([sessionId, chatId, createdAt])
+  @@index([direction, isRead])
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('create', true)   // Webhook receiver creates incoming; bridge creates outgoing
+  @@map("whatsapp_messages")
+}
+```
+
+#### WhatsAppContact (Customer contacts synced from WhatsApp)
+
+```zenstack
+/// A WhatsApp contact (customer, supplier, staff member).
+/// Synced from the WhatsApp session's contact list.
+model WhatsAppContact {
+  id          String   @id @default(cuid())
+  sessionId   String   @map("session_id")
+  session     WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// Phone number (international format)
+  phoneNumber String   @unique @map("phone_number")
+  /// Contact display name
+  name        String?
+  /// Is this a business contact
+  isBusiness  Boolean  @default(false) @map("is_business")
+  /// Tags (e.g., ["customer", "supplier", "vip", "staff"])
+  tags        String[] @default([])
+  /// Associated customer ID (if linked to a Customer/Order)
+  customerId  String?  @map("customer_id")
+  /// Last message timestamp
+  lastMessageAt DateTime? @map("last_message_at")
+  /// Total message count
+  messageCount Int     @default(0) @map("message_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([sessionId, tags])
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
+  @@map("whatsapp_contacts")
+}
+```
+
+### 0.6.4 New AI Tools for WhatsApp
+
+Add to the AI Tool Registry (Section 0.5.3):
+
+| Tool | Description | Parameters | Security |
+|------|-------------|------------|----------|
+| `send_whatsapp_message` | Send a WhatsApp message to a contact or group | `sessionId`, `chatId`, `message`, `mediaUrl?` | `whatsapp:write` + `allowWhatsAppSend` |
+| `send_whatsapp_group` | Post a message to a WhatsApp group | `sessionId`, `groupId`, `message` | `whatsapp:write` + `allowWhatsAppGroup` |
+| `broadcast_whatsapp` | Send message to multiple contacts (e.g., daily specials) | `sessionId`, `contacts[]`, `message` | `whatsapp:write` + `allowWhatsAppBroadcast` |
+| `read_whatsapp_chat` | Read recent messages from a chat/group | `sessionId`, `chatId`, `limit?` | `whatsapp:read` |
+| `list_whatsapp_contacts` | List WhatsApp contacts with filters | `sessionId`, `tags?`, `search?` | `whatsapp:read` |
+| `create_whatsapp_group` | Create a new WhatsApp group | `sessionId`, `name`, `participants[]` | `whatsapp:write` + `allowWhatsAppGroupManagement` |
+| `send_whatsapp_media` | Send an image/document/video via WhatsApp | `sessionId`, `chatId`, `mediaId`, `caption?` | `whatsapp:write` + `allowWhatsAppSend` |
+
+### 0.6.5 New API Routes for WhatsApp
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/whatsapp/sessions` | GET | List WhatsApp sessions |
+| `/api/whatsapp/sessions` | POST | Create a new WhatsApp session (start OpenWA) |
+| `/api/whatsapp/sessions/[id]` | GET | Get session status + QR code |
+| `/api/whatsapp/sessions/[id]` | DELETE | Disconnect and remove session |
+| `/api/whatsapp/sessions/[id]/qr` | GET | Get current QR code for authentication |
+| `/api/whatsapp/send` | POST | Send a message (called by AI tool or admin UI) |
+| `/api/whatsapp/messages` | GET | List messages (filter by session, chat, direction) |
+| `/api/whatsapp/contacts` | GET | List contacts (filter by tags, search) |
+| `/api/whatsapp/webhook` | POST | Receive incoming messages from OpenWA server |
+| `/api/whatsapp/groups` | GET | List groups for a session |
+| `/api/whatsapp/groups` | POST | Create a group |
+
+### 0.6.6 New Domain Services for WhatsApp
+
+| Service | Purpose |
+|---------|---------|
+| `src/domain/whatsapp/openwa-client.ts` | HTTP client for the OpenWA server (send, receive, session management) |
+| `src/domain/whatsapp/whatsapp-service.ts` | Business logic: send messages, manage sessions, sync contacts |
+| `src/domain/whatsapp/whatsapp-webhook-handler.ts` | Processes incoming messages: store, auto-respond via AI, trigger notifications |
+| `src/domain/whatsapp/whatsapp-ai-bridge.ts` | Routes incoming WhatsApp messages to the AI chat engine, returns AI response |
+
+### 0.6.7 WhatsApp AI Auto-Responder Flow
+
+```
+Customer sends WhatsApp message
+        │
+        ▼
+OpenWA Server (persistent WS to WhatsApp)
+        │
+        ▼
+POST /api/whatsapp/webhook (tenant app)
+        │
+        ▼
+whatsapp-webhook-handler.ts
+        │
+        ├──▶ Store in WhatsAppMessage (direction: incoming)
+        │
+        ├──▶ Update WhatsAppContact (lastMessageAt, messageCount)
+        │
+        ├──▶ Is autoRespondEnabled? ─── No ──▶ Stop (store only)
+        │
+        │ Yes
+        ▼
+whatsapp-ai-bridge.ts
+        │
+        ├──▶ Build AI context (WhatsApp-specific prompt + message history)
+        │
+        ├──▶ Call AI chat engine (streamText or generateText)
+        │
+        ├──▶ Does AI want to call a tool? (e.g., create_order from WhatsApp)
+        │    │
+        │    ▼
+        │    AiSecurityPolicy.check() → AiToolExecutor.execute()
+        │
+        ▼
+Send AI response via openwa-client.ts
+        │
+        ▼
+Store in WhatsAppMessage (direction: outgoing, aiHandled: true)
+        │
+        ▼
+Send in-app notification to admin ("AI replied to customer on WhatsApp")
+```
+
+### 0.6.8 WhatsApp Admin UI
+
+New admin tab "WhatsApp" with:
+
+- **Sessions list** — Connected WhatsApp numbers with status (connected, QR pending, disconnected)
+- **QR code display** — Scan to authenticate a new number
+- **Chat inbox** — View all incoming/outgoing messages across sessions
+- **Contacts directory** — Searchable contact list with tags
+- **Auto-responder config** — Enable/disable per session, set AI prompt, configure group behavior
+- **Message templates** — Pre-written messages for common scenarios (order confirmation, reservation reminder, out-of-office)
+
+### 0.6.9 New Capability Areas for WhatsApp
+
+```typescript
+{ area: 'whatsapp', label: 'WhatsApp Integration', accesses: ['read', 'write'] },
+```
+
+Add to `AiAgentConfig`:
+- `allowWhatsAppSend: Boolean @default(false)` — AI can send WhatsApp messages
+- `allowWhatsAppGroup: Boolean @default(false)` — AI can post to groups
+- `allowWhatsAppBroadcast: Boolean @default(false)` — AI can broadcast to multiple contacts
+- `allowWhatsAppGroupManagement: Boolean @default(false)` — AI can create/manage groups
+
+### 0.6.10 Environment Variables
+
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `OPENWA_SERVER_URL` | URL of the OpenWA server (e.g., `https://wa.tenant.com`) | For WhatsApp |
+| `OPENWA_API_KEY` | API key for the OpenWA server | For WhatsApp |
+
+### 0.6.11 OpenWA Server Deployment
+
+The OpenWA server is deployed separately from the tenant app (it needs a persistent process):
+
+| Platform | Cost | Notes |
+|----------|------|-------|
+| Railway | $5/mo | Easiest — supports Node.js, persistent volumes |
+| Render | $7/mo | Similar to Railway |
+| Fly.io | ~$3/mo | Cheapest, global edge |
+| VPS (DigitalOcean) | $5/mo | Full control, manual setup |
+
+The OpenWA server is a simple Express/Fastify app:
+```typescript
+// openwa-server/src/index.ts
+import { create } from '@open-wa/wa-automate';
+import express from 'express';
+
+const app = express();
+const sessions = new Map();
+
+app.post('/session/start', async (req, res) => {
+  const { sessionId, webhookUrl, webhookSecret } = req.body;
+  const client = await create({ sessionId, ... });
+  sessions.set(sessionId, client);
+  // Register webhook for incoming messages
+  client.onMessage(async (message) => {
+    await fetch(webhookUrl, { method: 'POST', headers: { 'x-webhook-secret': webhookSecret }, body: JSON.stringify(message) });
+  });
+  res.json({ status: 'started', qrCode: await client.getQR() });
+});
+
+app.post('/send', async (req, res) => {
+  const { sessionId, chatId, message } = req.body;
+  const client = sessions.get(sessionId);
+  await client.sendText(chatId, message);
+  res.json({ status: 'sent' });
+});
+```
+
+---
+
+## 0.7. Extensible Integration Framework — Third-Party Vendor Services
+
+> The AI's capabilities must be **extensible** — the platform admin should be able to connect third-party vendor services (WhatsApp, GoFood, Grab, Tokopedia, Stripe, Resend, Google Calendar, Instagram, etc.) and the AI should be able to use them via tool calls. This requires a **generic integration framework** that supports OAuth, API keys, webhooks, and custom connectors.
+
+### 0.7.1 Design Principles
+
+1. **Plugin architecture** — Each integration is a self-contained plugin with: schema (config fields), auth flow (OAuth or API key), tool definitions, webhook handler, and icon/label for UI
+2. **Per-tenant configuration** — Each tenant connects their own accounts (their own GoFood store, their own Stripe account, their own Google Calendar)
+3. **Secrets management** — API keys and OAuth tokens are stored encrypted in the existing `Secret` model (AES-256-GCM)
+4. **AI tool generation** — When an integration is connected, its tools are automatically registered in the AI Tool Registry and become available to the AI agent
+5. **Webhook receiver** — A generic webhook endpoint routes incoming webhooks to the correct integration plugin for processing
+
+### 0.7.2 New Schema Models for Integrations
+
+#### Integration (Connected third-party service)
+
+```zenstack
+/// A connected third-party integration (e.g., GoFood, Stripe, Google Calendar).
+/// Each tenant connects their own accounts.
+model Integration {
+  id          String   @id @default(cuid())
+  /// Integration type: "gofood" | "grab" | "tokopedia" | "stripe" | "resend" |
+  /// "google-calendar" | "instagram" | "facebook" | "whatsapp" | "mailchimp" | "custom"
+  type        String
+  /// Display label (e.g., "GoFood — Red Ruby Store")
+  label       String
+  /// Connection status: "pending" | "connected" | "error" | "disconnected"
+  status      String   @default("pending")
+  /// Auth method: "oauth" | "api_key" | "webhook" | "none"
+  authMethod  String   @default("api_key") @map("auth_method")
+  /// Secret key name in secrets table (e.g., "INTEGRATION_GOFOOD_abc123")
+  secretKey   String?  @map("secret_key")
+  /// OAuth state (for OAuth flow — stores state token during auth)
+  oauthState  String?  @map("oauth_state")
+  /// Configuration (JSON — integration-specific settings)
+  config      Json     @default("{}")
+  /// Whether AI tools from this integration are enabled
+  aiToolsEnabled Boolean @default(true) @map("ai_tools_enabled")
+  /// Webhook URL for this integration (if it receives webhooks)
+  webhookUrl  String?  @map("webhook_url")
+  /// Webhook secret for verifying incoming webhooks
+  webhookSecret String? @map("webhook_secret")
+  /// Last sync timestamp (for integrations that poll)
+  lastSyncAt  DateTime? @map("last_sync_at")
+  /// Error message (if status is "error")
+  errorMessage String? @db.Text @map("error_message")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([type, status])
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
+  @@map("integrations")
+}
+```
+
+#### IntegrationSyncLog (Sync history for integrations)
+
+```zenstack
+/// Log of integration sync operations (for polling integrations like GoFood orders).
+model IntegrationSyncLog {
+  id            String   @id @default(cuid())
+  integrationId String   @map("integration_id")
+  integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  /// Sync type: "orders" | "products" | "contacts" | "messages" | "full"
+  syncType      String   @map("sync_type")
+  /// Status: "success" | "failed" | "partial"
+  status        String   @default("success")
+  /// Records processed
+  recordsProcessed Int   @default(0) @map("records_processed")
+  /// Records created/updated
+  recordsChanged Int    @default(0) @map("records_changed")
+  /// Error message (if failed)
+  error         String?  @db.Text
+  /// Duration in ms
+  durationMs    Int      @map("duration_ms")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([integrationId, createdAt])
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('create', true)
+  @@map("integration_sync_logs")
+}
+```
+
+### 0.7.3 Integration Plugin Interface
+
+Each integration is a plugin that implements this interface:
+
+```typescript
+// src/domain/integrations/types.ts
+
+export interface IntegrationPlugin {
+  /// Unique type identifier (e.g., "gofood", "stripe")
+  type: string;
+  /// Display label
+  label: string;
+  /// Icon (emoji or image URL)
+  icon: string;
+  /// Auth method
+  authMethod: 'oauth' | 'api_key' | 'webhook' | 'none';
+  /// Configuration schema (Zod — what fields the admin fills in)
+  configSchema: ZodSchema;
+  /// OAuth configuration (if authMethod is 'oauth')
+  oauth?: {
+    authorizeUrl: string;
+    tokenUrl: string;
+    scopes: string[];
+    clientIdEnvVar: string;
+    clientSecretEnvVar: string;
+  };
+  /// AI tools this integration provides
+  tools: AiToolDefinition[];
+  /// Webhook handler (if integration receives webhooks)
+  handleWebhook?: (payload: unknown, config: Record<string, unknown>) => Promise<void>;
+  /// Sync handler (for polling integrations)
+  sync?: (config: Record<string, unknown>, lastSyncAt: Date) => Promise<SyncResult>;
+  /// Test connection
+  testConnection: (config: Record<string, unknown>) => Promise<boolean>;
+}
+```
+
+### 0.7.4 Built-in Integration Plugins
+
+| Plugin | Type | Auth | AI Tools | Purpose |
+|--------|------|------|----------|---------|
+| **WhatsApp** | `whatsapp` | API key | 7 tools (Section 0.6.4) | WhatsApp messaging, groups, auto-responder |
+| **GoFood** | `gofood` | API key | `sync_gofood_orders`, `update_gofood_menu`, `get_gofood_metrics` | Sync GoFood orders into app, update menu |
+| **Grab** | `grab` | OAuth | `sync_grab_orders`, `get_grab_metrics` | Sync GrabFood orders |
+| **Tokopedia** | `tokopedia` | OAuth | `sync_tokopedia_orders`, `update_tokopedia_products` | Sync Tokopedia orders and products |
+| **Stripe** | `stripe` | API key | `create_stripe_payment_link`, `refund_stripe_charge`, `get_stripe_balance` | Payment processing |
+| **Resend** | `resend` | API key | `send_email` (from marketing tools) | Email broadcast |
+| **Google Calendar** | `google-calendar` | OAuth | `create_calendar_event`, `list_calendar_events`, `check_availability` | Booking sync, appointment reminders |
+| **Instagram** | `instagram` | OAuth | `post_instagram`, `get_instagram_insights` | Social media posting |
+| **Facebook** | `facebook` | OAuth | `post_facebook`, `get_facebook_insights` | Social media posting |
+| **Mailchimp** | `mailchimp` | API key | `add_mailchimp_subscriber`, `send_mailchimp_campaign` | Email marketing |
+| **Google Sheets** | `google-sheets` | OAuth | `read_sheet`, `append_sheet_row`, `update_sheet_row` | Data import/export |
+| **Custom Webhook** | `custom-webhook` | Webhook | User-defined | Generic webhook integration |
+
+### 0.7.5 Integration Framework Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Integration Framework                         │
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ Integration  │  │ Integration  │  │ Integration          │  │
+│  │ Registry     │  │ Auth Service │  │ Tool Adapter         │  │
+│  │ (all plugins)│  │ (OAuth/key)  │  │ (AI tools → plugins) │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+│         │                  │                   │               │
+│         ▼                  ▼                   ▼               │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              Integration Manager                        │   │
+│  │  • Connect/disconnect integrations                      │   │
+│  │  • Store secrets (encrypted)                            │   │
+│  │  • Register AI tools when connected                     │   │
+│  │  • Route webhooks to plugins                            │   │
+│  │  • Run sync jobs (Inngest scheduled)                    │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│         │                                                       │
+│         ▼                                                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐    │
+│  │ WhatsApp    │  │ GoFood      │  │ Google Calendar     │    │
+│  │ Plugin      │  │ Plugin      │  │ Plugin              │    │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘    │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐    │
+│  │ Stripe      │  │ Instagram   │  │ Custom Webhook      │    │
+│  │ Plugin      │  │ Plugin      │  │ Plugin              │    │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 0.7.6 New API Routes for Integrations
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/integrations` | GET | List all integrations (connected + available) |
+| `/api/integrations` | POST | Connect a new integration |
+| `/api/integrations/[id]` | GET | Get integration details |
+| `/api/integrations/[id]` | PATCH | Update integration config |
+| `/api/integrations/[id]` | DELETE | Disconnect integration |
+| `/api/integrations/[id]/test` | POST | Test connection |
+| `/api/integrations/[id]/sync` | POST | Manually trigger sync |
+| `/api/integrations/[id]/oauth/callback` | GET | OAuth callback handler |
+| `/api/integrations/webhook/[type]` | POST | Generic webhook receiver |
+| `/api/integrations/available` | GET | List all available plugin types |
+
+### 0.7.7 New Domain Services for Integrations
+
+| Service | Purpose |
+|---------|---------|
+| `src/domain/integrations/integration-registry.ts` | Registry of all available integration plugins |
+| `src/domain/integrations/integration-manager.ts` | Connect/disconnect, store secrets, register AI tools |
+| `src/domain/integrations/integration-auth-service.ts` | OAuth flow handling, token refresh, API key validation |
+| `src/domain/integrations/integration-tool-adapter.ts` | Adapts integration tools to AI Tool Registry format |
+| `src/domain/integrations/integration-webhook-router.ts` | Routes incoming webhooks to the correct plugin |
+| `src/domain/integrations/integration-sync-service.ts` | Runs scheduled sync jobs via Inngest |
+| `src/domain/integrations/plugins/whatsapp.ts` | WhatsApp plugin implementation |
+| `src/domain/integrations/plugins/gofood.ts` | GoFood plugin implementation |
+| `src/domain/integrations/plugins/stripe.ts` | Stripe plugin implementation |
+| `src/domain/integrations/plugins/google-calendar.ts` | Google Calendar plugin implementation |
+| `src/domain/integrations/plugins/instagram.ts` | Instagram plugin implementation |
+| `src/domain/integrations/plugins/custom-webhook.ts` | Custom webhook plugin |
+
+### 0.7.8 Integration Admin UI
+
+New admin tab "Integrations" with:
+
+- **Available integrations** — Grid of integration cards (icon, name, description, "Connect" button)
+- **Connected integrations** — List of connected integrations with status, last sync, config
+- **OAuth flow** — Click "Connect" → redirect to vendor OAuth → callback → store token
+- **API key flow** — Click "Connect" → form to enter API key → test connection → store encrypted
+- **Sync history** — View sync logs per integration
+- **AI tools toggle** — Enable/disable AI access to each integration's tools
+- **Webhook URL display** — Show the webhook URL for each integration (for vendor config)
+
+### 0.7.9 New Capability Area
+
+```typescript
+{ area: 'integrations', label: 'Integrations Management', accesses: ['read', 'write'] },
+```
+
+---
+
+## 0.8. Account Top-Up & Credits System — AI Usage Billing
+
+> **The user needs a way to top-up their account so they can continue using the AI chat assistant.** AI chat is not free — each message consumes OpenAI tokens, and the platform needs a sustainable billing model. The base template includes a credits-based system where users buy credits, each AI message consumes credits, and the system blocks AI chat when credits are exhausted.
+
+### 0.8.1 Billing Model
+
+**Credits-based system (pay-as-you-go):**
+
+| Concept | Description |
+|---------|-------------|
+| **Credit** | 1 credit = 1 AI chat message (or 1 tool call). Simple, transparent. |
+| **Credit pack** | Pre-purchased bundles (e.g., 100 credits = $10, 500 credits = $45, 1000 credits = $80) |
+| **Free tier** | 50 free credits per month per tenant (enough to try the AI) |
+| **Top-up** | Buy more credits via Stripe (card) or crypto (existing wallet) |
+| **Auto-recharge** | Optional: automatically buy a credit pack when balance drops below threshold |
+| **Usage tracking** | Every AI message and tool call deducts credits from the balance |
+| **Balance check** | Before each AI message, check if the user has credits — block if exhausted |
+
+**Why credits (not subscription)?**
+- Bali businesses have variable usage (busy season vs quiet season)
+- Credits are transparent — users see exactly what they're paying for
+- No recurring billing surprises
+- Works with crypto payments (existing wallet infrastructure)
+- Easy to gift credits (promotional, referral rewards)
+
+### 0.8.2 New Schema Models for Billing
+
+#### CreditBalance (Tenant credit balance)
+
+```zenstack
+/// Credit balance for a tenant (singleton per tenant).
+/// Tracks current credits, free tier allocation, and auto-recharge config.
+model CreditBalance {
+  id              String   @id @default("default")
+  /// Current credit balance
+  balance         Int      @default(50)
+  /// Free credits allocated this month
+  freeCreditsUsed Int      @default(0) @map("free_credits_used")
+  /// Free credits per month (configurable per tenant)
+  freeCreditsLimit Int     @default(50) @map("free_credits_limit")
+  /// Free credits reset date (first of each month)
+  freeCreditsResetAt DateTime @default(now() + 30 * 24 * 60 * 60 * 1000) @map("free_credits_reset_at")
+  /// Auto-recharge enabled
+  autoRechargeEnabled Boolean @default(false) @map("auto_recharge_enabled")
+  /// Auto-recharge threshold (buy more when balance drops below this)
+  autoRechargeThreshold Int @default(20) @map("auto_recharge_threshold")
+  /// Auto-recharge pack ID (which pack to buy automatically)
+  autoRechargePackId String? @map("auto_recharge_pack_id")
+  /// Total credits purchased (lifetime)
+  totalPurchased   Int     @default(0) @map("total_purchased")
+  /// Total credits used (lifetime)
+  totalUsed        Int     @default(0) @map("total_used")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('update', auth().tier == pin || auth().tier == google)
+  @@map("credit_balances")
+}
+```
+
+#### CreditTransaction (Credit purchase or usage)
+
+```zenstack
+/// A credit transaction — either a purchase (top-up) or a usage (deduction).
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  /// Transaction type: "purchase" | "usage" | "refund" | "grant" | "expiry"
+  type        String
+  /// Credit amount (positive for purchase/grant, negative for usage)
+  amount      Int
+  /// Balance after this transaction
+  balanceAfter Int     @map("balance_after")
+  /// Description (e.g., "AI chat message", "Top-up 100 credits", "Free monthly grant")
+  description String
+  /// For usage: what consumed the credit ("chat_message", "tool_call:create_page", "whatsapp_send")
+  usageType   String?  @map("usage_type")
+  /// For usage: conversation ID (if chat message)
+  conversationId Int?  @map("conversation_id")
+  /// For purchase: payment method ("stripe", "crypto", "manual_grant")
+  paymentMethod String? @map("payment_method")
+  /// For purchase: payment transaction ID
+  paymentTxId String?  @map("payment_tx_id")
+  /// For purchase: credit pack ID
+  packId      String?  @map("pack_id")
+  /// User who triggered this transaction
+  userSub     String?  @map("user_sub")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([type, createdAt])
+  @@index([userSub])
+  @@allow('read', auth().tier == pin || auth().tier == google)
+  @@allow('create', true)   // System creates transactions
+  @@map("credit_transactions")
+}
+```
+
+#### CreditPack (Pre-defined credit bundles for purchase)
+
+```zenstack
+/// Pre-defined credit packs that users can purchase.
+/// Stored in DB so platform admin can adjust pricing.
+model CreditPack {
+  id          String   @id @default(cuid())
+  /// Pack name (e.g., "Starter", "Business", "Pro")
+  name        String
+  /// Number of credits in this pack
+  credits     Int
+  /// Price in cents (e.g., 1000 = $10.00)
+  priceCents  Int      @map("price_cents")
+  /// Currency
+  currency    String   @default("USD")
+  /// Whether this pack is available for purchase
+  isActive    Boolean  @default(true) @map("is_active")
+  /// Sort order for display
+  sortOrder   Int      @default(0) @map("sort_order")
+  /// Bonus credits (e.g., "Buy 100, get 20 bonus")
+  bonusCredits Int     @default(0) @map("bonus_credits")
+  /// Description (marketing text)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@allow('read', true)   // Public can see available packs
+  @@allow('create,update,delete', auth().tier == pin || auth().tier == google)
+  @@map("credit_packs")
+}
+```
+
+### 0.8.3 Default Credit Packs (Seeded)
+
+| Pack | Credits | Bonus | Price | Per Credit |
+|------|---------|-------|-------|------------|
+| Free Tier | 50/mo | — | $0 | $0 (free) |
+| Starter | 100 | 0 | $10 | $0.10 |
+| Business | 500 | 50 | $45 | $0.09 |
+| Pro | 1,000 | 150 | $80 | $0.08 |
+| Enterprise | 5,000 | 1,000 | $350 | $0.07 |
+
+### 0.8.4 Credit Usage Flow
+
+```
+User sends AI chat message
+        │
+        ▼
+/api/chat/route.ts
+        │
+        ├──▶ CreditService.checkBalance(userSub)
+        │         │
+        │         ├──▶ Balance > 0? ─── No ──▶ Return 402 Payment Required
+        │         │                                   │
+        │         │                                   ▼
+        │         │                            Return error:
+        │         │                            "Insufficient credits.
+        │         │                            Top up at /billing"
+        │         │
+        │         │ Yes
+        │         ▼
+        ├──▶ Process AI message (streamText/generateText)
+        │         │
+        │         ▼
+        ├──▶ CreditService.deductCredits(userSub, 1, {
+        │         usageType: "chat_message",
+        │         conversationId: convId,
+        │         description: "AI chat message"
+        │       })
+        │         │
+        │         ├──▶ Create CreditTransaction (type: "usage", amount: -1)
+        │         ├──▶ Update CreditBalance (balance -= 1, totalUsed += 1)
+        │         │
+        │         ├──▶ Balance < autoRechargeThreshold?
+        │         │         │
+        │         │         ├── Yes + autoRechargeEnabled ──▶ Trigger auto-purchase
+        │         │         │
+        │         │         └── No ──▶ Continue
+        │         │
+        │         ▼
+        └──▶ Return AI response
+```
+
+### 0.8.5 Credit Top-Up Flow
+
+```
+User clicks "Top Up" in billing page
+        │
+        ▼
+Select credit pack (Starter, Business, Pro, Enterprise)
+        │
+        ▼
+Choose payment method:
+        │
+        ├──▶ Stripe (card) ──▶ Create Stripe Checkout Session
+        │                        │
+        │                        ▼
+        │                    Stripe payment page
+        │                        │
+        │                        ▼
+        │                    /api/billing/stripe-webhook
+        │                        │
+        │                        ▼
+        │                    CreditService.addCredits(pack.credits + pack.bonusCredits, {
+        │                      type: "purchase",
+        │                      paymentMethod: "stripe",
+        │                      paymentTxId: stripeSessionId,
+        │                      packId: pack.id
+        │                    })
+        │
+        ├──▶ Crypto (existing wallet) ──▶ /api/billing/crypto-pay
+        │                                    │
+        │                                    ▼
+        │                                Verify on-chain payment
+        │                                    │
+        │                                    ▼
+        │                                CreditService.addCredits(...)
+        │
+        └──▶ Manual grant (admin only) ──▶ Admin grants credits via billing tab
+```
+
+### 0.8.6 New API Routes for Billing
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/billing/balance` | GET | Get current credit balance + usage stats |
+| `/api/billing/packs` | GET | List available credit packs |
+| `/api/billing/purchase` | POST | Purchase credits (creates Stripe session or crypto payment) |
+| `/api/billing/stripe-webhook` | POST | Stripe webhook — confirms payment, adds credits |
+| `/api/billing/crypto-pay` | POST | Crypto payment — verify on-chain, add credits |
+| `/api/billing/transactions` | GET | List credit transactions (history) |
+| `/api/billing/grant` | POST | Admin: manually grant credits to a tenant |
+| `/api/billing/auto-recharge` | PUT | Update auto-recharge settings |
+
+### 0.8.7 New Domain Services for Billing
+
+| Service | Purpose |
+|---------|---------|
+| `src/domain/billing/credit-service.ts` | Check balance, deduct credits, add credits, auto-recharge |
+| `src/domain/billing/stripe-service.ts` | Create Stripe Checkout sessions, handle webhooks |
+| `src/domain/billing/crypto-payment-service.ts` | Verify crypto payments on-chain, add credits |
+| `src/domain/billing/credit-pack-service.ts` | Manage credit packs (CRUD, seeding) |
+
+### 0.8.8 Billing UI
+
+New pages and components:
+
+| Component | Purpose |
+|-----------|---------|
+| `src/app/(app)/billing/page.tsx` | Billing page — balance, packs, transactions, auto-recharge |
+| `src/components/billing/credit-balance-card.tsx` | Current balance display with usage graph |
+| `src/components/billing/credit-pack-picker.tsx` | Credit pack selection grid |
+| `src/components/billing/payment-method-selector.tsx` | Choose Stripe or crypto |
+| `src/components/billing/transaction-history.tsx` | Transaction list with filters |
+| `src/components/billing/auto-recharge-settings.tsx` | Auto-recharge toggle + threshold + pack |
+| `src/components/billing/low-credits-banner.tsx` | Warning banner when credits < 10 |
+| `src/components/billing/top-up-dialog.tsx` | Quick top-up dialog (triggered from chat when credits run out) |
+
+### 0.8.9 Chat Route Integration
+
+The `/api/chat/route.ts` is updated to check credits before processing:
+
+```typescript
+// Before processing AI message:
+const creditService = new CreditService(db);
+const balance = await creditService.checkBalance(session.sub);
+
+if (balance <= 0) {
+  return jsonError('Insufficient credits. Please top up at /billing to continue using the AI assistant.', 402);
+}
+
+// After AI response is sent:
+await creditService.deductCredits(session.sub, 1, {
+  usageType: 'chat_message',
+  conversationId,
+  description: 'AI chat message',
+});
+
+// Check auto-recharge:
+if (balance <= autoRechargeThreshold && autoRechargeEnabled) {
+  await creditService.triggerAutoRecharge(session.sub);
+}
+```
+
+### 0.8.10 AI Tool Call Credit Cost
+
+Different AI actions cost different credits:
+
+| Action | Credit Cost | Rationale |
+|--------|-------------|-----------|
+| AI chat message | 1 | Base cost — one LLM call |
+| AI tool call (read) | 1 | Query tools (query_orders, query_analytics) — one LLM call + one DB query |
+| AI tool call (write) | 2 | Mutation tools (create_page, create_product) — one LLM call + one DB write |
+| AI tool call (external) | 3 | External service calls (send_whatsapp, send_email) — one LLM call + one API call |
+| AI tool call (destructive) | 5 | Delete tools — higher cost to discourage reckless deletion |
+| WhatsApp auto-respond | 1 | One AI response per incoming WhatsApp message |
+
+### 0.8.11 Free Tier Management
+
+- **50 free credits per month** per tenant (enough for ~50 AI messages)
+- Free credits reset on the 1st of each month
+- Unused free credits don't roll over
+- When free credits are exhausted, user must top up to continue
+- Platform admin can grant additional free credits (promotional, trial extension)
+- Free tier is configurable per tenant via `CreditBalance.freeCreditsLimit`
+
+### 0.8.12 New Capability Area
+
+```typescript
+{ area: 'billing', label: 'Billing & Credits', accesses: ['read', 'write'] },
+```
+
+---
+
 ## 1. Current State Audit
 
 ### 1.1 What EXISTS in website/ (current implicit base template)
@@ -652,6 +1514,10 @@ Add to `CAPABILITY_AREAS` in `src/domain/security/capabilities.ts`:
 | **AI knowledge of app structure** | ❌ Missing | AI system prompt only includes business review snippets — no schema, pages, navigation, or config awareness |
 | **AI confirmation queue** | ❌ Missing | No AiToolPending model — no human-in-the-loop review for AI mutations |
 | **AI config admin UI** | ❌ Missing | No admin tab for configuring AI capabilities per tenant |
+| **WhatsApp integration (OpenWA)** | ❌ Missing | No WhatsApp session, no message send/receive, no group management, no auto-responder |
+| **Integration framework (third-party vendors)** | ❌ Missing | No plugin architecture, no OAuth flow, no webhook router, no AI tool adapter |
+| **Account top-up & credits system** | ❌ Missing | No credit balance, no credit packs, no usage metering, no payment integration for credits |
+| **AI usage billing** | ❌ Missing | No credit deduction per AI message, no 402 response when credits exhausted, no auto-recharge |
 
 ### 1.3 What the codegen service currently copies
 
@@ -1771,6 +2637,18 @@ enum BlockType {
 | 29 | AI knowledge of app structure | — | `AiKnowledgeBuilder` ❌ | `AiKnowledgeViewer` ❌ | **NEW** |
 | 30 | AI confirmation queue (human-in-the-loop) | `AiToolPending` ❌ | `/api/ai-agent/pending` ❌ | `AiPendingQueue` ❌ | **NEW** |
 | 31 | AI config admin UI | — | — | `AiConfigTab` ❌ | **NEW** |
+| 32 | WhatsApp integration (OpenWA) | `WhatsAppSession`, `WhatsAppMessage`, `WhatsAppContact` ❌ | `/api/whatsapp/*` ❌ | WhatsApp admin tab ❌ | **NEW** |
+| 33 | WhatsApp AI auto-responder | — | `whatsapp-ai-bridge.ts` ❌ | Auto-responder config ❌ | **NEW** |
+| 34 | Integration framework (plugins) | `Integration`, `IntegrationSyncLog` ❌ | `/api/integrations/*` ❌ | Integrations admin tab ❌ | **NEW** |
+| 35 | Integration OAuth + API key flows | — | `integration-auth-service.ts` ❌ | OAuth connect buttons ❌ | **NEW** |
+| 36 | Integration webhook router | — | `integration-webhook-router.ts` ❌ | — | **NEW** |
+| 37 | Credit balance & usage tracking | `CreditBalance`, `CreditTransaction` ❌ | `/api/billing/balance` ❌ | `CreditBalanceCard` ❌ | **NEW** |
+| 38 | Credit packs (purchase) | `CreditPack` ❌ | `/api/billing/packs` ❌ | `CreditPackPicker` ❌ | **NEW** |
+| 39 | Credit top-up (Stripe + crypto) | — | `/api/billing/purchase` ❌ | `TopUpDialog`, `PaymentMethodSelector` ❌ | **NEW** |
+| 40 | AI usage billing (deduct per message) | — | Chat route credit check ❌ | `LowCreditsBanner` ❌ | **NEW** |
+| 41 | Auto-recharge | `CreditBalance` ❌ | `/api/billing/auto-recharge` ❌ | `AutoRechargeSettings` ❌ | **NEW** |
+| 42 | Free tier (50 credits/month) | `CreditBalance` ❌ | `credit-service.ts` ❌ | — | **NEW** |
+| 43 | Transaction history | `CreditTransaction` ❌ | `/api/billing/transactions` ❌ | `TransactionHistory` ❌ | **NEW** |
 
 ### 3.2 Summary
 
@@ -1779,7 +2657,10 @@ enum BlockType {
 - **NEW — Commerce (5 items):** Product catalog, cart+checkout, order management, customer management, booking scheduling
 - **NEW — Marketing (8 items):** Landing page builder, newsletter, blog/CMS, lead capture, campaign tracking, social media, analytics, email campaigns
 - **NEW — AI Agent (7 items):** Tool-use (app modification), parameterization, security policy, audit log, app structure knowledge, confirmation queue, config UI
-- **Total NEW: 30 items**
+- **NEW — WhatsApp (2 items):** OpenWA integration (send/receive/groups), AI auto-responder
+- **NEW — Integration Framework (3 items):** Plugin architecture, OAuth/API key flows, webhook router
+- **NEW — Billing & Credits (7 items):** Credit balance, credit packs, top-up (Stripe+crypto), usage billing, auto-recharge, free tier, transaction history
+- **Total NEW: 42 items**
 
 ---
 
@@ -1930,6 +2811,80 @@ enum BlockType {
 9. Seed default `AiAgentConfig` with safe defaults (non-destructive, confirmation required)
 10. Test: Platform admin prompts "Add a new page called 'About Us' with a hero section" → AI calls `create_page` tool → security check passes → page created → audit log entry written
 
+### Phase 10J: WhatsApp Integration (OpenWA) (Week 7)
+
+**Goal:** The AI assistant can send/receive WhatsApp messages, manage groups, and auto-respond to customer inquiries — critical for Bali business operations.
+
+1. Add `WhatsAppSession`, `WhatsAppMessage`, `WhatsAppContact` models to schema
+2. Create OpenWA server (separate microservice — Railway/Render/Fly.io deployment)
+3. Create WhatsApp domain services:
+   - `openwa-client.ts` — HTTP client for OpenWA server
+   - `whatsapp-service.ts` — Send/receive messages, manage sessions, sync contacts
+   - `whatsapp-webhook-handler.ts` — Process incoming messages, store, trigger auto-responder
+   - `whatsapp-ai-bridge.ts` — Route incoming WhatsApp messages to AI, return response
+4. Create `/api/whatsapp/*` API routes (sessions, send, messages, contacts, webhook, groups)
+5. Add 7 new AI tools for WhatsApp (send, group, broadcast, read, contacts, create group, send media)
+6. Add WhatsApp capability area and `allowWhatsApp*` fields to `AiAgentConfig`
+7. Create WhatsApp admin tab (sessions, QR code, chat inbox, contacts, auto-responder config, templates)
+8. Wire WhatsApp auto-responder: incoming message → AI context → AI response → send via WhatsApp
+9. Deploy OpenWA server and test end-to-end with a real WhatsApp number
+
+### Phase 10K: Integration Framework (Week 8)
+
+**Goal:** Platform admin can connect third-party vendor services (GoFood, Grab, Stripe, Google Calendar, Instagram, etc.) and the AI can use them via tool calls.
+
+1. Add `Integration`, `IntegrationSyncLog` models to schema
+2. Create integration framework:
+   - `integration-registry.ts` — Registry of all available plugins
+   - `integration-manager.ts` — Connect/disconnect, store secrets, register AI tools
+   - `integration-auth-service.ts` — OAuth flow handling, token refresh, API key validation
+   - `integration-tool-adapter.ts` — Adapts integration tools to AI Tool Registry
+   - `integration-webhook-router.ts` — Routes incoming webhooks to correct plugin
+   - `integration-sync-service.ts` — Scheduled sync jobs via Inngest
+3. Create `/api/integrations/*` API routes (list, connect, disconnect, test, sync, oauth callback, webhook)
+4. Implement built-in plugins:
+   - `plugins/whatsapp.ts` — Wraps the WhatsApp integration (Phase 10J) as a plugin
+   - `plugins/gofood.ts` — Sync GoFood orders, update menu
+   - `plugins/stripe.ts` — Payment links, refunds, balance
+   - `plugins/google-calendar.ts` — Calendar events, availability
+   - `plugins/instagram.ts` — Post, insights
+   - `plugins/custom-webhook.ts` — Generic webhook integration
+5. Create Integrations admin tab (available grid, connected list, OAuth flow, sync history, AI tools toggle)
+6. Wire integration tools to AI Tool Registry (when connected, tools become available to AI)
+7. Add Inngest scheduled function for periodic sync jobs (GoFood orders every 15 min, etc.)
+
+### Phase 10L: Account Top-Up & Credits System (Week 8)
+
+**Goal:** Users can top-up credits to continue using the AI chat assistant. AI usage is metered and billed.
+
+1. Add `CreditBalance`, `CreditTransaction`, `CreditPack` models to schema
+2. Create billing domain services:
+   - `credit-service.ts` — Check balance, deduct credits, add credits, auto-recharge, free tier management
+   - `stripe-service.ts` — Create Stripe Checkout sessions, handle webhooks
+   - `crypto-payment-service.ts` — Verify crypto payments on-chain, add credits
+   - `credit-pack-service.ts` — Manage credit packs (CRUD, seeding)
+3. Create `/api/billing/*` API routes (balance, packs, purchase, stripe-webhook, crypto-pay, transactions, grant, auto-recharge)
+4. Seed default credit packs (Starter $10/100, Business $45/500, Pro $80/1000, Enterprise $350/5000)
+5. Create billing UI:
+   - `/billing` page — Balance, packs, transactions, auto-recharge
+   - `CreditBalanceCard` — Current balance with usage graph
+   - `CreditPackPicker` — Pack selection grid
+   - `PaymentMethodSelector` — Stripe or crypto
+   - `TransactionHistory` — Transaction list with filters
+   - `AutoRechargeSettings` — Toggle + threshold + pack
+   - `LowCreditsBanner` — Warning when credits < 10
+   - `TopUpDialog` — Quick top-up from chat when credits run out
+6. Update `/api/chat/route.ts`:
+   - Check credit balance before processing AI message
+   - Return 402 with "Top up at /billing" message if credits exhausted
+   - Deduct 1 credit after each AI message
+   - Deduct 2-5 credits for tool calls (read/write/external/destructive)
+   - Trigger auto-recharge if balance drops below threshold
+7. Add billing capability area
+8. Add "Billing" tab to admin page (grant credits, view all transactions, manage packs)
+9. Add free tier: 50 credits/month, auto-reset on 1st of month
+10. Test: User exhausts credits → sees 402 → tops up via Stripe → credits added → AI chat resumes
+
 ---
 
 ## 5. Dependencies
@@ -1940,10 +2895,11 @@ enum BlockType {
 |---------|---------|---------|
 | `@vercel/blob` | Media upload storage (Vercel Blob) | ^1.0.0 |
 | `node-cron` | Task scheduling (recurring tasks) | ^3.0.3 |
-| `stripe` | Payment integration (Stripe Checkout) | ^17.0.0 |
+| `stripe` | Payment integration (Stripe Checkout + credit top-up) | ^17.0.0 |
 | `resend` | Email broadcast (transactional + campaigns) | ^4.0.0 |
 | `marked` | Markdown rendering (blog, content pages) | ^12.0.0 |
 | `sanitize-html` | HTML sanitization (blog, lead messages) | ^2.13.0 |
+| `@open-wa/wa-automate` | WhatsApp automation (OpenWA server only) | ^4.0.0 |
 
 ### 5.2 Environment Variables
 
@@ -1952,18 +2908,23 @@ enum BlockType {
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob access token | For media upload |
 | `INNGEST_EVENT_KEY` | Inngest production event key | For task scheduling |
 | `INNGEST_SIGNING_KEY` | Inngest production signing key | For task scheduling |
-| `STRIPE_SECRET_KEY` | Stripe API key (server-side) | For card payments |
+| `STRIPE_SECRET_KEY` | Stripe API key (server-side) | For card payments + credit top-up |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (client-side) | For Stripe.js |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | For credit top-up confirmation |
 | `RESEND_API_KEY` | Resend email API key | For email campaigns |
 | `EMAIL_FROM_ADDRESS` | From address for sent emails | For email campaigns |
+| `OPENWA_SERVER_URL` | URL of the OpenWA server | For WhatsApp integration |
+| `OPENWA_API_KEY` | API key for the OpenWA server | For WhatsApp integration |
 
 ### 5.3 Fallbacks
 
 - **No BLOB_READ_WRITE_TOKEN:** Media upload falls back to base64 data URLs stored in DB (limited to ~1MB files)
 - **No INNGEST keys:** Task scheduling falls back to inline execution on next user session
-- **No STRIPE_SECRET_KEY:** Checkout falls back to "cash on delivery" / "pay on arrival" — no card processing
-- **No RESEND_API_KEY:** Email campaigns log to console instead of sending — subscriber list still captured
+- **No STRIPE_SECRET_KEY:** Checkout falls back to "cash on delivery" / "pay on arrival" — no card processing. Credit top-up falls back to crypto-only or manual admin grant
+- **No RESEND_API_KEY:** Email campaigns log to console instead of sending — subscriber list still captured for export
 - **No EMAIL_FROM_ADDRESS:** Defaults to `noreply@<tenant-slug>.vercel.app`
+- **No OPENWA_SERVER_URL:** WhatsApp integration disabled — admin sees "Connect WhatsApp" but it won't function until OpenWA server is deployed
+- **No STRIPE_WEBHOOK_SECRET:** Credit top-up via Stripe disabled — crypto and manual grant still work
 
 ---
 
@@ -2062,7 +3023,10 @@ const BASE_TEMPLATE_DIR = process.env.TENANT_BASE_TEMPLATE_DIR
 | 10G | Commerce (catalog, cart, checkout, bookings) | ~25 | schema.zmodel, package.json, admin page | 20h |
 | 10H | Marketing (blog, newsletter, leads, campaigns, analytics) | ~25 | schema.zmodel, package.json, admin page | 20h |
 | 10I | **AI Agent (tool-use, parameterization, security, audit)** | **~20** | **schema.zmodel, chat route, capabilities, admin page** | **24h** |
-| **Total** | | **~120 new files** | **~12 modified** | **~106h** |
+| 10J | **WhatsApp Integration (OpenWA, auto-responder)** | **~18** | **schema.zmodel, admin page, AI tools** | **18h** |
+| 10K | **Integration Framework (plugins, OAuth, webhooks)** | **~20** | **schema.zmodel, admin page, AI tool registry** | **20h** |
+| 10L | **Account Top-Up & Credits (billing, Stripe, usage metering)** | **~15** | **schema.zmodel, chat route, admin page** | **16h** |
+| **Total** | | **~173 new files** | **~16 modified** | **~160h** |
 
 ---
 
@@ -2084,6 +3048,13 @@ const BASE_TEMPLATE_DIR = process.env.TENANT_BASE_TEMPLATE_DIR
 | AI agent accesses unauthorized data | Security breach via AI tool | 9-check security policy engine enforces tier, capability, model access, and rate limits before every tool call |
 | AI agent goes rogue (runaway tool calls) | App destabilization from excessive AI actions | Rate limits (`maxToolCallsPerConversation`, `maxToolCallsPerHour`) enforced; AI can be disabled instantly via `AiAgentConfig.enabled = false` |
 | AI agent prompt injection | Malicious user tricks AI into calling tools | Tool parameters validated with Zod schemas; security policy checks run regardless of prompt content; confirmation queue catches suspicious mutations |
+| WhatsApp session banned | WhatsApp blocks the number for automation | OpenWA uses official WhatsApp Web protocol (not unofficial API); rate-limit outgoing messages; monitor for ban warnings; have backup number |
+| OpenWA server downtime | WhatsApp integration goes offline | Health check endpoint; auto-reconnect; fallback to in-app notifications when WhatsApp unavailable |
+| Integration OAuth token expiry | Third-party integration stops working | Token refresh logic in `integration-auth-service.ts`; auto-refresh before expiry; alert admin on refresh failure |
+| User exhausts credits mid-conversation | AI chat stops abruptly | Return 402 with clear "Top up" message + link; show low-credits banner before exhaustion; auto-recharge option |
+| Stripe webhook missed | Credits not added after payment | Idempotent webhook handler (check `paymentTxId`); reconciliation job (Inngest daily — check Stripe for unprocessed payments) |
+| Credit fraud (fake crypto payment) | Credits added without real payment | On-chain verification with N confirmations required; only accept confirmed transactions |
+| Integration plugin security | Malicious plugin gains access to app data | Plugins run in sandboxed context; only receive their own config + secrets; cannot access other integrations' data |
 
 ---
 
