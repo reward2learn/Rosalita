@@ -226,22 +226,29 @@ async function resolveSessionGroups(input: {
   tier: string;
   roleCode?: string | null;
 }): Promise<{ groups: string[]; permissions: string[] }> {
+  const db = createBaseClient();
+  // Ensure tables exist — but don't let a failure here block account creation.
   try {
-    // Raw client: account persistence must not be blocked by ZenStack policies.
-    // Don't pass knownAccounts here — that would re-create deleted users.
-    // The current user's account is created via upsertUserAccount below.
-    const db = createBaseClient();
     await ensureSecurityTables(db);
-    await upsertUserAccount(db, input);
-    const groups = await resolveGroupCodesForSub(db, input.sub);
-    const permissions = await resolveCapabilitiesForSub(db, input.sub);
-    return { groups, permissions };
   } catch (err) {
-    // Sign-in must still succeed even if group resolution fails, but we log so
-    // the failure is diagnosable instead of silently dropping accounts.
-    console.error('[auth/resolveSessionGroups]', err instanceof Error ? err.message : err);
-    return { groups: [], permissions: [] };
+    console.error('[auth/resolveSessionGroups] ensureSecurityTables failed:', err instanceof Error ? err.stack : err);
   }
+  // Always attempt to upsert the user account.
+  try {
+    await upsertUserAccount(db, input);
+  } catch (err) {
+    console.error('[auth/resolveSessionGroups] upsertUserAccount failed:', err instanceof Error ? err.stack : err);
+  }
+  // Resolve groups/permissions (best-effort).
+  let groups: string[] = [];
+  let permissions: string[] = [];
+  try {
+    groups = await resolveGroupCodesForSub(db, input.sub);
+    permissions = await resolveCapabilitiesForSub(db, input.sub);
+  } catch (err) {
+    console.error('[auth/resolveSessionGroups] group/permission resolution failed:', err instanceof Error ? err.stack : err);
+  }
+  return { groups, permissions };
 }
 
 async function handleMe(request: Request): Promise<NextResponse> {
