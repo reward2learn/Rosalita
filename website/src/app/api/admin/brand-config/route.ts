@@ -64,19 +64,20 @@ export async function GET(request: Request): Promise<NextResponse> {
 // ── PUT (multipart or JSON) ─────────────────────────────
 
 export async function PUT(request: Request): Promise<NextResponse> {
-  const guard = await requireWriteAuth(request);
-  if (!guard.ok) return guard.response;
-  if (!sessionIsPlatformAdmin(guard.session)) return jsonError('Platform admin only', 403);
+  try {
+    const guard = await requireWriteAuth(request);
+    if (!guard.ok) return guard.response;
+    if (!sessionIsPlatformAdmin(guard.session)) return jsonError('Platform admin only', 403);
 
-  let tenantSlug: string | undefined;
-  let tenantDisplayName: string | undefined;
-  let tenantTemplate: string | undefined;
-  let brandLogoText: string | undefined;
-  let brandLogoUrl: string | undefined;
-  let brandPrimaryColor: string | undefined;
-  let brandSecondaryColor: string | undefined;
+    let tenantSlug: string | undefined;
+    let tenantDisplayName: string | undefined;
+    let tenantTemplate: string | undefined;
+    let brandLogoText: string | undefined;
+    let brandLogoUrl: string | undefined;
+    let brandPrimaryColor: string | undefined;
+    let brandSecondaryColor: string | undefined;
 
-  const contentType = request.headers.get('content-type') ?? '';
+    const contentType = request.headers.get('content-type') ?? '';
 
   if (contentType.includes('multipart/form-data')) {
     // Handle file upload + text fields via FormData
@@ -160,7 +161,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('brand-config PUT error:', msg, err instanceof Error ? err.stack : '');
     return NextResponse.json(
-      { success: false, error: msg },
+      { success: false, error: msg, step: 'updateAppSettings' },
       { status: 500 },
     );
   }
@@ -175,4 +176,12 @@ export async function PUT(request: Request): Promise<NextResponse> {
     brandSecondaryColor: settings.brandSecondaryColor,
     updatedAt: settings.updatedAt.toISOString(),
   });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('brand-config PUT outer error:', msg, err instanceof Error ? err.stack : '');
+    return NextResponse.json(
+      { success: false, error: msg, step: 'outer' },
+      { status: 500 },
+    );
+  }
 }
