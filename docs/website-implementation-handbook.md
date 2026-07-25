@@ -436,9 +436,11 @@ export default function SchemaPreviewPage() {
 | Date | Phase | Status | Agent | Notes |
 |------|-------|--------|-------|-------|
 | 2026-07-25 | Audit | ✅ Complete | Project Manager | Full architecture review |
-| — | Phase 0 | ⬜ Pending | — | — |
-| — | Phase 1 | ⬜ Pending | — | — |
-| — | Phase 2 | ⬜ Pending | — | — |
+| 2026-07-25 | Phase 0 | ✅ Complete | Project Manager | Template catalog updated, block categorization |
+| 2026-07-25 | Phase 1 | ✅ Complete | Project Manager | DynamicFormBlock, schema types, MUI registry |
+| 2026-07-25 | Phase 2 | ✅ Complete | Project Manager | AI schema gen, preview page, generate-schema API |
+| — | Phase 3 | ⬜ Pending | — | WASM validation integration |
+| — | Phase 5 | ⬜ Pending | — | Template-specific blocks & pages |
 
 ### Key Decisions
 
@@ -504,4 +506,4 @@ export default function SchemaPreviewPage() {
 ---
 
 *Last updated: 2026-07-25*
-*Next update: After Phase 0 completion*
+*Next update: After Phase 3 completion*
