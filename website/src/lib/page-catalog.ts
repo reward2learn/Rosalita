@@ -148,10 +148,10 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
       {
         blockType: 'hero',
         config: {
-          badge: 'July 2026 · Exit Viability Review',
-          headline: 'Business Review',
+          badge: 'E-Commerce & Retail Dashboard',
+          headline: 'Store Overview',
           subtitle:
-            'Exit-viability assessment for PT Taman Bintang Bali — revenue under pressure, margin erosion detected, shareholder seeking pathway out.',
+            'Real-time e-commerce performance metrics: revenue, orders, inventory status, and customer insights.',
           minTier: 'public',
         },
       },
@@ -229,6 +229,23 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
     authTier: 'google',
     sections: [],
   },
+  products: {
+    slug: 'products',
+    title: 'Products',
+    navLabel: 'Products',
+    showInNav: true,
+    authTier: 'public',
+    sections: [],
+  },
+  orders: {
+    slug: 'orders',
+    title: 'Orders',
+    navLabel: 'Orders',
+    showInNav: true,
+    authTier: 'pin',
+    sections: [],
+  },
+
   admin: {
     slug: 'admin',
     title: 'Platform Admin',
