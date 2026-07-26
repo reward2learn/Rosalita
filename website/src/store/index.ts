@@ -16,6 +16,7 @@ import { adminApi } from '@/store/apis/admin-api';
 import { dashboardApi } from '@/store/apis/dashboard-api';
 import { sheetDataApi } from '@/store/apis/sheet-data-api';
 import { brandConfigApi } from '@shared/store/apis/brand-config-api';
+import { tenantInfoApi } from '@shared/store/apis/tenant-info-api';
 import { navigationApi } from '@/store/apis/navigation-api';
 import { tenantApi } from '@/store/apis/tenant-api';
 
@@ -34,6 +35,7 @@ const apiMiddleware = [
   dashboardApi.middleware,
   sheetDataApi.middleware,
   brandConfigApi.middleware,
+  tenantInfoApi.middleware,
   navigationApi.middleware,
   tenantApi.middleware,
 ] as const;
@@ -58,6 +60,7 @@ export function makeStore() {
       [dashboardApi.reducerPath]: dashboardApi.reducer,
       [sheetDataApi.reducerPath]: sheetDataApi.reducer,
       [brandConfigApi.reducerPath]: brandConfigApi.reducer,
+      [tenantInfoApi.reducerPath]: tenantInfoApi.reducer,
       [navigationApi.reducerPath]: navigationApi.reducer,
       [tenantApi.reducerPath]: tenantApi.reducer,
     },
