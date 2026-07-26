@@ -641,16 +641,22 @@ export function formatGoogleOAuthResult(result: GoogleOAuthClientResult): string
  * Save the client_secret JSON to the Google/ directory.
  */
 export async function saveClientSecretJson(result: GoogleOAuthClientResult): Promise<string> {
-  const path = `/Users/iliashapiro/RedRuby-FPA/Google/client_secret_${result.projectId}.json`;
+  // Use tmpdir on Vercel, local path in development
+  const { tmpdir } = await import('node:os');
   const { writeFile, mkdir } = await import('node:fs/promises');
   const { existsSync } = await import('node:fs');
-  const { dirname } = await import('node:path');
+  const { dirname, join } = await import('node:path');
 
-  if (!existsSync(dirname(path))) {
-    await mkdir(dirname(path), { recursive: true });
+  const isVercel = !!process.env.VERCEL;
+  const baseDir = isVercel ? tmpdir() : process.cwd();
+  const googleDir = join(baseDir, isVercel ? 'tenant-oauth' : 'Google');
+
+  if (!existsSync(googleDir)) {
+    await mkdir(googleDir, { recursive: true });
   }
 
-  await writeFile(path, result.clientSecretJson, 'utf8');
-  console.log(`[google-cloud] Saved client_secret to ${path}`);
-  return path;
+  const filePath = join(googleDir, `client_secret_${result.projectId}.json`);
+  await writeFile(filePath, result.clientSecretJson, 'utf8');
+  console.log(`[google-cloud] Saved client_secret to ${filePath}`);
+  return filePath;
 }
