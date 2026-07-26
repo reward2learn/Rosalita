@@ -527,7 +527,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     const key = "sk-proj-" + Array.from({length: 48}, () => chars.charAt(Math.floor(Math.random() * 62))).join("");
     handleLicenseChange("openaiApiKey", key);
-    onSnackbar({ message: "API key placeholder generated (replace with real key)", severity: "info" });
+    onSnackbar({ message: "API key placeholder generated (replace with real key)", severity: "success" });
   }, [onSnackbar]);
 
   // ── Handlers: Custom Env ─────────────────────────────────
