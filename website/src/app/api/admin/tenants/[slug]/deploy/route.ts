@@ -131,6 +131,9 @@ export async function POST(
       deployTriggeredAt: new Date().toISOString(),
       deployedTemplate: template,
 
+      // ── Vercel deploy token (stored in tenant metadata, passed to triggerVercelDeploy) ──
+      vercelToken: (latest.metadata as Record<string, unknown> | null)?.vercelToken as string || process.env.VERCEL_TOKEN || '',
+
       // ── User-provided overrides (can override anything above) ──
       ...(parsed.data.metadata || {}),
     };
@@ -214,7 +217,9 @@ export async function POST(
     //    This replaces the previous manual CLI step — the API triggers a production
     //    redeployment using the latest source code.
     const projectId = latest.vercelProjectId || 'prj_kHPW3f3yGArIihBH3J1zJk4wSmhp';
-    const vercelDeployResult = await triggerVercelDeploy(projectId, slug);
+    // Read Vercel token from stored metadata (saved by admin via setup), or from env var
+    const storedToken = (latest.metadata as Record<string, unknown> | null)?.vercelToken as string | undefined;
+    const vercelDeployResult = await triggerVercelDeploy(projectId, slug, { token: storedToken });
 
     // 5. Update tenant status based on Vercel deploy result
     const vercelStatus = vercelDeployResult.success ? 'deploying' : 'live';

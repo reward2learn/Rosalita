@@ -53,19 +53,24 @@ function getVercelToken(): string | undefined {
 export async function triggerVercelDeploy(
   projectId: string,
   projectName: string,
+  options?: { token?: string; teamId?: string },
 ): Promise<VercelDeployResult> {
-  const token = getVercelToken();
+  // Token priority: 1) passed explicitly, 2) env var, 3) fallback
+  const token = options?.token || getVercelToken();
 
   if (!token) {
     console.warn('[vercel-api] VERCEL_TOKEN not set. Cannot trigger deployment via API.');
-    console.warn('[vercel-api] Set VERCEL_TOKEN in project env vars (Vercel dashboard → Settings → Environment Variables).');
     return {
       success: false,
       error: 'VERCEL_TOKEN not configured. Add a Vercel Access Token to the project environment variables.',
     };
   }
+  
+  // Allow override of teamId
+  const teamId = options?.teamId || TEAM_ID;
 
-  const url = `${VERCEL_API_BASE}/v13/deployments?teamId=${TEAM_ID}`;
+
+  const url = `${VERCEL_API_BASE}/v13/deployments?teamId=${teamId}`;
 
   const body: Record<string, unknown> = {
     name: projectName,
