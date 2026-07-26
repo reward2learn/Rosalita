@@ -29,6 +29,7 @@
         "./src/*"
       ],
       "@shared/*": [
+        "./shared/src/*",
         "../packages/shared/src/*"
       ]
     }
