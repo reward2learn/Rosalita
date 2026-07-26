@@ -148,10 +148,10 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
       {
         blockType: 'hero',
         config: {
-          badge: 'E-Commerce & Retail Dashboard',
-          headline: 'Store Overview',
+          badge: 'Business Dashboard',
+          headline: 'Overview',
           subtitle:
-            'Real-time e-commerce performance metrics: revenue, orders, inventory status, and customer insights.',
+            'Key business metrics, financial performance, and operational insights.',
           minTier: 'public',
         },
       },
@@ -172,6 +172,22 @@ export const PAGE_CATALOG: Record<string, PageDefinition> = {
         config: { title: 'The 5 Levers', minTier: 'google' },
       },
     ],
+  },
+  menu: {
+    slug: 'menu',
+    title: 'Menu',
+    navLabel: 'Menu',
+    showInNav: true,
+    authTier: 'public',
+    sections: [],
+  },
+  reservations: {
+    slug: 'reservations',
+    title: 'Reservations',
+    navLabel: 'Reservations',
+    showInNav: true,
+    authTier: 'public',
+    sections: [],
   },
   summary: {
     slug: 'summary',
