@@ -132,7 +132,7 @@ export async function seedTemplateNavItems(prisma: PrismaClient): Promise<number
   let templateId = 'default';
   try {
     const rows = await prisma.$queryRawUnsafe<{ tenant_template: string }[]>(
-      `SELECT tenant_template FROM app_settings LIMIT 1`
+      `SELECT tenant_template FROM app_settings ORDER BY updated_at DESC LIMIT 1`
     );
     if (rows.length > 0 && rows[0].tenant_template) {
       templateId = rows[0].tenant_template;
