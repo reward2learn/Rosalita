@@ -150,6 +150,23 @@ export async function seedTemplateNavItems(prisma: PrismaClient): Promise<number
   );
   const existingPaths = new Set(existing.map((r) => r.path));
 
+  // Clean up stale template items not in the current template
+  const currentPaths = new Set(template.defaultNavItems.map((n) => n.path));
+  const stalePrefix = 'template-';
+  for (const row of existing) {
+    if (row.id.startsWith(stalePrefix) && !currentPaths.has(row.path)) {
+      try {
+        await prisma.$executeRawUnsafe(
+          `DELETE FROM navigation_items WHERE id = $1`,
+          row.id
+        );
+        console.log(`[navigation] Removed stale template item: ${row.id} (${row.path})`);
+      } catch (err) {
+        console.error(`[navigation] Failed to remove stale item ${row.id}:`, err);
+      }
+    }
+  }
+
   let inserted = 0;
   for (const nav of template.defaultNavItems) {
     if (existingPaths.has(nav.path)) continue;
