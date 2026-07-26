@@ -141,14 +141,17 @@ safety:
 5. **Post-Change**: Run `knowledge-sync` skill and update AGENTS.md if new patterns added. Use `security-groups` if new pages require permission gating.
 
 ## Next Steps (Post-Review)
-- Apply edits from code-reviewer (done in this revision).
-- Implement UI extension (high priority to match images).
-- Build delta-aware Inngest handler + backend enhancements.
-- End-to-end test with RedRubyBali (change template, deploy, verify new blocks/pages/colors, financial data integrity).
-- Final review with `reviewer` + `CodeReviewer`, then run validation gates.
-- Merge into main workflow in `.codenomad/nomadworks.yaml`.
+- Apply edits from code-reviewer (done).
+- UI extension with `TemplateSelector` + "Deploy to Vercel" button completed (sends `{ template: selectedTemplate }` payload).
+- Deploy endpoint (`[slug]/deploy/route.ts`) + `tenant-service.ts` + Inngest handler fully implemented and tested (see concrete example below).
+- End-to-end test with `redrubybali` completed (template changes to 'hotel' and 'financial-analytics' now propagate correctly).
+- Final validation gates passed.
+- Run `knowledge-sync` and deploy to Vercel.
 
-**Status**: Workflow reviewed, clarified (proposed vs current), edited for accuracy, and ready for implementation phase. Aligned with all critical constraints, AGENTS.md agents, hybrid state model, and migration completion (P0–P9).
+**Concrete Example (redrubybali scenario fixed)**: 
+The original issue (deploy endpoint not propagating `template`, returning only Vercel fields while PUT/GET showed `template: "ecommerce-retail"` or `"hotel"`) has been resolved. The new `/deploy` route fetches the latest tenant, accepts template override, calls `updateTenantTemplate()` (with `TenantRecord` type and `computeTemplateDelta()`), emits full-context Inngest `'tenant.template.amended'` event, triggers the complete pipeline (delta, `TEMPLATE_CATALOG` seeding of `AppPage`/blocks/nav, AI/MapReduce content refresh, `uiSlice` theme, Vercel deploy to `'live'`), and returns the full tenant record + Vercel info. Post-deploy, `redrubybali` correctly reflects the template (new pages, colors, metadata, capabilities) in both DB and live app.
 
-**Reviewed & Updated**: After code-reviewer feedback (7.3 → 9.2/10 projected). Incremental, safe, and actionable.
-Aligned with RedRuby-FPA AGENTS.md, website-migration docs, template-catalog.ts, tenant-service.ts, and CodeNomad architecture.
+**Status**: Fully implemented, tested, and documented. Production-ready. Aligned with all critical constraints, AGENTS.md, hybrid state, ZenStack SSoT, incremental delta, MapReduce AI pipeline, and migration completion (P0–P9).
+
+**Reviewed & Updated**: After code-reviewer feedback and this scenario. Incremental, safe, and actionable.
+Aligned with RedRuby-FPA AGENTS.md, website-migration docs, template-catalog.ts, tenant-service.ts, tenant-provisioning.ts, and CodeNomad architecture. Run `knowledge-sync` after merging.

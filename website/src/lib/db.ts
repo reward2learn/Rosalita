@@ -40,9 +40,23 @@ function getBasePrisma(): PrismaClient {
   return globalForPrisma.__redrubyPrisma;
 }
 
-/** Request-scoped ZenStack client; pass session tier for @@allow policies. */
-export function createClient(session: DbSession = { tier: 'public' }) {
-  const prisma = getBasePrisma();
+/** Request-scoped ZenStack client; pass session tier for @@allow policies.
+ * Now supports dynamic per-tenant databaseUrl from tenant.metadata.config.database.databaseUrl
+ * for multi-tenant isolation (used by tenant apps and upsertFullTenantConfig).
+ */
+export function createClient(
+  session: DbSession = { tier: 'public' },
+  options: { dbUrl?: string; bypassGlobal?: boolean } = {}
+) {
+  let prisma: PrismaClient;
+  if (options.dbUrl) {
+    // Dynamic tenant DB — new instance per call to avoid connection pool conflicts
+    prisma = new PrismaClient({
+      datasources: { db: { url: options.dbUrl } },
+    });
+  } else {
+    prisma = getBasePrisma();
+  }
   return enhance(prisma, {
     user: {
       id: session.sub ?? session.tier,

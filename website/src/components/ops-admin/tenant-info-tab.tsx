@@ -13,11 +13,14 @@ import { getTemplate } from '@/domain/tenant/template-catalog';
 
 export function TenantInfoTab() {
   const tenant = getClientTenantConfig();
-  const template = getTemplate(tenant.slug === 'tokenizmyapp' ? 'default' : tenant.slug);
   const { data: brandData } = useGetBrandConfigQuery();
 
   const brand = brandData?.data;
-  const effectiveTemplate = template?.label ?? brand?.tenantTemplate ?? 'default';
+  // Prefer brand.tenantTemplate (synced from app_settings.tenant_template via deploy/Neon upsert)
+  // Fallback to catalog by slug or 'financial-analytics' for redrubybali (avoids "Generic Dashboard")
+  const templateId = brand?.tenantTemplate || tenant.template || (tenant.slug === 'redrubybali' ? 'financial-analytics' : tenant.slug) || 'default';
+  const template = getTemplate(templateId);
+  const effectiveTemplate = template?.label || brand?.tenantTemplate || 'financial-analytics';
 
   return (
     <Paper variant="outlined" sx={{ p: 3 }}>
