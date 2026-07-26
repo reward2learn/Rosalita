@@ -36,7 +36,7 @@
     "@prisma/client": "6.12.0",
     "@reduxjs/toolkit": "^2.6.0",
     "@sparticuz/chromium": "^133.0.0",
-    "@tenants/shared": "file:../packages/shared",
+    "@tenants/shared": "file:./shared",
     "@zenstackhq/runtime": "2.22.3",
     "ai": "^7.0.37",
     "chart.js": "^4.5.1",

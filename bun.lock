@@ -96,10 +96,11 @@
         "@prisma/client": "6.12.0",
         "@reduxjs/toolkit": "^2.6.0",
         "@sparticuz/chromium": "^133.0.0",
-        "@tenants/shared": "file:../packages/shared",
+        "@tenants/shared": "file:./shared",
         "@zenstackhq/runtime": "2.22.3",
         "ai": "^7.0.37",
         "chart.js": "^4.5.1",
+        "inngest": "^4.13.0",
         "jose": "^6.0.0",
         "next": "^16.0.0",
         "puppeteer-core": "^24.43.1",
@@ -1853,7 +1854,7 @@
 
     "proxy-agent/lru-cache": ["lru-cache@7.18.3", "", {}, "sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA=="],
 
-    "redruby-website/@tenants/shared": ["@tenants/shared@file:packages/shared", { "dependencies": { "@emotion/react": "^11.14.0", "@emotion/styled": "^11.14.1", "@mui/icons-material": "^9.1.1", "@mui/material": "^9.1.2", "@reduxjs/toolkit": "^2.6.0", "@zenstackhq/runtime": "2.22.3", "chart.js": "^4.5.1", "react": "^19.0.0", "react-chartjs-2": "^5.3.1", "react-dom": "^19.0.0", "react-hook-form": "^7.54.0", "react-redux": "^9.2.0", "xlsx": "^0.18.5", "zod": "^3.24.0" }, "devDependencies": { "@types/node": "^22.10.0", "typescript": "^5.7.0" } }],
+    "redruby-website/@tenants/shared": ["@tenants/shared@file:website/shared", { "dependencies": { "@emotion/react": "^11.14.0", "@emotion/styled": "^11.14.1", "@mui/icons-material": "^9.1.1", "@mui/material": "^9.1.2", "@reduxjs/toolkit": "^2.6.0", "@zenstackhq/runtime": "2.22.3", "chart.js": "^4.5.1", "react": "^19.0.0", "react-chartjs-2": "^5.3.1", "react-dom": "^19.0.0", "react-hook-form": "^7.54.0", "react-redux": "^9.2.0", "xlsx": "^0.18.5", "zod": "^3.24.0" }, "devDependencies": { "@types/node": "^22.10.0", "typescript": "^5.7.0" } }],
 
     "socks-proxy-agent/agent-base": ["agent-base@7.1.4", "", {}, "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="],
 

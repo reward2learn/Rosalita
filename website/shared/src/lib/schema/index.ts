@@ -1,0 +1,12 @@
+export * from './types';
+export * from './registry';
+export { FINANCIAL_ANALYTICS_SCHEMA } from './templates/financial-analytics';
+export { RESTAURANT_SCHEMA } from './templates/restaurant';
+export { HOTEL_SCHEMA } from './templates/hotel';
+export { ECOMMERCE_RETAIL_SCHEMA } from './templates/ecommerce-retail';
+export { HEALTHCARE_SCHEMA } from './templates/healthcare';
+export { SUPPLY_CHAIN_SCHEMA } from './templates/supply-chain';
+export { REAL_ESTATE_SCHEMA } from './templates/real-estate';
+export { EDUCATION_SCHEMA } from './templates/education';
+export { PROFESSIONAL_SERVICES_SCHEMA } from './templates/professional-services';
+export { MANUFACTURING_SCHEMA } from './templates/manufacturing';

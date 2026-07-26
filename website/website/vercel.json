@@ -1,0 +1,3 @@
+{
+  "installCommand": "mkdir -p node_modules/@tenants && cp -r ../packages/shared node_modules/@tenants/shared 2>/dev/null || true && bun install"
+}
