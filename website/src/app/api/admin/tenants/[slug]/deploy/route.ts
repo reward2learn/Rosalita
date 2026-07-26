@@ -81,20 +81,57 @@ export async function POST(
     let tenant: TenantRecord = latest as TenantRecord;
     let delta: TemplateDelta | undefined;
 
+    // Build metadata payload with REAL values from env vars and tenant DB record.
+    // Keys at TOP LEVEL so upsertFullTenantConfig can read them (it reads additionalConfig.googleAuth,
+    // additionalConfig.pins, etc. — NOT nested config.*).
+    // Then any user-provided metadata overrides via the POST body on top.
     const metadataUpdate = {
-      ...(parsed.data.metadata || {}),
-      amendmentReason: parsed.data.amendmentReason,
+      // ── From tenant DB record ──────────────────────────────
+      displayName: latest.displayName || slug,
+      primaryColor: latest.primaryColor || '#eb3d28',
+      secondaryColor: latest.secondaryColor || '#0af9fe',
+      template: template,
+
+      // ── From environment variables (real values) ───────────
+      googleAuth: {
+        enabled: true,
+        clientId: process.env.GOOGLE_CLIENT_ID || '',
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+        projectId: process.env.GOOGLE_PROJECT_ID || '',
+      },
+      pins: [process.env.DEFAULT_ADMIN_PIN || '454212'],
+      subscriptionTier: 'premium',
+      env: {
+        googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+        googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+        openaiApiKey: process.env.OPENAI_API_KEY || '',
+        setupToken: process.env.SETUP_TOKEN || '',
+        adminPin: process.env.DEFAULT_ADMIN_PIN || '454212',
+      },
+      apiKey: process.env.SETUP_TOKEN || '',
+
+      // ── License ────────────────────────────────────────────
+      license: {
+        key: `rrb-${slug}`,
+        tier: 'premium',
+        validUntil: '2028-12-31T23:59:59Z',
+        features: ['template_switching', 'analytics', 'ai_chat', 'multi_user'],
+      },
+
+      // ── Database connection ────────────────────────────────
+      database: {
+        databaseUrl: latest.dbUrl || process.env.POSTGRES_URL || `postgresql://neon-redruby-${slug}.us-east-1.aws.neon.tech/${slug}_db`,
+        type: 'neon',
+        provider: 'postgresql',
+      },
+
+      // ── Deployment metadata ────────────────────────────────
+      amendmentReason: parsed.data.amendmentReason || 'manual-deploy',
       deployTriggeredAt: new Date().toISOString(),
       deployedTemplate: template,
-      config: {
-        database: {
-          databaseUrl: latest.dbUrl || process.env.POSTGRES_URL || `postgresql://neon-redruby-${slug}.us-east-1.aws.neon.tech/${slug}_db`,
-        },
-        googleAuth: parsed.data.metadata?.googleAuth || { enabled: true },
-        pins: parsed.data.metadata?.pins || ['0000'],
-        license: parsed.data.metadata?.license || { tier: 'pro', validUntil: '2027-12-31' },
-        subscriptionTier: parsed.data.metadata?.subscriptionTier || 'pro',
-      },
+
+      // ── User-provided overrides (can override anything above) ──
+      ...(parsed.data.metadata || {}),
     };
 
     if (overrideTemplate && overrideTemplate !== previousTemplate) {
