@@ -17,12 +17,31 @@ const FALLBACK_COLORS: BrandColors = { primary: '#eb3d28', secondary: '#0af9fe' 
  * Build an MUI dark theme using the given brand colors.
  * Falls back to default palette when brand config is not yet loaded.
  */
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const m = hex.match(/^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i);
+  return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null;
+}
+
+function luminance(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0.5;
+  const [r, g, b] = [rgb.r / 255, rgb.g / 255, rgb.b / 255].map((c) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  );
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastText(bgHex: string): string {
+  return luminance(bgHex) > 0.5 ? '#0f0f14' : '#f0f0f5';
+}
+
 function buildTheme(brand: BrandColors) {
   return createTheme({
     palette: {
       mode: 'dark',
-      primary: { main: brand.primary },
-      secondary: { main: brand.secondary },
+      primary: { main: brand.primary, contrastText: contrastText(brand.primary) },
+      secondary: { main: brand.secondary, contrastText: contrastText(brand.secondary) },
       background: {
         default: '#0f0f14',
         paper: '#1a1a22',
