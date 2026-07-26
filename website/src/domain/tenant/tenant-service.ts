@@ -212,6 +212,7 @@ export async function upsertFullTenantConfig(
   success: boolean;
   databaseUrlSent?: string;
   payload?: Record<string, unknown>;
+  settingsUpdated?: boolean;
   error?: string;
 }> {
   if (!tenantDbUrl) {
@@ -282,9 +283,9 @@ export async function upsertFullTenantConfig(
       tenant_slug: slug,
       tenant_template: template,
       tenant_metadata: fullConfig,
-      tenant_display_name: fullConfig.displayName || slug,
-      brand_primary_color: fullConfig.primaryColor || '#eb3d28',
-      brand_secondary_color: fullConfig.secondaryColor || '#0af9fe',
+      tenant_display_name: (additionalConfig.displayName as string) || slug,
+      brand_primary_color: (additionalConfig.primaryColor as string) || '#eb3d28',
+      brand_secondary_color: (additionalConfig.secondaryColor as string) || '#0af9fe',
       updated_at: new Date().toISOString(),
     };
 

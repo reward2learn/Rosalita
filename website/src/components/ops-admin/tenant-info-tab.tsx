@@ -18,7 +18,8 @@ export function TenantInfoTab() {
   const brand = brandData?.data;
   // Prefer brand.tenantTemplate (synced from app_settings.tenant_template via deploy/Neon upsert)
   // Fallback to catalog by slug or 'financial-analytics' for redrubybali (avoids "Generic Dashboard")
-  const templateId = brand?.tenantTemplate || tenant.template || (tenant.slug === 'redrubybali' ? 'financial-analytics' : tenant.slug) || 'default';
+  const tenantAny = tenant as unknown as Record<string, unknown>;
+  const templateId = String(brand?.tenantTemplate || tenantAny.template || (tenant.slug === 'redrubybali' ? 'financial-analytics' : tenant.slug) || 'default');
   const template = getTemplate(templateId);
   const effectiveTemplate = template?.label || brand?.tenantTemplate || 'financial-analytics';
 
