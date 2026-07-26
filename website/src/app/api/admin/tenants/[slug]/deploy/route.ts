@@ -22,6 +22,7 @@ import { createClient } from '@/lib/db';
 import { requireWriteAuth } from '@/lib/auth/guards';
 import { jsonError, jsonOk } from '@/lib/api/response';
 import { ensureTenantsTable, updateTenantTemplate, computeTemplateDelta, upsertFullTenantConfig, type TemplateDelta, type TenantRecord } from '@/domain/tenant/tenant-service';
+import { ensureNavigationTable, seedTemplateNavItems } from '@/lib/navigation/db';
 import { inngest } from '@/lib/inngest';
 
 export const dynamic = 'force-dynamic';
@@ -135,6 +136,18 @@ export async function POST(
       template,
       metadataUpdate
     );
+
+    // 2b. Seed template-driven navigation items
+    try {
+      const navPrisma = new (await import('@/generated/prisma')).PrismaClient({
+        datasources: { db: { url: dbUrlForTenant } },
+      });
+      await ensureNavigationTable(navPrisma);
+      await seedTemplateNavItems(navPrisma);
+      await navPrisma.$disconnect();
+    } catch (navErr) {
+      console.warn(`[tenants:deploy] Template nav seeding failed for ${slug}:`, navErr);
+    }
 
     // 3. Send Inngest 'tenant.template.amended' with FULL context (includes neonResult for seeding/AppPage/AI/MapReduce)
     await inngest.send({

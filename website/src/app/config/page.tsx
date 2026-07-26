@@ -16,6 +16,7 @@ import { ChatSettingsForm } from '@/components/config/chat-settings-form';
 import { OpenAiKeyForm } from '@/components/config/openai-key-form';
 import { getClientTenantConfig } from '@shared/lib/config/tenant';
 import { getTemplate } from '@/domain/tenant/template-catalog';
+import { useGetBrandConfigQuery } from '@shared/store/apis/brand-config-api';
 
 const AiContentTab = dynamic(
   () => import('@/components/ops-admin/ai-content-tab').then((m) => ({ default: m.AiContentTab })),
@@ -59,7 +60,9 @@ function TemplateConfigPlaceholder({ template }: { template: { label: string; de
 function ConfigPageInner() {
   const searchParams = useSearchParams();
   const tenant = getClientTenantConfig();
-  const template = getTemplate(tenant.slug === 'tokenizmyapp' ? 'default' : tenant.slug);
+  const { data: brandData } = useGetBrandConfigQuery();
+  const brandTemplate = brandData?.data?.tenantTemplate;
+  const template = getTemplate(brandTemplate || (tenant.slug === 'tokenizmyapp' ? 'default' : tenant.slug));
   const initialTab = searchParams.get('tab');
   const [tab, setTab] = useState(initialTab ? Math.min(Math.max(parseInt(initialTab, 10) || 0, 0), 3) : 0);
 

@@ -12,7 +12,7 @@
 
 import { PrismaClient } from '@/generated/prisma';
 import { jsonOk } from '@/lib/api/response';
-import { ensureNavigationTable, seedMissingNavigationFromCatalog } from '@/lib/navigation/db';
+import { ensureNavigationTable, seedMissingNavigationFromCatalog, seedTemplateNavItems } from '@/lib/navigation/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,6 +57,8 @@ export async function GET(request: Request) {
     await ensureNavigationTable(prisma);
     const seeded = await seedMissingNavigationFromCatalog(prisma);
     if (seeded > 0) console.log(`[navigation] Seeded ${seeded} new item(s) from page catalog`);
+    const templateSeeded = await seedTemplateNavItems(prisma);
+    if (templateSeeded > 0) console.log(`[navigation] Seeded ${templateSeeded} template nav items`);
 
     const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
       `SELECT id, parent_id AS "parentId", sort_order AS "sortOrder", title, path, icon,

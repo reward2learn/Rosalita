@@ -4,6 +4,7 @@
  */
 
 import type { PrismaClient } from '@/generated/prisma';
+import { getTemplate } from '@/domain/tenant/template-catalog';
 
 const NAV_DDL = `
 CREATE TABLE IF NOT EXISTS navigation_items (
@@ -117,5 +118,60 @@ export async function seedMissingNavigationFromCatalog(prisma: PrismaClient): Pr
     await insertIfMissing(item.id, item.title, item.path, item.authTier);
   }
 
+  return inserted;
+}
+
+
+/**
+ * Seed navigation items from the active template in app_settings.
+ * Called on every GET /api/navigation to ensure template-driven pages appear.
+ * Idempotent: skips items that already exist (by path).
+ */
+export async function seedTemplateNavItems(prisma: PrismaClient): Promise<number> {
+  // Read the active template from app_settings
+  let templateId = 'default';
+  try {
+    const rows = await prisma.$queryRawUnsafe<{ tenant_template: string }[]>(
+      `SELECT tenant_template FROM app_settings LIMIT 1`
+    );
+    if (rows.length > 0 && rows[0].tenant_template) {
+      templateId = rows[0].tenant_template;
+    }
+  } catch {
+    // app_settings table may not exist yet
+    return 0;
+  }
+
+  const template = getTemplate(templateId);
+  if (!template || template.id === 'default') return 0; // no template nav to seed for generic
+
+  const existing = await prisma.$queryRawUnsafe<{ id: string; path: string }[]>(
+    `SELECT id, path FROM navigation_items`
+  );
+  const existingPaths = new Set(existing.map((r) => r.path));
+
+  let inserted = 0;
+  for (const nav of template.defaultNavItems) {
+    if (existingPaths.has(nav.path)) continue;
+    const id = `template-${templateId}-${nav.path.replace(/^\//, '').replace(/\//g, '-')}`;
+    try {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO navigation_items (id, parent_id, sort_order, title, path, icon, auth_tier, required_groups, is_visible, is_dynamic, updated_at)
+         VALUES ($1, NULL, $2, $3, $4, $5, CAST($6 AS "AuthTier"), '', TRUE, TRUE, NOW())
+         ON CONFLICT (id) DO NOTHING`,
+        id,
+        100 + inserted, // template items after static infra
+        nav.title,
+        nav.path,
+        nav.icon,
+        nav.authTier,
+      );
+      inserted++;
+    } catch (err) {
+      console.error(`[navigation] Failed to seed template item ${id}:`, err);
+    }
+  }
+
+  if (inserted > 0) console.log(`[navigation] Seeded ${inserted} template nav items for ${templateId}`);
   return inserted;
 }
