@@ -50,8 +50,8 @@ interface TenantDeployInfo {
   success: boolean;
 }
 
-export async function GET(): Promise<NextResponse> {
-  const guard = await requireWriteAuth();
+export async function GET(request: Request): Promise<NextResponse> {
+  const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
 
   const envTenant = getTenantConfig();
