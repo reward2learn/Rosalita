@@ -319,6 +319,34 @@ export const TEMPLATE_CATALOG: Record<string, TemplateDefinition> = {
     xsdStandard: 'B2MML (Business To Manufacturing)',
   },
 
+
+  // Alias: nightclub-bar -> financial-analytics (DB may still reference old name)
+  'nightclub-bar': {
+    id: 'nightclub-bar',
+    label: 'Financial Analytics',
+    description: 'Financial performance tracking: revenue analysis, BEP modeling, P&L projections, KPI monitoring, executive reporting.',
+    icon: 'Analytics',
+    defaultColors: { primary: '#eb3d28', secondary: '#0af9fe' },
+    defaultPages: [
+      DASHBOARD_PAGE(['hero', 'kpi_cards', 'chart_financial']),
+      SUMMARY_PAGE,
+      { slug: 'review', title: 'Business Review', navLabel: 'Review', authTier: 'google', blockTypes: ['review_blocks'] },
+      TASKS_PAGE,
+      { slug: 'ops-admin', title: 'Ops Admin', navLabel: 'Ops Admin', authTier: 'pin', blockTypes: ['ops_admin_tabs', 'z_report_form', 'costs_form'] },
+      { slug: 'ops-tracking', title: 'Ops Tracking', navLabel: 'Ops Tracking', authTier: 'pin', blockTypes: ['kpi_cards', 'sheet_viewer'] },
+    ],
+    defaultNavItems: [
+      { title: 'Dashboard', path: '/dashboard', icon: 'Dashboard', authTier: 'public' },
+      { title: 'Business Review', path: '/review', icon: 'Description', authTier: 'google' },
+      { title: 'Tasks', path: '/tasks', icon: 'CheckCircle', authTier: 'pin' },
+      { title: 'Ops Admin', path: '/ops-admin', icon: 'AdminPanelSettings', authTier: 'pin' },
+      { title: 'Ops Tracking', path: '/ops-tracking', icon: 'TrackChanges', authTier: 'pin' },
+      { title: 'Admin', path: '/admin', icon: 'Settings', authTier: 'pin' },
+    ],
+    schemaOrgType: 'FinancialService',
+    xsdStandard: 'FpML, FIXML',
+  },
+
   // Default (minimal — kept for backward compatibility)
   default: {
     id: 'default',
