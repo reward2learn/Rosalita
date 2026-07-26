@@ -10,6 +10,8 @@
  * The deploy endpoint writes full config to app_config + app_settings via
  * upsertFullTenantConfig(). This endpoint reads it back so the tenant-info tab
  * in /admin shows exactly what the tenant administrator deployed — no hardcoded values.
+ *
+ * Auto-creates app_config + app_settings tables if they don't exist yet (idempotent).
  */
 
 import { NextResponse } from 'next/server';
@@ -20,34 +22,60 @@ import { getTenantConfig } from '@shared/lib/config/tenant';
 export const dynamic = 'force-dynamic';
 
 interface TenantDeployInfo {
-  /** Core tenant identity */
   slug: string;
   displayName: string;
   template: string;
-
-  /** Branding */
   primaryColor: string;
   secondaryColor: string;
   logoText: string;
   logoUrl: string | null;
-
   /** Full config payload from app_config (written by deploy endpoint) */
   config: Record<string, unknown> | null;
-
   /** Raw metadata from app_settings */
   metadata: Record<string, unknown> | null;
-
-  /** Deploy timestamps */
   lastDeployed: string | null;
   lastUpdated: string | null;
   deployedTemplate: string | null;
   amendmentReason: string | null;
-
   /** Source: which table(s) the data comes from */
   source: 'app_config' | 'app_settings' | 'env_fallback';
-
-  /** Status */
   success: boolean;
+}
+
+/**
+ * Ensure app_config table exists (idempotent).
+ * Mirrors the DDL from upsertFullTenantConfig in tenant-service.ts.
+ */
+async function ensureAppConfigTable(prisma: import('@/generated/prisma').PrismaClient): Promise<void> {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS app_config (
+      id TEXT PRIMARY KEY DEFAULT 'main',
+      data JSONB NOT NULL DEFAULT '{}',
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+}
+
+/**
+ * Ensure app_settings table exists (idempotent).
+ * Mirrors the DDL from app-settings-service.ts.
+ */
+async function ensureAppSettingsTable(prisma: import('@/generated/prisma').PrismaClient): Promise<void> {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      id TEXT PRIMARY KEY,
+      web_search_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+      tenant_slug TEXT NOT NULL DEFAULT 'tokenizmyapp',
+      tenant_display_name TEXT NOT NULL DEFAULT '',
+      tenant_template TEXT NOT NULL DEFAULT 'default',
+      tenant_metadata JSONB DEFAULT '{}',
+      brand_logo_text TEXT NOT NULL DEFAULT '',
+      brand_logo_url TEXT NOT NULL DEFAULT '',
+      brand_primary_color TEXT NOT NULL DEFAULT '#eb3d28',
+      brand_secondary_color TEXT NOT NULL DEFAULT '#0af9fe',
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 }
 
 export async function GET(request: Request): Promise<NextResponse> {
@@ -61,13 +89,16 @@ export async function GET(request: Request): Promise<NextResponse> {
     const url = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
 
     if (!url) {
-      // No DB — return env-only info
       return jsonOk(buildEnvFallback(envTenant));
     }
 
     const prisma = new PrismaClient({ datasources: { db: { url } } });
 
     try {
+      // Ensure both tables exist (idempotent)
+      await ensureAppConfigTable(prisma);
+      await ensureAppSettingsTable(prisma);
+
       // 1) Try app_config (full deploy payload, JSONB)
       const configRow = await prisma.$queryRawUnsafe<{ id: string; data: unknown; updated_at: Date }[]>(
         `SELECT id, data, updated_at FROM app_config WHERE id = 'main'`
@@ -152,7 +183,6 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
   } catch (err) {
     console.error('[tenant-info] Error reading deploy data:', err);
-    // Last resort: env fallback
     return jsonOk(buildEnvFallback(envTenant));
   }
 }
