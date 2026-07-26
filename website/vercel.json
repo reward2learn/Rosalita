@@ -1,0 +1,10 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "env": {
+    "AWS_LAMBDA_JS_RUNTIME": "nodejs22.x"
+  }
+}
