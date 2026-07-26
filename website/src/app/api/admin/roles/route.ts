@@ -134,3 +134,125 @@ export async function POST(request: Request): Promise<NextResponse> {
     return jsonError('Failed to store PIN', 500);
   }
 }
+
+
+// ── PUT: Create or update a functional role ──────────────
+
+export async function PUT(request: Request): Promise<NextResponse> {
+  const guard = await requireWriteAuth(request);
+  if (!guard.ok) return guard.response;
+
+  if (!sessionIsPlatformAdmin(guard.session)) {
+    return jsonError("Platform admin only", 403);
+  }
+
+  let db;
+  try {
+    db = createClient({ tier: guard.session.tier, sub: guard.session.sub });
+  } catch {
+    return jsonError("Database unavailable", 503);
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Invalid JSON body", 400);
+  }
+
+  const { code, name, isPlatformAdmin, email } = (body ?? {}) as {
+    code?: string;
+    name?: string;
+    isPlatformAdmin?: boolean;
+    email?: string;
+  };
+
+  if (!code || typeof code !== "string" || code.trim().length < 2) {
+    return jsonError("code is required (min 2 characters)", 400);
+  }
+  if (!name || typeof name !== "string" || name.trim().length < 1) {
+    return jsonError("name is required", 400);
+  }
+
+  const normalizedCode = code.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+
+  try {
+    const existing = await db.role.findUnique({ where: { code: normalizedCode } });
+
+    const roleData: Record<string, unknown> = {
+      name: name.trim(),
+      isPlatformAdmin: isPlatformAdmin ?? false,
+      email: email?.trim() || null,
+    };
+
+    if (existing) {
+      await db.role.update({ where: { code: normalizedCode }, data: roleData });
+      return jsonOk({ code: normalizedCode, created: false, updated: true });
+    } else {
+      await db.role.create({
+        data: {
+          code: normalizedCode,
+          ...roleData,
+        } as any,
+      });
+      return jsonOk({ code: normalizedCode, created: true });
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Failed to save role";
+    console.error("[roles:PUT]", msg);
+    return jsonError(msg, 500);
+  }
+}
+
+// ── DELETE: Remove a functional role ─────────────────────
+
+export async function DELETE(request: Request): Promise<NextResponse> {
+  const guard = await requireWriteAuth(request);
+  if (!guard.ok) return guard.response;
+
+  if (!sessionIsPlatformAdmin(guard.session)) {
+    return jsonError("Platform admin only", 403);
+  }
+
+  const { searchParams } = new URL(request.url);
+  const code = searchParams.get("code");
+
+  if (!code || typeof code !== "string") {
+    return jsonError("code query parameter is required", 400);
+  }
+
+  let db;
+  try {
+    db = createClient({ tier: guard.session.tier, sub: guard.session.sub });
+  } catch {
+    return jsonError("Database unavailable", 503);
+  }
+
+  try {
+    const existing = await db.role.findUnique({ where: { code } });
+    if (!existing) {
+      return jsonError("Role not found", 404);
+    }
+
+    // Check if any user accounts reference this role
+    const usersWithRole = await db.userAccount.findMany({
+      where: { roleCode: code },
+      select: { id: true, email: true },
+    });
+
+    await db.role.delete({ where: { code } });
+
+    return jsonOk({
+      deleted: true,
+      code,
+      unlinkedUsers: usersWithRole.length,
+      note: usersWithRole.length > 0
+        ? "Role removed. " + usersWithRole.length + " user account(s) had this role assigned and will need re-assignment."
+        : "Role removed successfully.",
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Failed to delete role";
+    console.error("[roles:DELETE]", msg);
+    return jsonError(msg, 500);
+  }
+}

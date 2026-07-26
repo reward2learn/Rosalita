@@ -75,6 +75,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import KeyIcon from '@mui/icons-material/Key';
 import LockIcon from '@mui/icons-material/Lock';
+import PeopleIcon from '@mui/icons-material/People';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SettingsIcon from '@mui/icons-material/Settings';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
@@ -175,6 +176,7 @@ const MANUAL_TABS = [
   { label: 'Google OAuth', icon: <VerifiedUserIcon fontSize="small" />, key: 'oauth' },
   { label: 'Database', icon: <DnsIcon fontSize="small" />, key: 'database' },
   { label: 'Custom Env', icon: <CloudIcon fontSize="small" />, key: 'env' },
+  { label: 'Functional Roles', icon: <PeopleIcon fontSize="small" />, key: 'roles' },
 ];
 
 const ACCORDION_ICONS: Record<string, React.ReactNode> = {
@@ -183,6 +185,7 @@ const ACCORDION_ICONS: Record<string, React.ReactNode> = {
   oauth: <VerifiedUserIcon />,
   database: <DnsIcon />,
   env: <CloudIcon />,
+  roles: <PeopleIcon />,
 };
 
 // ── Component ──────────────────────────────────────────────────
@@ -241,6 +244,24 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
   const [newEnvKey, setNewEnvKey] = useState('');
   const [newEnvValue, setNewEnvValue] = useState('');
 
+  // ── Functional Roles ──────────────────────────────
+  const [rolesList, setRolesList] = useState<Array<{ code: string; name: string; isPlatformAdmin: boolean; email: string | null; pinConfigured: boolean }>>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [rolesError, setRolesError] = useState<string | null>(null);
+  const [settingPinRole, setSettingPinRole] = useState<string | null>(null);
+  const [settingPinValue, setSettingPinValue] = useState<Record<string, string>>({});
+  const [savingPinRole, setSavingPinRole] = useState<string | null>(null);
+  // ── Role CRUD state ──────────────────────────────
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [roleDialogMode, setRoleDialogMode] = useState<"create" | "edit">("create");
+  const [roleFormCode, setRoleFormCode] = useState("");
+  const [roleFormName, setRoleFormName] = useState("");
+  const [roleFormIsPlatformAdmin, setRoleFormIsPlatformAdmin] = useState(false);
+  const [roleFormEmail, setRoleFormEmail] = useState("");
+  const [roleDeleteConfirm, setRoleDeleteConfirm] = useState<string | null>(null);
+  const [roleSaving, setRoleSaving] = useState(false);
+
+
   // ── Automated Provisioning ───────────────────────────────
   const [autoProvision, setAutoProvision] = useState<AutoProvisionConfig>({
     googleOAuth: true,
@@ -284,6 +305,143 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
       }));
     }
   }, [tenant]);
+
+  // ── Fetch roles when modal opens ────────────────
+  const fetchRoles = useCallback(async () => {
+    if (!tenant) return;
+    setRolesLoading(true);
+    setRolesError(null);
+    try {
+      const res = await fetch("/api/admin/roles");
+      const data = await res.json();
+      if (data.ok && data.data?.roles) {
+        setRolesList(data.data.roles);
+      } else {
+        setRolesError(data.error || "Failed to load roles");
+      }
+    } catch {
+      setRolesError("Failed to connect to roles API");
+    } finally {
+      setRolesLoading(false);
+    }
+  }, [tenant]);
+
+  const handleSetRolePin = useCallback(async (code: string, pin: string) => {
+    setSavingPinRole(code);
+    try {
+      const res = await fetch("/api/admin/roles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, pin }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        await fetchRoles();
+        onSnackbar({ message: "PIN set for role " + code, severity: "success" });
+      } else {
+        onSnackbar({ message: data.error || "Failed to set PIN", severity: "error" });
+      }
+    } catch {
+      onSnackbar({ message: "Failed to set PIN", severity: "error" });
+    } finally {
+      setSavingPinRole(null);
+      setSettingPinRole(null);
+      setSettingPinValue((prev) => ({ ...prev, [code]: "" }));
+    }
+  }, [fetchRoles, onSnackbar]);
+
+
+
+  // ── Role CRUD handlers ────────────────────────────
+  const openCreateRole = useCallback(() => {
+    setRoleFormCode("");
+    setRoleFormName("");
+    setRoleFormIsPlatformAdmin(false);
+    setRoleFormEmail("");
+    setRoleDialogMode("create");
+    setRoleDialogOpen(true);
+  }, []);
+
+  const openEditRole = useCallback((role: { code: string; name: string; isPlatformAdmin: boolean; email: string | null }) => {
+    setRoleFormCode(role.code);
+    setRoleFormName(role.name);
+    setRoleFormIsPlatformAdmin(role.isPlatformAdmin);
+    setRoleFormEmail(role.email || "");
+    setRoleDialogMode("edit");
+    setRoleDialogOpen(true);
+  }, []);
+
+  const handleRoleSave = useCallback(async () => {
+    if (!roleFormName.trim()) return;
+    setRoleSaving(true);
+    try {
+      const res = await fetch("/api/admin/roles", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: roleFormCode || roleFormName.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+          name: roleFormName.trim(),
+          isPlatformAdmin: roleFormIsPlatformAdmin,
+          email: roleFormEmail.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        await fetchRoles();
+        setRoleDialogOpen(false);
+        onSnackbar({ message: "Role " + (roleDialogMode === "create" ? "created" : "updated"), severity: "success" });
+      } else {
+        onSnackbar({ message: data.error || "Failed to save role", severity: "error" });
+      }
+    } catch {
+      onSnackbar({ message: "Failed to save role", severity: "error" });
+    } finally {
+      setRoleSaving(false);
+    }
+  }, [roleFormCode, roleFormName, roleFormIsPlatformAdmin, roleFormEmail, roleDialogMode, fetchRoles, onSnackbar]);
+
+  const handleRoleDelete = useCallback(async (code: string) => {
+    setRoleSaving(true);
+    try {
+      const res = await fetch("/api/admin/roles?code=" + encodeURIComponent(code), { method: "DELETE" });
+      const data = await res.json();
+      if (data.ok) {
+        await fetchRoles();
+        setRoleDeleteConfirm(null);
+        onSnackbar({ message: "Role deleted: " + code, severity: "success" });
+      } else {
+        onSnackbar({ message: data.error || "Failed to delete role", severity: "error" });
+      }
+    } catch {
+      onSnackbar({ message: "Failed to delete role", severity: "error" });
+    } finally {
+      setRoleSaving(false);
+    }
+  }, [fetchRoles, onSnackbar]);
+
+  const handleClearPin = useCallback(async (code: string) => {
+    setSavingPinRole(code);
+    try {
+      await fetch("/api/admin/roles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, pin: "" }),
+      });
+      await fetchRoles();
+    } catch {
+      // Non-critical
+    } finally {
+      setSavingPinRole(null);
+    }
+  }, [fetchRoles]);
+
+  // Fetch roles when tenant changes
+  useEffect(() => {
+    if (tenant) {
+      void fetchRoles();
+    }
+  }, [tenant, fetchRoles]);
+
 
   // ── Handlers: Mode switch ─────────────────────────────────
   const handleModeChange = (_: React.SyntheticEvent, newValue: number) => {
@@ -807,6 +965,244 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
     </Stack>
   );
 
+
+  const renderRolesContent = () => {
+    return (
+      <Stack spacing={3}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              Functional Role Catalog
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Create, edit, and manage functional roles. Set PIN codes for role-based authentication.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={openCreateRole}
+            startIcon={<AddIcon />}
+            sx={{ flexShrink: 0 }}
+          >
+            Create Role
+          </Button>
+        </Stack>
+
+        {rolesLoading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : rolesError ? (
+          <Alert severity="error">{rolesError}</Alert>
+        ) : rolesList.length === 0 ? (
+          <Box sx={{ textAlign: "center", py: 4 }}>
+            <Typography color="text.secondary" sx={{ mb: 2 }}>
+              No roles configured. Create your first functional role.
+            </Typography>
+            <Button variant="outlined" onClick={openCreateRole} startIcon={<AddIcon />}>
+              Create Role
+            </Button>
+          </Box>
+        ) : (
+          <Stack spacing={1.5}>
+            {rolesList.map((role) => (
+              <Paper
+                key={role.code}
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  borderLeft: 4,
+                  borderLeftColor: role.isPlatformAdmin ? "primary.main" : "grey.300",
+                }}
+              >
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5, flexWrap: "wrap" }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {role.name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontFamily: "monospace", color: "text.secondary" }}>
+                        ({role.code})
+                      </Typography>
+                      {role.isPlatformAdmin && (
+                        <Chip label="Platform Admin" size="small" color="primary" variant="outlined" />
+                      )}
+                    </Stack>
+                    {role.email && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                        Email: {role.email}
+                      </Typography>
+                    )}
+                    <Chip
+                      icon={role.pinConfigured ? <CheckCircleIcon /> : <LockIcon />}
+                      label={role.pinConfigured ? "PIN Configured" : "No PIN"}
+                      size="small"
+                      color={role.pinConfigured ? "success" : "warning"}
+                      variant={role.pinConfigured ? "filled" : "outlined"}
+                    />
+                  </Box>
+
+                  <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexShrink: 0 }}>
+                    {settingPinRole === role.code ? (
+                      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                        <TextField
+                          size="small"
+                          type="password"
+                          placeholder="Enter PIN (3+ chars)"
+                          value={settingPinValue[role.code] || ""}
+                          onChange={(e) =>
+                            setSettingPinValue((prev) => ({ ...prev, [role.code]: e.target.value }))
+                          }
+                          sx={{ width: 160 }}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const pin = settingPinValue[role.code] || "";
+                              if (pin.length >= 3) void handleSetRolePin(role.code, pin);
+                            }
+                          }}
+                        />
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => {
+                            const pin = settingPinValue[role.code] || "";
+                            if (pin.length >= 3) void handleSetRolePin(role.code, pin);
+                          }}
+                          disabled={savingPinRole === role.code || (settingPinValue[role.code] || "").length < 3}
+                        >
+                          {savingPinRole === role.code ? <CircularProgress size={18} /> : <CheckCircleIcon />}
+                        </IconButton>
+                        <IconButton size="small" onClick={() => { setSettingPinRole(null); setSettingPinValue((prev) => ({ ...prev, [role.code]: "" })); }}>
+                          <CloseIcon />
+                        </IconButton>
+                      </Stack>
+                    ) : (
+                      <>
+                        <Tooltip title="Set PIN">
+                          <IconButton size="small" onClick={() => setSettingPinRole(role.code)} color="default">
+                            <LockIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit role">
+                          <IconButton size="small" onClick={() => openEditRole(role)} color="primary">
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete role">
+                          <IconButton size="small" onClick={() => setRoleDeleteConfirm(role.code)} color="error">
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </>
+                    )}
+                  </Stack>
+                </Stack>
+              </Paper>
+            ))}
+          </Stack>
+        )}
+
+        {/* Create/Edit Role Dialog */}
+        <Dialog open={roleDialogOpen} onClose={() => !roleSaving && setRoleDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 700 }}>
+            {roleDialogMode === "create" ? "Create Functional Role" : "Edit Role: " + roleFormCode}
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={2.5} sx={{ mt: 1 }}>
+              {roleDialogMode === "create" && (
+                <TextField
+                  label="Role Code"
+                  value={roleFormCode}
+                  onChange={(e) => setRoleFormCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                  fullWidth
+                  size="small"
+                  helperText="Unique identifier (lowercase, hyphens). Auto-generated from name if empty."
+                />
+              )}
+              <TextField
+                label="Role Name"
+                value={roleFormName}
+                onChange={(e) => {
+                  setRoleFormName(e.target.value);
+                  if (roleDialogMode === "create" && !roleFormCode) {
+                    setRoleFormCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
+                  }
+                }}
+                fullWidth
+                size="small"
+                placeholder="e.g. Finance Manager"
+                autoFocus={roleDialogMode === "create"}
+              />
+              <TextField
+                label="Email (optional)"
+                type="email"
+                value={roleFormEmail}
+                onChange={(e) => setRoleFormEmail(e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="role-owner@tenant.com"
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={roleFormIsPlatformAdmin}
+                    onChange={(e) => setRoleFormIsPlatformAdmin(e.target.checked)}
+                  />
+                }
+                label="Platform Admin (full access)"
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setRoleDialogOpen(false)} disabled={roleSaving}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleRoleSave}
+              disabled={roleSaving || !roleFormName.trim()}
+              startIcon={roleSaving ? <CircularProgress size={18} color="inherit" /> : undefined}
+            >
+              {roleSaving ? "Saving..." : roleDialogMode === "create" ? "Create Role" : "Save Changes"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={Boolean(roleDeleteConfirm)} onClose={() => !roleSaving && setRoleDeleteConfirm(null)}>
+          <DialogTitle>Delete Role?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Are you sure you want to delete role <strong>{roleDeleteConfirm}</strong>?
+              This action cannot be undone. User accounts assigned to this role may need re-assignment.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setRoleDeleteConfirm(null)} disabled={roleSaving}>Cancel</Button>
+            <Button
+              onClick={() => roleDeleteConfirm && handleRoleDelete(roleDeleteConfirm)}
+              color="error"
+              variant="contained"
+              disabled={roleSaving}
+            >
+              {roleSaving ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Divider />
+        <Typography variant="caption" color="text.secondary">
+          Roles control access and task assignment. PINs are stored encrypted in the secrets table.
+          Platform Admin roles share the ADMIN_PIN; functional roles each have their own PIN.
+        </Typography>
+      </Stack>
+    );
+  };
+
+
   const renderEnvContent = () => (
     <Stack spacing={3}>
       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -1045,6 +1441,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         { key: 'oauth', label: 'Google OAuth', content: renderOAuthContent() },
         { key: 'database', label: 'Database', content: renderDatabaseContent() },
         { key: 'env', label: 'Custom Env', content: renderEnvContent() },
+        { key: 'roles', label: 'Functional Roles', content: renderRolesContent() },
       ];
       return (
         <Box sx={{ py: 1 }}>
@@ -1107,6 +1504,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         <TabPanel value={manualTab} index={2}>{renderOAuthContent()}</TabPanel>
         <TabPanel value={manualTab} index={3}>{renderDatabaseContent()}</TabPanel>
         <TabPanel value={manualTab} index={4}>{renderEnvContent()}</TabPanel>
+        <TabPanel value={manualTab} index={5}>{renderRolesContent()}</TabPanel>
       </Box>
     );
   };
