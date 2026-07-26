@@ -7,11 +7,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
-import LinearProgress from '@mui/material/LinearProgress';
-import Step from '@mui/material/Step';
-import StepContent from '@mui/material/StepContent';
-import StepLabel from '@mui/material/StepLabel';
-import Stepper from '@mui/material/Stepper';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -39,18 +34,14 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import BuildIcon from '@mui/icons-material/Build';
 import EditIcon from '@mui/icons-material/Edit';
-import CloseIcon from '@mui/icons-material/Close';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {
   useListTenantsQuery,
   useDeleteTenantMutation,
   type TenantEntry,
 } from '@/store/apis/tenant-api';
+import { TenantWizard } from '@/components/ops-admin/tenant-wizard';
+import { EditTenantModal } from '@/components/ops-admin/edit-tenant-modal';
 import { getTemplate } from '@/domain/tenant/template-catalog';
-import { TenantWizard, TemplateSelector } from '@/components/ops-admin/tenant-wizard';
-import { useAppDispatch } from '@/store/hooks';
-import { setThemeColors } from '@/store/ui-slice';
 
 const STATUS_COLORS: Record<string, 'info' | 'warning' | 'success' | 'error'> = {
   draft: 'info',
@@ -58,16 +49,6 @@ const STATUS_COLORS: Record<string, 'info' | 'warning' | 'success' | 'error'> = 
   live: 'success',
   error: 'error',
 };
-
-const DEPLOY_STEPS = [
-  { key: 'fetch', label: 'Fetch tenant', description: 'Loading latest record and metadata from tenants registry' },
-  { key: 'delta', label: 'Compute delta', description: 'Template delta analysis (incremental-only from TEMPLATE_CATALOG)' },
-  { key: 'neon', label: 'Update Neon DB with full metadata.config', description: 'Upserting databaseUrl, googleAuth, pins, license, subscriptionTier etc. — exact JSON shape' },
-  { key: 'vercel-env', label: 'Sync env vars to Vercel', description: 'Pushing databaseUrl and config to project env vars' },
-  { key: 'inngest', label: 'Trigger Inngest pipeline', description: 'Seeding AppPage from TEMPLATE_CATALOG for chosen template (e.g. hotel), AI/MapReduce content, blocks' },
-  { key: 'vercel-deploy', label: 'Vercel deploy complete', description: 'Redeploy triggered, waiting for build completion' },
-  { key: 'verify', label: 'Verify live app', description: 'Health check, template validation (WCAG, ARIA), status → live' },
-];
 
 export function TenantDashboard() {
   const { data, isLoading, isError, refetch } = useListTenantsQuery();
@@ -79,17 +60,9 @@ export function TenantDashboard() {
   // Delete confirmation dialog state
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  // Edit and Deploy states for existing tenants
-  const dispatch = useAppDispatch();
+  // Edit modal state
   const [editOpen, setEditOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<TenantEntry | null>(null);
-  const [editTemplate, setEditTemplate] = useState<string>('financial-analytics');
-  const [editPrimaryColor, setEditPrimaryColor] = useState<string>('#eb3d28');
-  const [editSecondaryColor, setEditSecondaryColor] = useState<string>('#0af9fe');
-  const [deployingSlug, setDeployingSlug] = useState<string | null>(null);
-  const [deployProgress, setDeployProgress] = useState<number>(0);
-  const [deployStepStatuses, setDeployStepStatuses] = useState<Record<string, 'pending' | 'inprogress' | 'success' | 'error'>>({});
-  const [deployDetails, setDeployDetails] = useState<Record<string, string>>({});
 
   const tenants = data?.data?.tenants ?? [];
 
@@ -146,10 +119,6 @@ export function TenantDashboard() {
 
   const handleEditOpen = (tenant: TenantEntry) => {
     setEditingTenant(tenant);
-    setEditTemplate(tenant.template || 'financial-analytics');
-    const tpl = getTemplate(tenant.template || 'financial-analytics');
-    setEditPrimaryColor(tenant.primaryColor || tpl.defaultColors.primary);
-    setEditSecondaryColor(tenant.secondaryColor || tpl.defaultColors.secondary);
     setEditOpen(true);
     handleMenuClose();
   };
@@ -157,139 +126,10 @@ export function TenantDashboard() {
   const handleEditClose = () => {
     setEditOpen(false);
     setEditingTenant(null);
-    setDeployingSlug(null);
-    setDeployProgress(0);
-    setDeployStepStatuses({});
-    setDeployDetails({});
   };
 
-  const handleTemplateSelectForEdit = (id: string) => {
-    setEditTemplate(id);
-    const tpl = getTemplate(id);
-    // Reuse logic from TenantWizard update callback
-    setEditPrimaryColor((prev) => prev || tpl.defaultColors.primary); // preserve if customized
-    setEditSecondaryColor((prev) => prev || tpl.defaultColors.secondary);
-  };
-
-  const handleColorsChange = (primary: string, secondary: string) => {
-    setEditPrimaryColor(primary);
-    setEditSecondaryColor(secondary);
-  };
-
-  const handleDeployToVercel = async () => {
-    if (!editingTenant) return;
-
-    const previousTemplate = editingTenant.template || 'financial-analytics';
-    const targetTemplate = editTemplate;
-    setDeployingSlug(editingTenant.slug);
-    setDeployProgress(0);
-    setDeployStepStatuses({});
-    setDeployDetails({});
-
-    const updateStep = (stepKey: string, status: 'inprogress' | 'success' | 'error', detail?: string) => {
-      setDeployStepStatuses((prev) => ({ ...prev, [stepKey]: status }));
-      if (detail) {
-        setDeployDetails((prev) => ({ ...prev, [stepKey]: detail }));
-      }
-      setDeployProgress(DEPLOY_STEPS.findIndex((s) => s.key === stepKey) + 1);
-    };
-
-    try {
-      updateStep('fetch', 'inprogress', `Fetched tenant ${editingTenant.slug} with current template=${previousTemplate}`);
-
-      // Call the enhanced /deploy endpoint with full payload (triggers Neon upsert + Inngest)
-      const payload = {
-        template: targetTemplate,
-        metadata: {
-          previousTemplate,
-          updatedVia: 'tenant-dashboard-edit-deploy',
-          amendmentReason: 'manual-template-change-to-' + targetTemplate,
-          primaryColor: editPrimaryColor,
-          secondaryColor: editSecondaryColor,
-          redRubyCompatible: targetTemplate === 'financial-analytics' || targetTemplate === 'hotel',
-          config: {
-            database: {
-              databaseUrl: `postgresql://redruby-${editingTenant.slug}:***@ep-cool-neon-123.us-east-1.aws.neon.tech/${editingTenant.slug}_db?pgbouncer=true`,
-            },
-            googleAuth: { enabled: true, clientId: 'g-123456' },
-            pins: ['0000', '9999'],
-            license: { tier: 'enterprise', validUntil: '2028-01-01' },
-            subscriptionTier: 'pro',
-          },
-        },
-      };
-
-      const deployRes = await fetch(`/api/admin/tenants/${editingTenant.slug}/deploy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const deployData = await deployRes.json();
-
-      if (!deployRes.ok || !deployData.success) {
-        throw new Error(deployData.error || 'Deploy API failed');
-      }
-
-      updateStep('fetch', 'success', 'Tenant record loaded successfully');
-      updateStep('delta', 'inprogress');
-      await new Promise((r) => setTimeout(r, 600)); // simulate compute
-      updateStep('delta', 'success', `Delta computed: ${deployData.deploy?.deltaSummary || 'incremental template update to ' + targetTemplate}`);
-
-      updateStep('neon', 'inprogress', 'Preparing full config payload for Neon...');
-      await new Promise((r) => setTimeout(r, 800));
-      const neonDetail = deployData.neonResult?.success
-        ? deployData.deploy?.neonDetail || `Sent databaseUrl=postgresql://... to tenant Neon record for ${editingTenant.slug}`
-        : 'Neon update completed (see console for full payload)';
-      updateStep('neon', deployData.neonResult?.success ? 'success' : 'error', neonDetail);
-
-      updateStep('vercel-env', 'inprogress');
-      await new Promise((r) => setTimeout(r, 500));
-      updateStep('vercel-env', 'success', 'Env vars synced to Vercel project (databaseUrl, GOOGLE_*, LICENSE_KEY)');
-
-      updateStep('inngest', 'inprogress', 'Triggering Inngest tenant.template.amended with full context...');
-      await new Promise((r) => setTimeout(r, 1200));
-      updateStep('inngest', 'success', 'Pipeline running: AppPage seeding from TEMPLATE_CATALOG (for hotel template), AI/MapReduce content gen, block registration complete');
-
-      updateStep('vercel-deploy', 'inprogress');
-      await new Promise((r) => setTimeout(r, 900));
-      updateStep('vercel-deploy', 'success', `Vercel deploy complete. App live at ${deployData.deploy?.vercelInfo?.appUrl}`);
-
-      updateStep('verify', 'inprogress');
-      await new Promise((r) => setTimeout(r, 700));
-      updateStep('verify', 'success', `Verified live app for ${targetTemplate} template. redrubybali now supports hotel capabilities (new pages, nav, schema.org updates)`);
-
-      // Sync theme via uiSlice
-      dispatch(
-        setThemeColors({
-          primary: editPrimaryColor,
-          secondary: editSecondaryColor,
-        })
-      );
-
-      setSnackbar({
-        message: `Successfully deployed ${editingTenant.displayName} with ${getTemplate(targetTemplate).label} template. Full Neon config + Inngest pipeline executed.`,
-        severity: 'success',
-      });
-
-      refetch();
-      // Close after small delay to show final success state
-      setTimeout(() => {
-        handleEditClose();
-      }, 1500);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Deploy failed';
-      console.error('[TenantDeploy]', err);
-      setSnackbar({ message: msg, severity: 'error' });
-      // Mark current step as error
-      const currentIdx = Math.floor(deployProgress);
-      if (currentIdx < DEPLOY_STEPS.length) {
-        const failedKey = DEPLOY_STEPS[currentIdx].key;
-        setDeployStepStatuses((prev) => ({ ...prev, [failedKey]: 'error' }));
-      }
-    } finally {
-      setDeployingSlug(null);
-    }
+  const handleSnackbar = (msg: { message: string; severity: 'success' | 'error' }) => {
+    setSnackbar(msg);
   };
 
   return (
@@ -469,139 +309,14 @@ export function TenantDashboard() {
         </DialogActions>
       </Dialog>
 
-      {/* Edit Tenant Dialog with TemplateSelector, Delta Preview, Colors, Pages/Nav, and Prominent Deploy Button */}
-      <Dialog
+      {/* Edit Tenant Modal (replaces previous inline dialog) */}
+      <EditTenantModal
         open={editOpen}
+        tenant={editingTenant}
         onClose={handleEditClose}
-        maxWidth="lg"
-        fullWidth
-        aria-labelledby="edit-tenant-dialog-title"
-      >
-        <DialogTitle id="edit-tenant-dialog-title" sx={{ display: 'flex', alignItems: 'center', gap: 2, fontWeight: 700, pr: 6 }}>
-          <EditIcon color="primary" />
-          Edit &amp; Deploy — {editingTenant?.displayName || 'Tenant'}
-          <IconButton
-            onClick={handleEditClose}
-            sx={{ position: 'absolute', right: 16, top: 16 }}
-            aria-label="close"
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers sx={{ p: { xs: 2, md: 3 } }}>
-          {editingTenant && (
-            <TemplateSelector
-              selectedId={editTemplate}
-              currentId={editingTenant.template}
-              onSelect={handleTemplateSelectForEdit}
-              primaryColor={editPrimaryColor}
-              secondaryColor={editSecondaryColor}
-              onColorsChange={handleColorsChange}
-              showPreviewDelta={true}
-            />
-          )}
-
-          {deployingSlug === editingTenant?.slug && (
-            <Paper variant="outlined" sx={{ mt: 4, p: 3, borderColor: 'primary.main' }}>
-              <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <RocketLaunchIcon color="primary" /> Tenant Deploy Progress — Step by Step
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Live updates via polling/SSE (simulated with realistic delays). Full Neon DB upsert shown with databaseUrl.
-                Integrates with Inngest for seeding, AI content generation (MapReduce), and Vercel.
-              </Typography>
-
-              <Stepper activeStep={deployProgress} orientation="vertical" sx={{ mb: 3 }}>
-                {DEPLOY_STEPS.map((step) => {
-                  const status = deployStepStatuses[step.key] || 'pending';
-                  const isActive = status === 'inprogress';
-                  const detail = deployDetails[step.key];
-                  let icon = null;
-                  if (status === 'success') {
-                    icon = <CheckCircleIcon color="success" />;
-                  } else if (status === 'error') {
-                    icon = <CloseIcon color="error" />;
-                  } else if (isActive) {
-                    icon = <CircularProgress size={20} color="primary" />;
-                  }
-                  return (
-                    <Step key={step.key} active={isActive || status === 'success'}>
-                      <StepLabel
-                        icon={icon}
-                        sx={{
-                          '& .MuiStepLabel-label': {
-                            fontWeight: isActive || status === 'success' ? 600 : 400,
-                          },
-                        }}
-                      >
-                        {step.label}
-                      </StepLabel>
-                      <StepContent>
-                        <Typography variant="body2" color="text.secondary">
-                          {step.description}
-                        </Typography>
-                        {detail && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              mt: 1,
-                              display: 'block',
-                              p: 1,
-                              bgcolor: 'background.default',
-                              borderRadius: 1,
-                              fontFamily: 'monospace',
-                              whiteSpace: 'pre-wrap',
-                            }}
-                          >
-                            {detail}
-                          </Typography>
-                        )}
-                        {step.key === 'neon' && status === 'success' && (
-                          <Alert severity="info" sx={{ mt: 1, fontSize: '0.75rem' }}>
-                            Example: Sent databaseUrl=postgresql://redruby-redrubybali:***@... to tenant Neon record for redrubybali (full config JSON upserted to app_config.data)
-                          </Alert>
-                        )}
-                      </StepContent>
-                    </Step>
-                  );
-                })}
-              </Stepper>
-
-              <LinearProgress
-                variant="determinate"
-                value={(deployProgress / DEPLOY_STEPS.length) * 100}
-                color="primary"
-                sx={{ mt: 2, height: 6, borderRadius: 4 }}
-              />
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block', textAlign: 'center' }}>
-                Full seeding triggered (AppPage, AI content, blocks). Test: redrubybali changed to 'hotel' template — Neon updated, live app verified.
-              </Typography>
-            </Paper>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2.5, gap: 2 }}>
-          <Button onClick={handleEditClose} disabled={!!deployingSlug}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            onClick={() => void handleDeployToVercel()}
-            disabled={!!deployingSlug || !editingTenant}
-            startIcon={
-              deployingSlug ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <RocketLaunchIcon />
-              )
-            }
-            sx={{ fontWeight: 700, minWidth: 220 }}
-          >
-            {deployingSlug ? 'DEPLOYING TO VERCEL...' : 'DEPLOY TO VERCEL'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onRefetch={refetch}
+        onSnackbar={handleSnackbar}
+      />
 
       {/* Feedback Snackbar */}
       <Snackbar

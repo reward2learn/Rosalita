@@ -15,6 +15,10 @@
  *
  * The previous version returned only Vercel info because it predated the template column and
  * amendment workflow in tenant-service.ts.
+ *
+ * Enhanced v2: If Google OAuth credentials have been provisioned for this tenant
+ * (stored in google_oauth_config table), they are used instead of the platform-level
+ * GOOGLE_CLIENT_* env vars. This enables per-tenant Google OAuth.
  */
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -24,6 +28,7 @@ import { jsonError, jsonOk } from '@/lib/api/response';
 import { ensureTenantsTable, updateTenantTemplate, computeTemplateDelta, upsertFullTenantConfig, type TemplateDelta, type TenantRecord } from '@/domain/tenant/tenant-service';
 import { ensureNavigationTable, seedTemplateNavItems } from '@/lib/navigation/db';
 import { triggerVercelDeploy, hasVercelToken } from '@/domain/tenant/vercel-api-service';
+import { getGoogleOAuthCredentials } from '@/lib/auth/google-oauth';
 import { inngest } from '@/lib/inngest';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +45,7 @@ export async function POST(
 ): Promise<NextResponse> {
   const guard = await requireWriteAuth(request);
   if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   const { slug } = await params;
 
@@ -53,7 +59,7 @@ export async function POST(
     return jsonError(`Validation failed: ${parsed.error.issues.map((i) => i.message).join(', ')}`, 400);
   }
 
-  const db = createClient();
+  const db = createClient({ tier: session.tier, sub: session.sub });
   try {
     await ensureTenantsTable(db);
 
@@ -82,6 +88,22 @@ export async function POST(
     let tenant: TenantRecord = latest as TenantRecord;
     let delta: TemplateDelta | undefined;
 
+    // ── Resolve Google OAuth credentials ──────────────────────
+    // Priority: 1) Tenant-specific provisioned OAuth, 2) Platform env vars
+    let googleClientId = process.env.GOOGLE_CLIENT_ID || '';
+    let googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+    let googleProjectId = process.env.GOOGLE_PROJECT_ID || '';
+    try {
+      const oauthCreds = await getGoogleOAuthCredentials();
+      if (oauthCreds) {
+        googleClientId = oauthCreds.clientId || googleClientId;
+        googleClientSecret = oauthCreds.clientSecret || googleClientSecret;
+        googleProjectId = oauthCreds.projectId || googleProjectId;
+      }
+    } catch {
+      // Fallback to env vars — logged below if empty
+    }
+
     // Build metadata payload with REAL values from env vars and tenant DB record.
     // Keys at TOP LEVEL so upsertFullTenantConfig can read them (it reads additionalConfig.googleAuth,
     // additionalConfig.pins, etc. — NOT nested config.*).
@@ -93,18 +115,18 @@ export async function POST(
       secondaryColor: latest.secondaryColor || '#0af9fe',
       template: template,
 
-      // ── From environment variables (real values) ───────────
+      // ── Resolved Google OAuth (tenant-specific > platform env) ──
       googleAuth: {
-        enabled: true,
-        clientId: process.env.GOOGLE_CLIENT_ID || '',
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-        projectId: process.env.GOOGLE_PROJECT_ID || '',
+        enabled: !!googleClientId,
+        clientId: googleClientId,
+        clientSecret: googleClientSecret,
+        projectId: googleProjectId,
       },
       pins: [process.env.DEFAULT_ADMIN_PIN || '454212'],
       subscriptionTier: 'premium',
       env: {
-        googleClientId: process.env.GOOGLE_CLIENT_ID || '',
-        googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+        googleClientId,
+        googleClientSecret,
         openaiApiKey: process.env.OPENAI_API_KEY || '',
         setupToken: process.env.SETUP_TOKEN || '',
         adminPin: process.env.DEFAULT_ADMIN_PIN || '454212',

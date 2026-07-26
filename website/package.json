@@ -20,6 +20,8 @@
     "seed": "bun run scripts/seed-from-sources.ts",
     "seed:google-oauth": "bun run scripts/seed-google-oauth.ts",
     "migrate:tenants": "bun run scripts/migrate-tenants.ts",
+    "provision:tenant": "bun run scripts/provision-tenant.ts",
+    "provision:tenant:help": "bun run scripts/provision-tenant.ts --help",
     "analyze": "ANALYZE=true bun run build",
     "worker:pdf": "node scripts/pdf-worker.js",
     "postinstall": "node scripts/create_job_queue.mjs"

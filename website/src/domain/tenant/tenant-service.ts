@@ -178,7 +178,7 @@ export async function updateTenantTemplate(
     template: newTemplate,
     status: newTemplate !== previousTemplate ? 'deploying' : updates.status,
     metadata: finalMetadata,
-    updated_at: new Date(),
+    updatedAt: new Date(),
   };
 
   // If colors provided or changed via template, update them
@@ -289,7 +289,7 @@ export async function upsertFullTenantConfig(
       tenant_display_name: (fullConfig as any).displayName || slug,
       brand_primary_color: (fullConfig as any).primaryColor || '#eb3d28',
       brand_secondary_color: (fullConfig as any).secondaryColor || '#0af9fe',
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     await tenantPrisma.$executeRaw`
