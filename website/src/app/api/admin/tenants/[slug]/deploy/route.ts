@@ -23,6 +23,7 @@ import { requireWriteAuth } from '@/lib/auth/guards';
 import { jsonError, jsonOk } from '@/lib/api/response';
 import { ensureTenantsTable, updateTenantTemplate, computeTemplateDelta, upsertFullTenantConfig, type TemplateDelta, type TenantRecord } from '@/domain/tenant/tenant-service';
 import { ensureNavigationTable, seedTemplateNavItems } from '@/lib/navigation/db';
+import { triggerVercelDeploy, hasVercelToken } from '@/domain/tenant/vercel-api-service';
 import { inngest } from '@/lib/inngest';
 
 export const dynamic = 'force-dynamic';
@@ -209,19 +210,35 @@ export async function POST(
       console.warn(`[tenants:deploy] Failed to emit tenant.template.amended for ${slug}:`, err);
     });
 
-    // 4. Neon DB updated with full payload (see neonResult). Full seeding from TEMPLATE_CATALOG,
-    //    AI content (MapReduce), blocks, AppPage upsert triggered via Inngest.
-    // 5. Return rich response with step details for frontend progress UI (Stepper/Timeline)
+    // 4. Trigger actual Vercel deployment via REST API
+    //    This replaces the previous manual CLI step — the API triggers a production
+    //    redeployment using the latest source code.
+    const projectId = latest.vercelProjectId || 'prj_kHPW3f3yGArIihBH3J1zJk4wSmhp';
+    const vercelDeployResult = await triggerVercelDeploy(projectId, slug);
+
+    // 5. Update tenant status based on Vercel deploy result
+    const vercelStatus = vercelDeployResult.success ? 'deploying' : 'live';
+    await db.tenant.update({
+      where: { slug },
+      data: { status: vercelStatus, updatedAt: new Date() },
+    });
+
+    // 6. Build response
     const fullTenant = await db.tenant.findUnique({ where: { slug } });
 
     const neonDetail = neonResult.success
       ? `Sent databaseUrl=${neonResult.databaseUrlSent} to tenant Neon record for ${slug}. Full config (database, googleAuth, pins, license, subscriptionTier) upserted into app_config table.`
       : `Neon update skipped/failed: ${neonResult.error}`;
 
+    const vercelDetail = vercelDeployResult.success
+      ? `Deployment ${vercelDeployResult.deploymentId} triggered → ${vercelDeployResult.appUrl}`
+      : `Vercel deploy skipped: ${vercelDeployResult.error}`;
+
     return jsonOk({
       success: true,
       tenant: fullTenant,
       neonResult,
+      vercelDeploy: vercelDeployResult,
       deploy: {
         triggered: true,
         template,
@@ -229,10 +246,13 @@ export async function POST(
         deltaSummary: delta?.summary,
         incrementalOnly: delta?.incrementalOnly,
         neonDetail,
+        vercelDetail,
         vercelInfo: {
-          projectId: latest.vercelProjectId || 'prj_kHPW3f3yGArIihBH3J1zJk4wSmhp',
+          projectId,
           appUrl: latest.appUrl || `https://${slug}.vercel.app`,
-          status: 'deploying',
+          status: vercelStatus,
+          deploymentUrl: vercelDeployResult.appUrl || null,
+          hasVercelToken: hasVercelToken(),
         },
         pipelineSteps: [
           'fetch-tenant',
@@ -240,14 +260,15 @@ export async function POST(
           'update-neon-db-full-config',
           'sync-vercel-env-vars',
           'trigger-inngest-pipeline-seeding-apppage-ai-mapreduce',
-          'vercel-deploy-complete',
+          'trigger-vercel-deploy-api',
           'verify-live-app',
         ],
         stepsStatus: {
           neon: neonResult.success ? 'success' : 'warning',
-          detail: neonDetail,
+          vercel: vercelDeployResult.success ? 'success' : 'warning',
+          detail: `${neonDetail} | ${vercelDetail}`,
         },
-        note: `Full application seeding triggered (AppPage from TEMPLATE_CATALOG for ${template}, AI content, blocks). Test with redrubybali -> 'hotel' verified. Aligns with MapReduce, template-amendment-workflow.`,
+        note: `Full application seeding triggered (AppPage from TEMPLATE_CATALOG for ${template}, AI content, blocks). Vercel deploy via REST API. Aligns with MapReduce, template-amendment-workflow.`,
       },
     });
   } catch (err: unknown) {
