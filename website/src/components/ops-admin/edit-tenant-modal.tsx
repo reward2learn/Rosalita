@@ -501,6 +501,35 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
     setGoogleOAuth((prev) => ({ ...prev, redirectUris: prev.redirectUris.filter((u) => u !== uri) }));
   };
 
+
+  // ── Generate value handlers ──────────────────────────
+  const generateLicenseKey = useCallback(() => {
+    const key = "rrb-" + (tenant?.slug || "unknown") + "-" + Date.now().toString(36);
+    handleLicenseChange("licenseKey", key);
+    onSnackbar({ message: "License key generated", severity: "success" });
+  }, [tenant, onSnackbar]);
+
+  const generateSetupToken = useCallback(() => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let token = "st_";
+    for (let i = 0; i < 32; i++) token += chars.charAt(Math.floor(Math.random() * chars.length));
+    handleLicenseChange("setupToken", token);
+    onSnackbar({ message: "Setup token generated", severity: "success" });
+  }, [onSnackbar]);
+
+  const generateAdminPin = useCallback(() => {
+    const pin = String(100000 + Math.floor(Math.random() * 900000));
+    handleLicenseChange("adminPin", pin);
+    onSnackbar({ message: "Admin PIN generated", severity: "success" });
+  }, [onSnackbar]);
+
+  const generateOpenAiKey = useCallback(() => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const key = "sk-proj-" + Array.from({length: 48}, () => chars.charAt(Math.floor(Math.random() * 62))).join("");
+    handleLicenseChange("openaiApiKey", key);
+    onSnackbar({ message: "API key placeholder generated (replace with real key)", severity: "info" });
+  }, [onSnackbar]);
+
   // ── Handlers: Custom Env ─────────────────────────────────
   const addEnvPair = () => {
     if (newEnvKey && newEnvValue) {
@@ -717,21 +746,32 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         License Configuration
       </Typography>
 
-      <TextField
-        label="License Key"
-        value={license.licenseKey}
-        onChange={(e) => handleLicenseChange('licenseKey', e.target.value)}
-        fullWidth
-        placeholder={`rrb-${tenant.slug}`}
-        helperText="Auto-generated if left empty"
-      />
+      <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+        <TextField
+          label="License Key"
+          value={license.licenseKey}
+          onChange={(e) => handleLicenseChange("licenseKey", e.target.value)}
+          fullWidth
+          placeholder={"rrb-" + (tenant?.slug || "unknown")}
+          helperText="Auto-generated if left empty"
+          sx={{ flex: 1 }}
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={generateLicenseKey}
+          sx={{ mt: 0.5, minWidth: 100 }}
+        >
+          Generate
+        </Button>
+      </Stack>
 
       <FormControl fullWidth>
         <InputLabel>License Tier</InputLabel>
         <Select
           value={license.licenseTier}
           label="License Tier"
-          onChange={(e) => handleLicenseChange('licenseTier', e.target.value)}
+          onChange={(e) => handleLicenseChange("licenseTier", e.target.value)}
         >
           {LICENSE_TIERS.map((tier) => (
             <MenuItem key={tier} value={tier}>{tier.toUpperCase()}</MenuItem>
@@ -743,7 +783,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         label="Valid Until"
         type="date"
         value={license.validUntil}
-        onChange={(e) => handleLicenseChange('validUntil', e.target.value)}
+        onChange={(e) => handleLicenseChange("validUntil", e.target.value)}
         fullWidth
         slotProps={{ inputLabel: { shrink: true } }}
       />
@@ -775,34 +815,65 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         API Keys & PINs
       </Typography>
 
-      <TextField
-        label="Setup Token (SETUP_TOKEN)"
-        value={license.setupToken}
-        onChange={(e) => handleLicenseChange('setupToken', e.target.value)}
-        fullWidth
-        type="password"
-      />
+      <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+        <TextField
+          label="Setup Token (SETUP_TOKEN)"
+          value={license.setupToken}
+          onChange={(e) => handleLicenseChange("setupToken", e.target.value)}
+          fullWidth
+          type="password"
+          sx={{ flex: 1 }}
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={generateSetupToken}
+          sx={{ mt: 0.5, minWidth: 100 }}
+        >
+          Generate
+        </Button>
+      </Stack>
 
-      <TextField
-        label="Admin PIN"
-        value={license.adminPin}
-        onChange={(e) => handleLicenseChange('adminPin', e.target.value)}
-        fullWidth
-        type="password"
-        placeholder="454212"
-      />
+      <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+        <TextField
+          label="Admin PIN"
+          value={license.adminPin}
+          onChange={(e) => handleLicenseChange("adminPin", e.target.value)}
+          fullWidth
+          type="password"
+          placeholder="454212"
+          sx={{ flex: 1 }}
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={generateAdminPin}
+          sx={{ mt: 0.5, minWidth: 100 }}
+        >
+          Generate
+        </Button>
+      </Stack>
 
-      <TextField
-        label="OpenAI API Key"
-        value={license.openaiApiKey}
-        onChange={(e) => handleLicenseChange('openaiApiKey', e.target.value)}
-        fullWidth
-        type="password"
-      />
+      <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+        <TextField
+          label="OpenAI API Key"
+          value={license.openaiApiKey}
+          onChange={(e) => handleLicenseChange("openaiApiKey", e.target.value)}
+          fullWidth
+          type="password"
+          sx={{ flex: 1 }}
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={generateOpenAiKey}
+          sx={{ mt: 0.5, minWidth: 100 }}
+        >
+          Generate
+        </Button>
+      </Stack>
     </Stack>
-  );
-
-  const renderOAuthContent = () => (
+  );  const renderOAuthContent = () => (
     <Stack spacing={3}>
       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
         Google OAuth 2.0 Credentials

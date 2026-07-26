@@ -72,7 +72,7 @@ export async function POST(
 
   const steps: StepResult[] = [];
   const envVars: Record<string, string> = {};
-  const db = createClient();
+  const db = createClient({ tier: guard.session.tier, sub: guard.session.sub });
 
   try {
     await ensureTenantsTable(db);
