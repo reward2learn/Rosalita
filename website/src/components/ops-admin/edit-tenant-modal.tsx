@@ -723,21 +723,11 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
   // ── Deploy handler ────────────────────────────────────────
   const handleDeploy = useCallback(async () => {
     if (!tenant) return;
+    if (deployingSlug) return;
 
     setDeployingSlug(tenant.slug);
-    setDeployProgress(0);
-    setDeployStepStatuses({});
-    setDeployDetails({});
-
-    const updateStep = (stepKey: string, status: 'inprogress' | 'success' | 'error', detail?: string) => {
-      setDeployStepStatuses((prev) => ({ ...prev, [stepKey]: status }));
-      if (detail) setDeployDetails((prev) => ({ ...prev, [stepKey]: detail }));
-      setDeployProgress(DEPLOY_STEPS.findIndex((s) => s.key === stepKey) + 1);
-    };
 
     try {
-      updateStep('fetch', 'inprogress', `Fetched tenant ${tenant.slug} with current template=${tenant.template}`);
-
       const payload = buildDeployPayload();
       const deployRes = await fetch(`/api/admin/tenants/${tenant.slug}/deploy`, {
         method: 'POST',
@@ -750,47 +740,20 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         throw new Error(deployData.error || 'Deploy API failed');
       }
 
-      updateStep('fetch', 'success', `Tenant ${tenant.slug} loaded`);
-      updateStep('delta', 'inprogress');
-      await new Promise((r) => setTimeout(r, 400));
-      updateStep('delta', 'success', deployData.deploy?.deltaSummary || `Updated to template: ${editTemplate}`);
-
-      updateStep('neon', 'inprogress', 'Upserting full config to Neon...');
-      await new Promise((r) => setTimeout(r, 600));
-      updateStep('neon', deployData.neonResult?.success ? 'success' : 'error',
-        deployData.deploy?.neonDetail || 'Neon update completed');
-
-      updateStep('vercel-env', 'inprogress');
-      await new Promise((r) => setTimeout(r, 400));
-      updateStep('vercel-env', 'success', 'Env vars synced to Vercel');
-
-      updateStep('inngest', 'inprogress', 'Triggering pipeline...');
-      await new Promise((r) => setTimeout(r, 1000));
-      updateStep('inngest', 'success', 'Pipeline: AppPage seeding, AI/MapReduce content gen, blocks');
-
-      updateStep('vercel-deploy', 'inprogress');
-      await new Promise((r) => setTimeout(r, 800));
-      updateStep('vercel-deploy', 'success', `Deploy complete: ${deployData.deploy?.vercelInfo?.appUrl || `https://${tenant.slug}.vercel.app`}`);
-
-      updateStep('verify', 'inprogress');
-      await new Promise((r) => setTimeout(r, 500));
-      updateStep('verify', 'success', `Verified: ${editTemplate} template live`);
-
       dispatch(setThemeColors({ primary: editPrimaryColor, secondary: editSecondaryColor }));
-      onSnackbar({ message: `✅ ${tenant.displayName} deployed with ${getTemplate(editTemplate).label}`, severity: 'success' });
+      onSnackbar({
+        message: `🚀 ${tenant.displayName} deployment started — building in background. Status will update to live when ready.`,
+        severity: 'success',
+      });
       onRefetch();
-      setTimeout(() => { handleClose(); }, 1500);
+      handleClose();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Deploy failed';
-      onSnackbar({ message: msg, severity: 'error' });
-      const currentIdx = Math.floor(deployProgress);
-      if (currentIdx < DEPLOY_STEPS.length) {
-        setDeployStepStatuses((prev) => ({ ...prev, [DEPLOY_STEPS[currentIdx].key]: 'error' }));
-      }
+      onSnackbar({ message: `❌ Deploy failed: ${msg}`, severity: 'error' });
     } finally {
       setDeployingSlug(null);
     }
-  }, [tenant, buildDeployPayload, editTemplate, editPrimaryColor, editSecondaryColor, dispatch, onSnackbar, onRefetch]);
+  }, [tenant, buildDeployPayload, editTemplate, editPrimaryColor, editSecondaryColor, dispatch, onSnackbar, onRefetch, handleClose, deployingSlug]);
 
   // ── Close / Reset ─────────────────────────────────────────
   const handleClose = () => {
