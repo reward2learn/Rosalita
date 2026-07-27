@@ -1,10 +1,10 @@
 {
   "provider": {
     "ollama": {
-      "name": "Ollama (Mac Studio)",
+      "name": "Ollama (local)",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
-        "baseURL": "http://192.168.1.168:11434/v1"
+        "baseURL": "http://localhost:11434/v1"
       },
       "models": {
         "qwen3:8b": {
@@ -54,6 +54,11 @@
         "qwen3-embedding:0.6b": {
           "id": "qwen3-embedding:0.6b",
           "name": "Qwen3 Embedding 0.6B (Studio)"
+        },
+        "gemma3:1b": {
+          "id": "gemma3:1b",
+          "name": "gemma3:1b",
+          "tool_call": true
         }
       }
     }

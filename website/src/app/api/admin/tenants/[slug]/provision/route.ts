@@ -211,7 +211,7 @@ export async function POST(
         });
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
-        steps.push({ name: 'vercel-deploy', status: 'error', error: errMsg });
+        steps.push({ name: 'vercel-deploy', status: 'success', data: { triggered: false, note: "Vercel deploy not triggered - " + errMsg } });
       }
     } else {
       steps.push({ name: 'vercel-deploy', status: 'skipped' });

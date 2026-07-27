@@ -16,6 +16,7 @@ import { requireWriteAuth } from '@/lib/auth/guards';
 import { jsonError, jsonOk } from '@/lib/api/response';
 import { ensureTenantsTable, updateTenantTemplate, upsertFullTenantConfig } from '@/domain/tenant/tenant-service';
 import { inngest } from '@/lib/inngest';
+import { cleanupTenant } from '@/domain/tenant/tenant-cleanup-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -203,9 +204,44 @@ export async function DELETE(
     const existing = await db.tenant.findUnique({ where: { slug } });
     if (!existing) return jsonError('Tenant not found', 404);
 
+    // Extract context for cleanup
+    const cleanupContext: any = {
+      tenantSlug: slug,
+      tenantDbUrl: existing.dbUrl,
+      vercelProjectId: existing.vercelProjectId,
+      googleClientId: existing.googleClientId,
+      googleProjectId: existing.googleProjectId,
+    };
+
+    // Delete the tenant record first
     await db.tenant.delete({ where: { slug } });
 
-    return jsonOk({ deleted: true });
+    // Trigger cleanup service
+    try {
+      const cleanupResult = await cleanupTenant(cleanupContext);
+      
+      if (!cleanupResult.success) {
+        console.warn(`Tenant cleanup completed with errors for ${slug}:`, cleanupResult.errors);
+      } else {
+        console.log(`Tenant cleanup completed successfully for ${slug}`);
+      }
+
+      return jsonOk({
+        deleted: true,
+        cleanup: cleanupResult,
+      });
+    } catch (cleanupErr) {
+      console.error(`Tenant cleanup failed for ${slug}:`, cleanupErr);
+      // Still return success for tenant deletion, but report cleanup failure
+      return jsonOk({
+        deleted: true,
+        cleanup: {
+          success: false,
+          errors: [cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)],
+          cleanedResources: {},
+        },
+      });
+    }
   } catch (err) {
     console.error('[tenants] DELETE /' + slug + ' error:', err);
     return jsonError('Failed to delete tenant', 500);
