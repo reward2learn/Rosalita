@@ -519,19 +519,18 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          slug: tenant.slug,
-          displayName: displayName || tenant.displayName,
+          email: googleOAuth.gcpAccountEmail || undefined,
           redirectUris: googleOAuth.redirectUris,
-          adminEmail: googleOAuth.gcpAccountEmail,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setProvisionOAuthResult(data);
-        // Auto-fill returned credentials
-        if (data.data?.clientId) handleOAuthChange('clientId', data.data.clientId);
-        if (data.data?.clientSecret) handleOAuthChange('clientSecret', data.data.clientSecret);
-        if (data.data?.projectId) handleOAuthChange('projectId', data.data.projectId);
+        // Auto-fill returned credentials — route wraps in jsonOk so data.data has the fields
+        const dd = data.data || {};
+        if (dd.clientId) handleOAuthChange('clientId', dd.clientId);
+        if (dd.clientSecret) handleOAuthChange('clientSecret', dd.clientSecret);
+        if (dd.projectId) handleOAuthChange('projectId', dd.projectId);
         onSnackbar({ message: `✅ GCP project + OAuth credentials created for ${tenant.slug}`, severity: 'success' });
       } else {
         throw new Error(data.error || 'Google OAuth provisioning failed');
