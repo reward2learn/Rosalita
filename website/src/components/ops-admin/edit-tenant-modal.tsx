@@ -192,6 +192,8 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
   const [provisioningDb, setProvisioningDb] = useState(false);
   const [provisionDbResult, setProvisionDbResult] = useState<Record<string, unknown> | null>(null);
   const [provisionDbError, setProvisionDbError] = useState<string | null>(null);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState<string | null>(null);
 
   // ── Custom Env ─────────────────────────────────────────────
   const [envPairs, setEnvPairs] = useState<EnvPair[]>([]);
@@ -538,15 +540,19 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
       if (res.ok && data.success) {
         setProvisionDbResult(data);
         // Auto-fill returned connection strings
-        const conn = data.data?.connectionStrings || {};
-        if (conn.pooledUrl || conn.databaseUrl) {
+        const dd = data.data || {};
+        const pooledUrl = dd.pooledUrl || dd.connectionStrings?.DATABASE_URL || dd.connectionStrings?.POSTGRES_URL || '';
+        const directUrl = dd.directUrl || dd.connectionStrings?.DATABASE_URL_UNPOOLED || dd.connectionStrings?.POSTGRES_URL_NON_POOLING || '';
+        if (pooledUrl) {
           setDbConfig({
-            dbUrl: conn.pooledUrl || conn.databaseUrl || '',
-            pooledUrl: conn.pooledUrl || conn.databaseUrl || '',
-            directUrl: conn.directUrl || '',
+            dbUrl: pooledUrl,
+            pooledUrl: pooledUrl,
+            directUrl: directUrl || pooledUrl.replace('-pooler', ''),
           });
+          onSnackbar({ message: `✅ Neon database provisioned for ${tenant.slug} — connection strings auto-populated`, severity: 'success' });
+        } else {
+          onSnackbar({ message: `✅ Neon database provisioned for ${tenant.slug}`, severity: 'success' });
         }
-        onSnackbar({ message: `✅ Neon database provisioned for ${tenant.slug}`, severity: 'success' });
       } else {
         throw new Error(data.error || 'Neon provisioning failed');
       }
@@ -558,6 +564,56 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
       setProvisioningDb(false);
     }
   }, [tenant, onSnackbar]);
+
+  // ── Test database connection ────────────────────────────
+  const handleTestConnection = useCallback(async () => {
+    if (!dbConfig.dbUrl) {
+      setConnectionTestResult('⚠️ No database URL configured');
+      return;
+    }
+    setTestingConnection(true);
+    setConnectionTestResult(null);
+    try {
+      // Parse the URL to validate format
+      const url = new URL(dbConfig.dbUrl);
+      const hostname = url.hostname;
+      const isPooled = hostname.includes('-pooler');
+
+      // Try to resolve hostname and check port availability
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const testRes = await fetch(`/api/admin/tenants/${tenant?.slug}/provision/neon/test`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dbUrl: dbConfig.dbUrl }),
+          signal: controller.signal,
+        });
+        const testData = await testRes.json();
+        clearTimeout(timeout);
+        if (testData.success) {
+          setConnectionTestResult('✅ Connection successful — database is reachable');
+        } else {
+          setConnectionTestResult(`❌ Connection failed: ${testData.error || 'Unknown error'}`);
+        }
+      } catch (fetchErr) {
+        clearTimeout(timeout);
+        // Fallback: basic URL validation
+        setConnectionTestResult(
+          `✅ URL format valid: ${url.protocol}//${url.hostname}/${url.pathname.split('/').pop()}
+` +
+          `   Type: ${isPooled ? 'Pooled (PgBouncer)' : 'Direct'}
+` +
+          `   Note: In-browser connection test unavailable; verify via psql or the Neon Console.`
+        );
+      }
+    } catch {
+      setConnectionTestResult('❌ Invalid database URL format');
+    } finally {
+      setTestingConnection(false);
+    }
+  }, [dbConfig.dbUrl, tenant]);
 
   // ── Build deploy payload ──────────────────────────────────
   const buildDeployPayload = useCallback(() => {
@@ -1174,9 +1230,27 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         {provisionDbResult && (
           <Alert severity="success" sx={{ mt: 1 }}>
             <AlertTitle>✅ Database Provisioned</AlertTitle>
-            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'pre-wrap' }}>
-              {JSON.stringify(provisionDbResult, null, 2)}
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Connection strings have been auto-populated below. Review and continue to the next step.
             </Typography>
+            {/* Summary of key connection strings */}
+            {(() => {
+              const dd = provisionDbResult?.data as Record<string, unknown> | undefined;
+              const conns = dd?.connectionStrings as Record<string, string> | undefined;
+              if (!conns) return null;
+              const entries = Object.entries(conns).slice(0, 6);
+              return (
+                <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'background.default' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>Provisioned Keys:</Typography>
+                  {entries.map(([key, val]) => (
+                    <Stack key={key} direction="row" spacing={1} sx={{ mb: 0.25 }}>
+                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 700, minWidth: 200, fontSize: '0.65rem' }}>{key}=</Typography>
+                      <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary', fontSize: '0.65rem', wordBreak: 'break-all' }}>{(val as string).length > 60 ? (val as string).substring(0, 60) + '...' : val}</Typography>
+                    </Stack>
+                  ))}
+                </Paper>
+              );
+            })()}
           </Alert>
         )}
         {provisionDbError && (
@@ -1207,6 +1281,30 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         fullWidth multiline rows={2}
         slotProps={{ input: { sx: { fontFamily: 'monospace', fontSize: '0.8rem' } } }}
       />
+
+      {/* Test Connection + Results */}
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleTestConnection}
+          disabled={testingConnection || !dbConfig.dbUrl}
+          startIcon={testingConnection ? <CircularProgress size={16} color="inherit" /> : <DnsIcon />}
+        >
+          {testingConnection ? 'Testing...' : 'Test Connection'}
+        </Button>
+        {connectionTestResult && (
+          <Typography
+            variant="caption"
+            sx={{
+              fontFamily: 'monospace', fontSize: '0.7rem', whiteSpace: 'pre-wrap',
+              color: connectionTestResult.startsWith('✅') ? 'success.main' : connectionTestResult.startsWith('⚠️') ? 'warning.main' : 'error.main',
+            }}
+          >
+            {connectionTestResult}
+          </Typography>
+        )}
+      </Stack>
     </Stack>
   );
 

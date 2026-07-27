@@ -302,7 +302,7 @@ export async function provisionTenantDatabase(
   }
 
   // 4. Retrieve connection strings (branch endpoint may take a moment to be ready).
-  const { pooledUrl, directUrl } = await getConnectionStrings(branchId);
+  const { pooledUrl, directUrl } = await getConnectionStrings(branchId, databaseName);
 
   console.log(
     `[neon-provision] Provisioned ${branchName}: branch=${branchId}, ` +
@@ -355,6 +355,7 @@ export async function deprovisionTenantDatabase(
  */
 async function getConnectionStrings(
   branchId: string,
+  databaseName?: string,
 ): Promise<{ pooledUrl: string; directUrl: string }> {
   const { projectId } = getConfig();
   const maxAttempts = 5;
@@ -377,7 +378,7 @@ async function getConnectionStrings(
       if (!directUrl && ep.host) {
         const pgUser = process.env.POSTGRES_USER || process.env.PGUSER || 'neondb_owner';
         const pgPass = process.env.POSTGRES_PASSWORD || process.env.PGPASSWORD || '';
-        const pgDb = process.env.POSTGRES_DATABASE || process.env.PGDATABASE || 'neondb';
+        const pgDb = databaseName || process.env.POSTGRES_DATABASE || process.env.PGDATABASE || 'neondb';
         const directHost = ep.hosts?.read_write_host ?? ep.host;
         const pooledHost = ep.hosts?.read_write_pooled_host ?? derivePooledHost(directHost);
 
