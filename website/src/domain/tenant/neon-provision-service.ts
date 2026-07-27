@@ -127,7 +127,7 @@ async function neonFetch(
 
 async function listBranches(): Promise<NeonBranch[]> {
   const { projectId } = getConfig();
-  const res = await neonFetch(`/v2/projects/${projectId}/branches`);
+  const res = await neonFetch(`/projects/${projectId}/branches`);
   if (!res.ok) {
     const err = await res.text().catch(() => '');
     throw new Error(`Failed to list Neon branches: ${res.status} ${err.slice(0, 200)}`);
@@ -191,7 +191,7 @@ export async function provisionTenantDatabase(
 
   // 2. Create the branch (reuse on 409 conflict).
   let branchId: string;
-  const createRes = await neonFetch(`/v2/projects/${projectId}/branches`, {
+  const createRes = await neonFetch(`/projects/${projectId}/branches`, {
     method: 'POST',
     body: JSON.stringify({ name: branchName, parent_id: mainBranchId }),
   });
@@ -215,7 +215,7 @@ export async function provisionTenantDatabase(
 
   // 3. Create the database inside the branch (reuse on 409 conflict).
   const dbRes = await neonFetch(
-    `/v2/projects/${projectId}/branches/${branchId}/databases`,
+    `/projects/${projectId}/branches/${branchId}/databases`,
     {
       method: 'POST',
       body: JSON.stringify({ name: databaseName }),
@@ -260,7 +260,7 @@ export async function deprovisionTenantDatabase(
   }
 
   const res = await neonFetch(
-    `/v2/projects/${projectId}/branches/${branchId}`,
+    `/projects/${projectId}/branches/${branchId}`,
     { method: 'DELETE' },
   );
   if (!res.ok && res.status !== 404) {
@@ -290,7 +290,7 @@ async function getConnectionStrings(
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const res = await neonFetch(
-      `/v2/projects/${projectId}/branches/${branchId}/endpoints`,
+      `/projects/${projectId}/branches/${branchId}/endpoints`,
     );
 
     if (res.ok) {
