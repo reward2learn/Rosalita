@@ -46,7 +46,7 @@ interface NeonEndpoint {
 
 // ── Config & helpers ───────────────────────────────────────────
 
-function getConfig(): { apiKey: string; projectId: string } {
+function getConfig(): { apiKey: string; projectId: string; orgId?: string } {
   const apiKey = process.env.NEON_API_KEY;
   const projectId = process.env.NEON_PROJECT_ID;
   if (!apiKey) {
@@ -59,7 +59,7 @@ function getConfig(): { apiKey: string; projectId: string } {
       'NEON_PROJECT_ID is not set. Find it in the Neon console project URL or dashboard.',
     );
   }
-  return { apiKey, projectId };
+  return { apiKey, projectId, orgId: process.env.NEON_ORG_ID };
 }
 
 function sleep(ms: number): Promise<void> {
@@ -95,15 +95,32 @@ async function neonFetch(
   const { apiKey } = getConfig();
   const url = `${NEON_API}${path}`;
 
+  // For organization-owned projects, include the org_id header
+  const orgId = process.env.NEON_ORG_ID;
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    };
+    if (orgId) headers['X-Org-Id'] = orgId;
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
+
+    console.log(`[neon-provision] ${options.method || 'GET'} ${path} (attempt ${attempt + 1})`);
+
     const res = await fetch(url, {
       ...options,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     });
+
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      console.warn(
+        `[neon-provision] Response ${res.status} for ${options.method || 'GET'} ${path}: ${errBody.slice(0, 300)}`,
+      );
+    }
 
     // 423 = project locked by conflicting operations — wait and retry
     if (res.status === 423) {
