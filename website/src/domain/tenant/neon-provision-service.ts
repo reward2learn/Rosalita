@@ -193,7 +193,10 @@ export async function provisionTenantDatabase(
   let branchId: string;
   const createRes = await neonFetch(`/projects/${projectId}/branches`, {
     method: 'POST',
-    body: JSON.stringify({ name: branchName, parent_id: mainBranchId }),
+    body: JSON.stringify({
+        branch: { name: branchName, parent_id: mainBranchId },
+        endpoints: [{ type: 'read_write' }],
+      }),
   });
 
   if (createRes.status === 409) {
