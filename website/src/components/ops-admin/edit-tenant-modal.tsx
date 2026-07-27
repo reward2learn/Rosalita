@@ -1199,71 +1199,141 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         the tenant slug as Project ID) or enter existing credentials manually.
       </Typography>
 
-      {/* GCP Auto-Provisioning */}
+      {/* Step 1: Create GCP Project */}
       <Paper variant="outlined" sx={{ p: 2.5, borderColor: 'primary.main' }}>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 1.5 }}>
           <VerifiedUserIcon color="primary" />
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Google Cloud Console — Manual Setup
+            Step 1: Create a GCP Project
           </Typography>
         </Stack>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Create a new GCP project and OAuth 2.0 client manually via the Google Cloud Console.
-          Once created, enter the credentials below.
+          Create a new project in Google Cloud Console, then paste the Project ID below.
         </Typography>
-        <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
+        <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
           <Button
             variant="contained"
             href="https://console.cloud.google.com/projectcreate"
             target="_blank"
             startIcon={<OpenInNewIcon />}
+            sx={{ whiteSpace: 'nowrap' }}
           >
             Create New GCP Project
           </Button>
+          <TextField
+            label="GCP Project ID"
+            value={googleOAuth.projectId}
+            onChange={(e) => handleOAuthChange('projectId', e.target.value)}
+            size="small"
+            placeholder="my-project-mynew"
+            sx={{ minWidth: 280, flex: 1 }}
+            helperText="Paste the Project ID from GCP Console after creating the project."
+            slotProps={{ input: { sx: { fontFamily: 'monospace', fontSize: '0.85rem' } } }}
+          />
+        </Stack>
+      </Paper>
+
+      {/* Step 2: Create OAuth Client */}
+      <Paper variant="outlined" sx={{ p: 2.5, borderColor: 'secondary.main' }}>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 1.5 }}>
+          <KeyIcon color="secondary" />
+          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            Step 2: Create OAuth 2.0 Client
+          </Typography>
+        </Stack>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Open the GCP Console credentials page for your project and create a Web application OAuth client.
+          Add the redirect URIs shown below, then paste the Client ID and Secret here.
+        </Typography>
+        <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', alignItems: 'center', mb: 2 }}>
           <Button
-            variant="outlined"
+            variant="contained"
+            color="secondary"
             href={`https://console.cloud.google.com/apis/credentials?project=${googleOAuth.projectId || tenant.slug}`}
             target="_blank"
             startIcon={<OpenInNewIcon />}
+            disabled={!googleOAuth.projectId}
           >
             Create OAuth 2.0 Client
           </Button>
-        </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-          Use <strong>{tenant.slug}</strong> as the project name. Configure redirect URIs to include your tenant URL.
-        </Typography>
-      </Paper>
-
-      {/* Auto-Provision via API (attempted but may fall back) */}
-      <Paper variant="outlined" sx={{ p: 2, bgcolor: 'action.hover' }}>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 1 }}>
-          <AutoFixHighIcon fontSize="small" color="action" />
-          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-            Auto-Provision (optional)
+          <Typography variant="caption" color="text.secondary">
+            {googleOAuth.projectId ? `Project: ${googleOAuth.projectId}` : 'Enter Project ID above first'}
           </Typography>
         </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-          Attempt to auto-provision via service account. Requires configured GCP service account.
-        </Typography>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+
+        {/* Redirect URIs reference */}
+        <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'background.default', mb: 2 }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>
+            Required Redirect URIs (add these in GCP Console):
+          </Typography>
+          {googleOAuth.redirectUris.map((uri) => (
+            <Typography key={uri} variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '0.7rem', color: 'text.secondary', mb: 0.25 }}>
+              {uri}
+            </Typography>
+          ))}
+        </Paper>
+
+        {/* OAuth Credentials fields */}
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              label="Client ID"
+              value={googleOAuth.clientId}
+              onChange={(e) => handleOAuthChange('clientId', e.target.value)}
+              fullWidth
+              placeholder="670560975972-xxxxx.apps.googleusercontent.com"
+              slotProps={{ input: { sx: { fontFamily: 'monospace', fontSize: '0.8rem' } } }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              label="Client Secret"
+              value={googleOAuth.clientSecret}
+              onChange={(e) => handleOAuthChange('clientSecret', e.target.value)}
+              fullWidth
+              type={showSecret ? 'text' : 'password'}
+              slotProps={{
+                input: {
+                  sx: { fontFamily: 'monospace', fontSize: '0.8rem' },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowSecret(!showSecret)} edge="end" size="small">
+                        {showSecret ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* Auto-Provision (optional attempt) */}
+      <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover' }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <AutoFixHighIcon fontSize="small" color="disabled" />
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Auto-provision via service account (may fall back to shared credentials):
+          </Typography>
           <TextField
-            label="GCP Account Email"
+            label="GCP Email"
             type="email"
             value={googleOAuth.gcpAccountEmail}
             onChange={(e) => handleOAuthChange('gcpAccountEmail', e.target.value)}
             size="small"
             placeholder="reward2learn@gmail.com"
-            sx={{ minWidth: 280 }}
-            slotProps={{ input: { sx: { fontFamily: 'monospace', fontSize: '0.8rem' } } }}
+            sx={{ minWidth: 200 }}
+            slotProps={{ input: { sx: { fontSize: '0.75rem' } } }}
           />
           <Button
             variant="text"
             size="small"
             onClick={handleProvisionOAuth}
             disabled={provisioningOAuth || !googleOAuth.gcpAccountEmail.trim()}
-            startIcon={provisioningOAuth ? <CircularProgress size={14} color="inherit" /> : <AutoFixHighIcon />}
+            startIcon={provisioningOAuth ? <CircularProgress size={12} color="inherit" /> : <AutoFixHighIcon />}
           >
-            {provisioningOAuth ? 'Trying...' : 'Auto-Provision'}
+            {provisioningOAuth ? '...' : 'Auto'}
           </Button>
         </Stack>
         {provisionOAuthError && (
@@ -1288,40 +1358,6 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         </Alert>
       )}
 
-      <Divider><Typography variant="caption" color="text.secondary">or enter manually</Typography></Divider>
-
-      {/* Manual OAuth fields */}
-      <TextField
-        label="Client ID"
-        value={googleOAuth.clientId}
-        onChange={(e) => handleOAuthChange('clientId', e.target.value)}
-        fullWidth placeholder="670560975972-xxxxx.apps.googleusercontent.com"
-      />
-      <TextField
-        label="Client Secret"
-        value={googleOAuth.clientSecret}
-        onChange={(e) => handleOAuthChange('clientSecret', e.target.value)}
-        fullWidth type={showSecret ? 'text' : 'password'}
-        slotProps={{
-          input: {
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton onClick={() => setShowSecret(!showSecret)} edge="end" size="small">
-                  {showSecret ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          },
-        }}
-      />
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <TextField label="Project ID" value={googleOAuth.projectId} onChange={(e) => handleOAuthChange('projectId', e.target.value)} fullWidth />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <TextField label="Support Email" type="email" value={googleOAuth.supportEmail} onChange={(e) => handleOAuthChange('supportEmail', e.target.value)} fullWidth placeholder="admin@tenant.com" />
-        </Grid>
-      </Grid>
       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Redirect URIs</Typography>
       <Stack spacing={1}>
         {googleOAuth.redirectUris.map((uri) => (
