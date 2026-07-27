@@ -218,7 +218,7 @@ export async function provisionTenantDatabase(
     `/projects/${projectId}/branches/${branchId}/databases`,
     {
       method: 'POST',
-      body: JSON.stringify({ name: databaseName }),
+      body: JSON.stringify({ database: { name: databaseName } }),
     },
   );
   if (!dbRes.ok && dbRes.status !== 409) {
