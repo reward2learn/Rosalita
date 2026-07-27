@@ -1192,44 +1192,76 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
 
       {/* GCP Auto-Provisioning */}
       <Paper variant="outlined" sx={{ p: 2.5, borderColor: 'primary.main' }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
-          🚀 Auto-Provision from Google Cloud
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 1.5 }}>
+          <VerifiedUserIcon color="primary" />
+          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            Google Cloud Console — Manual Setup
+          </Typography>
+        </Stack>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Create a new GCP project and OAuth 2.0 client manually via the Google Cloud Console.
+          Once created, enter the credentials below.
         </Typography>
-        <Stack spacing={2}>
+        <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
+          <Button
+            variant="contained"
+            href="https://console.cloud.google.com/projectcreate"
+            target="_blank"
+            startIcon={<OpenInNewIcon />}
+          >
+            Create New GCP Project
+          </Button>
+          <Button
+            variant="outlined"
+            href={`https://console.cloud.google.com/apis/credentials?project=${googleOAuth.projectId || tenant.slug}`}
+            target="_blank"
+            startIcon={<OpenInNewIcon />}
+          >
+            Create OAuth 2.0 Client
+          </Button>
+        </Stack>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+          Use <strong>{tenant.slug}</strong> as the project name. Configure redirect URIs to include your tenant URL.
+        </Typography>
+      </Paper>
+
+      {/* Auto-Provision via API (attempted but may fall back) */}
+      <Paper variant="outlined" sx={{ p: 2, bgcolor: 'action.hover' }}>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 1 }}>
+          <AutoFixHighIcon fontSize="small" color="action" />
+          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+            Auto-Provision (optional)
+          </Typography>
+        </Stack>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          Attempt to auto-provision via service account. Requires configured GCP service account.
+        </Typography>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
           <TextField
-            label="Google Cloud Account Email"
+            label="GCP Account Email"
             type="email"
             value={googleOAuth.gcpAccountEmail}
             onChange={(e) => handleOAuthChange('gcpAccountEmail', e.target.value)}
-            fullWidth size="small"
-            placeholder="admin@google-cloud-project.iam.gserviceaccount.com"
-            helperText="The GCP account email used to create the project and OAuth consent screen."
-            slotProps={{ input: { sx: { fontFamily: 'monospace' } } }}
+            size="small"
+            placeholder="reward2learn@gmail.com"
+            sx={{ minWidth: 280 }}
+            slotProps={{ input: { sx: { fontFamily: 'monospace', fontSize: '0.8rem' } } }}
           />
-          <Typography variant="caption" color="text.secondary">
-            A new GCP project will be created with Project ID: <strong>{tenant.slug}</strong>
-          </Typography>
-          <Stack direction="row" spacing={1.5}>
-            <Button
-              variant="contained"
-              onClick={handleProvisionOAuth}
-              disabled={provisioningOAuth || !googleOAuth.gcpAccountEmail.trim()}
-              startIcon={provisioningOAuth ? <CircularProgress size={18} color="inherit" /> : <VerifiedUserIcon />}
-            >
-              {provisioningOAuth ? 'Creating...' : 'Create GCP Project & OAuth'}
-            </Button>
-            {googleOAuth.projectId && (
-              <Button
-                variant="outlined"
-                href={`https://console.cloud.google.com/apis/credentials?project=${googleOAuth.projectId || tenant.slug}`}
-                target="_blank"
-                endIcon={<OpenInNewIcon />}
-              >
-                Open GCP Console
-              </Button>
-            )}
-          </Stack>
+          <Button
+            variant="text"
+            size="small"
+            onClick={handleProvisionOAuth}
+            disabled={provisioningOAuth || !googleOAuth.gcpAccountEmail.trim()}
+            startIcon={provisioningOAuth ? <CircularProgress size={14} color="inherit" /> : <AutoFixHighIcon />}
+          >
+            {provisioningOAuth ? 'Trying...' : 'Auto-Provision'}
+          </Button>
         </Stack>
+        {provisionOAuthError && (
+          <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
+            {provisionOAuthError}
+          </Typography>
+        )}
       </Paper>
 
       {provisionOAuthResult && (
