@@ -160,11 +160,10 @@ export async function PUT(request: Request): Promise<NextResponse> {
     return jsonError("Invalid JSON body", 400);
   }
 
-  const { code, name, isPlatformAdmin, email } = (body ?? {}) as {
+  const { code, name, isPlatformAdmin } = (body ?? {}) as {
     code?: string;
     name?: string;
     isPlatformAdmin?: boolean;
-    email?: string;
   };
 
   if (!code || typeof code !== "string" || code.trim().length < 2) {
@@ -179,20 +178,12 @@ export async function PUT(request: Request): Promise<NextResponse> {
   try {
     const existing = await db.role.findUnique({ where: { code: normalizedCode } });
 
-    const trimmedEmail = email?.trim() || null;
+    // Roles are just display names — email is not stored on the role.
+    // Person-to-role mapping is handled by the PERSONS registry in persons.ts.
     const roleData: Record<string, unknown> = {
       name: name.trim(),
       isPlatformAdmin: isPlatformAdmin ?? false,
-      email: trimmedEmail,
     };
-
-    // If setting an email, null it out on any other role that has it (avoid unique constraint).
-    if (trimmedEmail) {
-      await db.role.updateMany({
-        where: { email: trimmedEmail, code: { not: normalizedCode } },
-        data: { email: null },
-      });
-    }
 
     if (existing) {
       await db.role.update({ where: { code: normalizedCode }, data: roleData });

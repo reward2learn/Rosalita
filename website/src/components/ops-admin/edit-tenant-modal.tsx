@@ -360,7 +360,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
           code: roleFormCode || roleFormName.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
           name: roleFormName.trim(),
           isPlatformAdmin: roleFormIsPlatformAdmin,
-          email: roleFormEmail.trim() || undefined,
+
         }),
       });
       const data = await res.json();
@@ -376,7 +376,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
     } finally {
       setRoleSaving(false);
     }
-  }, [roleFormCode, roleFormName, roleFormIsPlatformAdmin, roleFormEmail, roleDialogMode, fetchRoles, onSnackbar]);
+  }, [roleFormCode, roleFormName, roleFormIsPlatformAdmin, roleDialogMode, fetchRoles, onSnackbar]);
 
   const handleRoleDelete = useCallback(async (code: string) => {
     setRoleSaving(true);
@@ -1440,8 +1440,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
             <TextField label="Role Name" value={roleFormName}
               onChange={(e) => { setRoleFormName(e.target.value); if (roleDialogMode === 'create' && !roleFormCode) setRoleFormCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')); }}
               fullWidth size="small" placeholder="e.g. Finance Manager" autoFocus={roleDialogMode === 'create'} />
-            <TextField label="Email (optional)" type="email" value={roleFormEmail}
-              onChange={(e) => setRoleFormEmail(e.target.value)} fullWidth size="small" placeholder="role-owner@tenant.com" />
+            {/* Email not stored on roles — mapping is via PERSONS registry. */}
             <FormControlLabel control={<Switch checked={roleFormIsPlatformAdmin} onChange={(e) => setRoleFormIsPlatformAdmin(e.target.checked)} />} label="Platform Admin (full access)" />
           </Stack>
         </DialogContent>
