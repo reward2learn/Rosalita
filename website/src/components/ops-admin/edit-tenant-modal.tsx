@@ -294,7 +294,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
     try {
       const res = await fetch('/api/admin/roles');
       const data = await res.json();
-      if (data.ok && data.data?.roles) {
+      if (data.success && data.data?.roles) {
         setRolesList(data.data.roles);
       } else {
         setRolesError(data.error || 'Failed to load roles');
@@ -315,7 +315,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         body: JSON.stringify({ code, pin }),
       });
       const data = await res.json();
-      if (data.ok) {
+      if (data.success) {
         await fetchRoles();
         onSnackbar({ message: 'PIN set for role ' + code, severity: 'success' });
       } else {
@@ -364,7 +364,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         }),
       });
       const data = await res.json();
-      if (data.ok) {
+      if (data.success) {
         await fetchRoles();
         setRoleDialogOpen(false);
         onSnackbar({ message: 'Role ' + (roleDialogMode === 'create' ? 'created' : 'updated'), severity: 'success' });
@@ -383,7 +383,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
     try {
       const res = await fetch('/api/admin/roles?code=' + encodeURIComponent(code), { method: 'DELETE' });
       const data = await res.json();
-      if (data.ok) {
+      if (data.success) {
         await fetchRoles();
         setRoleDeleteConfirm(null);
         onSnackbar({ message: 'Role deleted: ' + code, severity: 'success' });
