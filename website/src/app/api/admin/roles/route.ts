@@ -179,11 +179,20 @@ export async function PUT(request: Request): Promise<NextResponse> {
   try {
     const existing = await db.role.findUnique({ where: { code: normalizedCode } });
 
+    const trimmedEmail = email?.trim() || null;
     const roleData: Record<string, unknown> = {
       name: name.trim(),
       isPlatformAdmin: isPlatformAdmin ?? false,
-      email: email?.trim() || null,
+      email: trimmedEmail,
     };
+
+    // If setting an email, null it out on any other role that has it (avoid unique constraint).
+    if (trimmedEmail) {
+      await db.role.updateMany({
+        where: { email: trimmedEmail, code: { not: normalizedCode } },
+        data: { email: null },
+      });
+    }
 
     if (existing) {
       await db.role.update({ where: { code: normalizedCode }, data: roleData });
