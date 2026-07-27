@@ -531,7 +531,16 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         if (dd.clientId) handleOAuthChange('clientId', dd.clientId);
         if (dd.clientSecret) handleOAuthChange('clientSecret', dd.clientSecret);
         if (dd.projectId) handleOAuthChange('projectId', dd.projectId);
-        onSnackbar({ message: `✅ GCP project + OAuth credentials created for ${tenant.slug}`, severity: 'success' });
+        
+        const strategy = dd.strategy || 'unknown';
+        if (strategy === 'env-fallback') {
+          onSnackbar({
+            message: `⚠️ Using shared OAuth credentials. Create a dedicated OAuth client via GCP Console for production.`,
+            severity: 'success',
+          });
+        } else {
+          onSnackbar({ message: `✅ GCP project + OAuth credentials created for ${tenant.slug}`, severity: 'success' });
+        }
       } else {
         throw new Error(data.error || 'Google OAuth provisioning failed');
       }

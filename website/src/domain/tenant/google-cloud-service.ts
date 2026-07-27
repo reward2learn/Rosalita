@@ -110,10 +110,12 @@ export async function provisionGoogleOAuth(
  */
 async function getServiceAccountToken(): Promise<{ accessToken: string; projectId: string } | null> {
   let saJson: string | null = null;
+  let source = 'none';
 
   // Try secrets table first
   try {
     saJson = await getSecretPlaintext('GOOGLE_CLOUD_SERVICE_ACCOUNT');
+    if (saJson) source = 'secrets_table';
   } catch {
     // Secret might not exist — fall through
   }
@@ -121,9 +123,15 @@ async function getServiceAccountToken(): Promise<{ accessToken: string; projectI
   // Try env var next
   if (!saJson) {
     saJson = process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON ?? null;
+    if (saJson) source = 'env_var';
   }
 
-  if (!saJson) return null;
+  if (!saJson) {
+    console.warn('[google-cloud] No service account found in secrets table or env var');
+    return null;
+  }
+
+  console.log(`[google-cloud] Using service account from source: ${source} (${saJson.length} chars)`);
 
   try {
     const sa = JSON.parse(saJson) as {
@@ -137,14 +145,19 @@ async function getServiceAccountToken(): Promise<{ accessToken: string; projectI
     const now = Math.floor(Date.now() / 1000);
     const claims = {
       iss: sa.client_email,
-      scope: 'https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/oauth2',
+      scope: 'https://www.googleapis.com/auth/cloud-platform',
       aud: OAUTH_TOKEN_URL,
       exp: now + 3600,
       iat: now,
     };
 
-    const b64 = (obj: Record<string, unknown>) =>
-      Buffer.from(JSON.stringify(obj)).toString('base64url');
+    // Use base64 with manual url-safe conversion for compatibility
+    const b64 = (obj: Record<string, unknown>): string =>
+      Buffer.from(JSON.stringify(obj))
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
 
     const payload = `${b64(header)}.${b64(claims)}`;
 
@@ -152,11 +165,15 @@ async function getServiceAccountToken(): Promise<{ accessToken: string; projectI
     const crypto = await import('node:crypto');
     const sign = crypto.createSign('RSA-SHA256');
     sign.update(payload);
-    const signature = sign.sign(sa.private_key, 'base64url');
+    const signature = sign.sign(sa.private_key, 'base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
 
     const jwt = `${payload}.${signature}`;
 
     // Exchange JWT for access token
+    console.log(`[google-cloud] Exchanging JWT for access token (key_length=${sa.private_key.length})...`);
     const tokenRes = await fetch(OAUTH_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -168,11 +185,39 @@ async function getServiceAccountToken(): Promise<{ accessToken: string; projectI
 
     if (!tokenRes.ok) {
       const errText = await tokenRes.text().catch(() => '');
-      console.warn(`[google-cloud] Service account token exchange failed: ${tokenRes.status} ${errText.slice(0, 200)}`);
+      console.error(`[google-cloud] Service account token exchange FAILED: ${tokenRes.status} ${errText.slice(0, 300)}`);
       return null;
     }
 
-    const tokenData = await tokenRes.json() as { access_token: string };
+    const tokenText = await tokenRes.text();
+    let tokenData: { access_token?: string; scope?: string; token_type?: string; expires_in?: number };
+    try {
+      tokenData = JSON.parse(tokenText);
+    } catch {
+      console.error(`[google-cloud] Token response is not JSON: ${tokenText.slice(0, 300)}`);
+      return null;
+    }
+    console.log(`[google-cloud] Token response: access_token=${tokenData.access_token ? '***' + tokenData.access_token.slice(-10) : 'UNDEFINED'}, type=${tokenData.token_type}, expires_in=${tokenData.expires_in}s, scope="${tokenData.scope || '(not returned)'}"`);
+    if (!tokenData.access_token) {
+      console.error(`[google-cloud] Full token response: ${JSON.stringify(tokenData).slice(0, 500)}`);
+      return null;
+    }
+
+    // Test the token by listing projects
+    try {
+      const testRes = await fetch('https://cloudresourcemanager.googleapis.com/v1/projects?pageSize=1', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      if (testRes.ok) {
+        console.log(`[google-cloud] Token VALID for Cloud Resource Manager API`);
+      } else {
+        const errText = await testRes.text().catch(() => '');
+        console.error(`[google-cloud] Token REJECTED by Cloud Resource Manager: ${testRes.status} ${errText.slice(0, 200)}`);
+      }
+    } catch (testErr) {
+      console.warn(`[google-cloud] Token test error: ${testErr instanceof Error ? testErr.message : String(testErr)}`);
+    }
+
     return { accessToken: tokenData.access_token, projectId: sa.project_id };
   } catch (err) {
     console.warn('[google-cloud] Service account auth failed:', err instanceof Error ? err.message : err);
@@ -201,48 +246,68 @@ async function tryStrategyServiceAccount(
 
     if (process.env.GOOGLE_CLOUD_CREATE_PROJECTS === 'true') {
       try {
+        console.log(`[google-cloud] Creating project "${projectId}"...`);
         const project = await createProject(auth.accessToken, projectId, displayName);
         tenantProjectId = project.projectId;
-        console.log(`[google-cloud] Created project: ${tenantProjectId}`);
+        console.log(`[google-cloud] Project created: ${tenantProjectId}`);
       } catch (projErr) {
-        console.warn(`[google-cloud] Project creation skipped/fallback:`, projErr instanceof Error ? projErr.message : projErr);
+        console.warn(`[google-cloud] Project creation failed:`, projErr instanceof Error ? projErr.message : String(projErr));
         tenantProjectId = parentProjectId;
       }
+    } else {
+      console.log(`[google-cloud] Skipping project creation (GOOGLE_CLOUD_CREATE_PROJECTS != 'true'), using parent: ${parentProjectId}`);
     }
 
     // 2. Enable the OAuth 2.0 API on the project
+    console.log(`[google-cloud] Enabling OAuth API on project ${tenantProjectId}...`);
     await enableOAuthApi(auth.accessToken, tenantProjectId);
+    console.log(`[google-cloud] OAuth API enabled`);
 
     // 3. Configure OAuth consent screen
+    console.log(`[google-cloud] Configuring consent screen for ${displayName}...`);
     await configureConsentScreen(auth.accessToken, tenantProjectId, {
       displayName,
       supportEmail: adminEmail,
       logoPath: config.logoPath,
     });
+    console.log(`[google-cloud] Consent screen configured`);
 
     // 4. Create OAuth 2.0 Web client
-    const client = await createOAuthClient(auth.accessToken, tenantProjectId, {
-      displayName: `${displayName} (${slug})`,
-      redirectUris,
-    });
+    let client: GcpOAuthClientResponse | null = null;
+    try {
+      console.log(`[google-cloud] Creating OAuth client for ${slug}...`);
+      client = await createOAuthClient(auth.accessToken, tenantProjectId, {
+        displayName: `${displayName} (${slug})`,
+        redirectUris,
+      });
+      console.log(`[google-cloud] OAuth client created: ${client.client_id}`);
+    } catch (clientErr) {
+      console.warn(`[google-cloud] OAuth client creation failed (non-fatal):`, clientErr instanceof Error ? clientErr.message : String(clientErr));
+      console.warn(`[google-cloud] User must create OAuth client manually via GCP Console.`);
+    }
 
-    // 5. Build the client_secret JSON
-    const clientSecretJson = buildClientSecretJson(client, tenantProjectId);
+    // 5. Build the client_secret JSON (if client was created)
+    if (client) {
+      const clientSecretJson = buildClientSecretJson(client, tenantProjectId);
+      return {
+        clientId: client.client_id,
+        clientSecret: client.client_secret,
+        projectId: tenantProjectId,
+        projectName: displayName,
+        redirectUris,
+        clientEmail: adminEmail,
+        authUri: OAUTH_AUTH_URL,
+        tokenUri: OAUTH_TOKEN_URL,
+        clientSecretJson,
+        strategy: 'rest-api',
+      };
+    }
 
-    return {
-      clientId: client.client_id,
-      clientSecret: client.client_secret,
-      projectId: tenantProjectId,
-      projectName: displayName,
-      redirectUris,
-      clientEmail: adminEmail,
-      authUri: OAUTH_AUTH_URL,
-      tokenUri: OAUTH_TOKEN_URL,
-      clientSecretJson,
-      strategy: 'rest-api',
-    };
+    // Partial success: project + consent screen configured, but OAuth client needs manual creation
+    console.log(`[google-cloud] Partial success for "${slug}": project=${tenantProjectId}, consent screen configured. OAuth client needs manual creation.`);
+    return null;
   } catch (err) {
-    console.warn('[google-cloud] REST API strategy failed:', err instanceof Error ? err.message : err);
+    console.error('[google-cloud] REST API strategy failed at:', err instanceof Error ? err.message : String(err));
     return null;
   }
 }
@@ -308,7 +373,7 @@ async function enableOAuthApi(accessToken: string, projectId: string): Promise<v
   if (!res.ok && res.status !== 409) {
     // 409 = already enabled, ignore
     const errText = await res.text().catch(() => '');
-    throw new Error(`enableOAuthApi failed: ${res.status} ${errText.slice(0, 200)}`);
+    console.warn(`[google-cloud] enableOAuthApi returned ${res.status} (non-fatal): ${errText.slice(0, 200)}`);
   }
 }
 
@@ -383,13 +448,13 @@ async function createOAuthClient(
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
-    // If 409, the client might already exist
     if (res.status === 409) {
-      console.warn('[google-cloud] OAuth client already exists (409) — attempting to read existing');
+      console.warn('[google-cloud] OAuth client already exists (409)');
       const existing = await listOAuthClients(accessToken, projectId);
       if (existing) return existing;
     }
-    throw new Error(`createOAuthClient failed: ${res.status} ${errText.slice(0, 300)}`);
+    console.warn(`[google-cloud] createOAuthClient returned ${res.status} (non-fatal): ${errText.slice(0, 300)}`);
+    throw new Error(`createOAuthClient failed: ${res.status}`);
   }
 
   const data = await res.json() as GcpOAuthClientResponse;
