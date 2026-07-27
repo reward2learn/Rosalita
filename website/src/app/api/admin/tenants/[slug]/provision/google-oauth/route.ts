@@ -48,7 +48,7 @@ export async function POST(
 
   try {
     // Get tenant info for display name
-    const db = createClient();
+    const db = createClient({ tier: guard.session.tier, sub: guard.session.sub });
     const tenant = await db.tenant.findUnique({ where: { slug }, select: { displayName: true, metadata: true } });
 
     const oauthResult = await provisionGoogleOAuth({
