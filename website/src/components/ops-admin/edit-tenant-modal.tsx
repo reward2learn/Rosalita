@@ -229,25 +229,58 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
       setEditPrimaryColor(tenant.primaryColor || tpl.defaultColors.primary);
       setEditSecondaryColor(tenant.secondaryColor || tpl.defaultColors.secondary);
       setDisplayName(tenant.displayName || '');
+
+      // Restore saved config from metadata
+      const cfg = (tenant.metadata?.config ?? {}) as Record<string, unknown>;
+      const savedLicense = (cfg.license ?? {}) as Record<string, unknown>;
+      const savedGoogle = (cfg.googleAuth ?? {}) as Record<string, unknown>;
+      const savedDb = (cfg.database ?? {}) as Record<string, unknown>;
+      const savedEnv = (cfg.env ?? {}) as Record<string, string>;
+
+      // Restore license fields
+      setLicense((prev) => ({
+        ...prev,
+        licenseKey: (savedLicense.key as string) || prev.licenseKey,
+        licenseTier: (savedLicense.tier as string) || prev.licenseTier,
+        validUntil: (savedLicense.validUntil as string) || prev.validUntil,
+        features: (savedLicense.features as string[]) || prev.features,
+        setupToken: (cfg.apiKey as string) || prev.setupToken,
+        openaiApiKey: (cfg.openaiApiKey as string) || prev.openaiApiKey,
+      }));
+
+      // Restore DB config (metadata.database overrides tenant.dbUrl)
       setDbConfig({
-        dbUrl: tenant.dbUrl || '',
-        pooledUrl: tenant.dbUrl || '',
-        directUrl: tenant.dbUrl || '',
+        dbUrl: (savedDb.pooledUrl as string) || (savedDb.databaseUrl as string) || tenant.dbUrl || '',
+        pooledUrl: (savedDb.pooledUrl as string) || (savedDb.databaseUrl as string) || tenant.dbUrl || '',
+        directUrl: (savedDb.directUrl as string) || '',
       });
+
+      // Restore Google OAuth
+      setGoogleOAuth((g) => ({
+        ...g,
+        clientId: (savedGoogle.clientId as string) || g.clientId,
+        clientSecret: (savedGoogle.clientSecret as string) || g.clientSecret,
+        projectId: (savedGoogle.projectId as string) || g.projectId,
+        authUri: (savedGoogle.authUri as string) || g.authUri,
+        redirectUris: ((savedGoogle.redirectUris as string[])?.length
+          ? (savedGoogle.redirectUris as string[])
+          : [
+              `https://${tenant.slug}.vercel.app`,
+              `https://${tenant.slug}.vercel.app/api/auth?action=google-callback`,
+            ]),
+        supportEmail: (savedGoogle.supportEmail as string) || g.supportEmail,
+        gcpAccountEmail: (savedGoogle.gcpAccountEmail as string) || g.gcpAccountEmail,
+      }));
+
+      // Restore custom env vars
+      const envPairsFromMeta = Object.entries(savedEnv).map(([key, value]) => ({ key, value }));
+      setEnvPairs(envPairsFromMeta);
+
       setActiveStep(0);
       setProvisionOAuthResult(null);
       setProvisionOAuthError(null);
       setProvisionDbResult(null);
       setProvisionDbError(null);
-      setGoogleOAuth((g) => ({
-        ...g,
-        redirectUris: [
-          `https://${tenant.slug}.vercel.app`,
-          `https://${tenant.slug}.vercel.app/api/auth?action=google-callback`,
-        ],
-        supportEmail: '',
-        gcpAccountEmail: 'reward2learn@gmail.com',
-      }));
     }
   }, [tenant]);
 
@@ -613,7 +646,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
       };
 
       const res = await fetch(`/api/admin/tenants/${tenant.slug}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
