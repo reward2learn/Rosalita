@@ -11,8 +11,9 @@
  *   NEON_PROJECT_ID — Neon project ID (already in .env.local)
  *
  * Error handling:
- *   429 Rate Limit → exponential backoff (1s, 2s, 4s, 8s)
- *   409 Conflict   → branch already exists, reuse it
+ *   423 Locked      → project has conflicting ops, retry with backoff (2s, 4s, 8s, 16s)
+ *   429 Rate Limit  → exponential backoff (1s, 2s, 4s, 8s)
+ *   409 Conflict    → handled by check-first pattern (list before create)
  *   Never exposes the API key in error messages.
  */
 const NEON_API = 'https://console.neon.tech/api/v2';
@@ -34,13 +35,13 @@ interface NeonBranch {
 }
 
 interface NeonEndpoint {
-  host?: string;
+  host: string;
   hosts?: {
     read_write_host: string;
     read_write_pooled_host: string;
   };
-  pooled_connection_string?: string;
   connection_string?: string;
+  pooled_connection_string?: string;
 }
 
 // ── Config & helpers ───────────────────────────────────────────
@@ -104,6 +105,21 @@ async function neonFetch(
       },
     });
 
+    // 423 = project locked by conflicting operations — wait and retry
+    if (res.status === 423) {
+      if (attempt === maxRetries) {
+        console.warn(`[neon-provision] Project locked after ${maxRetries + 1} attempts: ${path}`);
+        return res;
+      }
+      const delay = Math.min(2 ** attempt * 2000, 16000); // 2s, 4s, 8s, 16s
+      console.warn(
+        `[neon-provision] Project locked (423), retrying in ${delay}ms ` +
+        `(attempt ${attempt + 1}/${maxRetries + 1})`,
+      );
+      await sleep(delay);
+      continue;
+    }
+
     if (res.status !== 429) return res;
 
     if (attempt === maxRetries) {
@@ -143,6 +159,28 @@ async function findBranchIdByName(name: string): Promise<string> {
     throw new Error(`Neon branch "${name}" not found in project`);
   }
   return found.id;
+}
+
+interface NeonDatabase {
+  name: string;
+}
+
+/** List all databases in a branch. */
+async function listDatabases(branchId: string): Promise<NeonDatabase[]> {
+  const { projectId } = getConfig();
+  const res = await neonFetch(`/projects/${projectId}/branches/${branchId}/databases`);
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    throw new Error(`Failed to list databases in branch ${branchId}: ${res.status} ${err.slice(0, 200)}`);
+  }
+  const data = await res.json() as { databases?: NeonDatabase[] };
+  return data.databases ?? [];
+}
+
+/** Check if a database exists by name in a branch. */
+async function databaseExists(branchId: string, dbName: string): Promise<boolean> {
+  const databases = await listDatabases(branchId);
+  return databases.some((d) => d.name === dbName);
 }
 
 // ── Public API ─────────────────────────────────────────────────
@@ -189,49 +227,62 @@ export async function provisionTenantDatabase(
   const mainBranchId = await getMainBranchId();
   console.log(`[neon-provision] Branching "${branchName}" off main branch ${mainBranchId}`);
 
-  // 2. Create the branch (reuse on 409 conflict).
+  // 2. Check if branch already exists; if not, create it.
   let branchId: string;
-  const createRes = await neonFetch(`/projects/${projectId}/branches`, {
-    method: 'POST',
-    body: JSON.stringify({
+  try {
+    branchId = await findBranchIdByName(branchName);
+    console.log(`[neon-provision] Branch "${branchName}" already exists — reusing (${branchId})`);
+  } catch {
+    // Branch not found — create it with read_write endpoint
+    console.log(`[neon-provision] Creating branch "${branchName}" with read_write endpoint...`);
+    const createRes = await neonFetch(`/projects/${projectId}/branches`, {
+      method: 'POST',
+      body: JSON.stringify({
         branch: { name: branchName, parent_id: mainBranchId },
         endpoints: [{ type: 'read_write' }],
       }),
-  });
+    });
 
-  if (createRes.status === 409) {
-    console.log(`[neon-provision] Branch "${branchName}" already exists (409) — reusing`);
-    branchId = await findBranchIdByName(branchName);
-  } else if (!createRes.ok) {
-    const err = await createRes.text().catch(() => '');
-    throw new Error(
-      `Failed to create Neon branch "${branchName}": ${createRes.status} ${err.slice(0, 200)}`,
-    );
-  } else {
-    const data = await createRes.json() as { branch?: { id: string } };
-    branchId = data.branch?.id ?? '';
-    if (!branchId) {
-      throw new Error(`Neon create branch returned no branch id for "${branchName}"`);
+    if (createRes.status === 409) {
+      console.log(`[neon-provision] Branch "${branchName}" already exists (409) — reusing`);
+      branchId = await findBranchIdByName(branchName);
+    } else if (!createRes.ok) {
+      const err = await createRes.text().catch(() => '');
+      throw new Error(
+        `Failed to create Neon branch "${branchName}": ${createRes.status} ${err.slice(0, 200)}`,
+      );
+    } else {
+      const data = await createRes.json() as { branch?: { id: string } };
+      branchId = data.branch?.id ?? '';
+      if (!branchId) {
+        throw new Error(`Neon create branch returned no branch id for "${branchName}"`);
+      }
+      console.log(`[neon-provision] Branch created: ${branchId} (${branchName})`);
     }
-    console.log(`[neon-provision] Branch created: ${branchId} (${branchName})`);
   }
 
-  // 3. Create the database inside the branch (reuse on 409 conflict).
-  const dbRes = await neonFetch(
-    `/projects/${projectId}/branches/${branchId}/databases`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ database: { name: databaseName, owner_name: "neondb_owner" } }),
-    },
-  );
-  if (!dbRes.ok && dbRes.status !== 409) {
-    const err = await dbRes.text().catch(() => '');
-    throw new Error(
-      `Failed to create database "${databaseName}" in branch ${branchId}: ` +
-      `${dbRes.status} ${err.slice(0, 200)}`,
+  // 3. Check if database already exists; if not, create it.
+  const dbExists = await databaseExists(branchId, databaseName);
+  if (dbExists) {
+    console.log(`[neon-provision] Database "${databaseName}" already exists in branch ${branchId} — reusing`);
+  } else {
+    console.log(`[neon-provision] Creating database "${databaseName}" in branch ${branchId}...`);
+    const dbRes = await neonFetch(
+      `/projects/${projectId}/branches/${branchId}/databases`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ database: { name: databaseName, owner_name: 'neondb_owner' } }),
+      },
     );
+    if (!dbRes.ok && dbRes.status !== 409) {
+      const err = await dbRes.text().catch(() => '');
+      throw new Error(
+        `Failed to create database "${databaseName}" in branch ${branchId}: ` +
+        `${dbRes.status} ${err.slice(0, 200)}`,
+      );
+    }
+    console.log(`[neon-provision] Database "${databaseName}" ready in branch ${branchId}`);
   }
-  console.log(`[neon-provision] Database "${databaseName}" ready in branch ${branchId}`);
 
   // 4. Retrieve connection strings (branch endpoint may take a moment to be ready).
   const { pooledUrl, directUrl } = await getConnectionStrings(branchId);
