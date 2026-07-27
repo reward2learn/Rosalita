@@ -746,14 +746,17 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         severity: 'success',
       });
       onRefetch();
-      handleClose();
+      // Close modal immediately — deployment continues in background
+      setDeployingSlug(null);
+      setActiveStep(0);
+      onClose();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Deploy failed';
       onSnackbar({ message: `❌ Deploy failed: ${msg}`, severity: 'error' });
     } finally {
       setDeployingSlug(null);
     }
-  }, [tenant, buildDeployPayload, editTemplate, editPrimaryColor, editSecondaryColor, dispatch, onSnackbar, onRefetch, handleClose, deployingSlug]);
+  }, [tenant, buildDeployPayload, editTemplate, editPrimaryColor, editSecondaryColor, dispatch, onSnackbar, onRefetch, onClose, deployingSlug]);
 
   // ── Close / Reset ─────────────────────────────────────────
   const handleClose = () => {
