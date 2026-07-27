@@ -8,7 +8,7 @@
  *
  * Footer: [Back] [Save Changes] [Continue / Deploy to Vercel]
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import Alert from '@mui/material/Alert';
@@ -46,6 +46,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import CloudIcon from '@mui/icons-material/Cloud';
@@ -124,6 +125,7 @@ const EDIT_STEPS: Array<{ label: string; icon: React.ReactNode; key: string }> =
   { label: 'Database', icon: <DnsIcon fontSize="small" />, key: 'database' },
   { label: 'Custom Env', icon: <CloudIcon fontSize="small" />, key: 'env' },
   { label: 'Functional Roles', icon: <PeopleIcon fontSize="small" />, key: 'roles' },
+  { label: 'Summary', icon: <RocketLaunchIcon fontSize="small" />, key: 'summary' },
 ];
 
 const LICENSE_TIERS = ['pro', 'enterprise', 'premium', 'trial'];
@@ -140,6 +142,23 @@ const DEPLOY_STEPS = [
 ];
 
 // ── Component ──────────────────────────────────────────────────
+
+/** Helper component for summary display rows. */
+function SummaryRow({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+      <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 140, fontSize: '0.7rem', color: 'text.secondary' }}>
+        {label}
+      </Typography>
+      {color && (
+        <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: color, border: '1px solid', borderColor: 'divider', flexShrink: 0 }} />
+      )}
+      <Typography variant="caption" sx={{ fontSize: '0.7rem', wordBreak: 'break-all', color: value.startsWith('✅') ? 'success.main' : value.startsWith('⚠️') ? 'warning.main' : 'text.primary' }}>
+        {value}
+      </Typography>
+    </Stack>
+  );
+}
 
 export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }: EditTenantModalProps) {
   const theme = useTheme();
@@ -222,6 +241,8 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
   const [deployStepStatuses, setDeployStepStatuses] = useState<Record<string, 'pending' | 'inprogress' | 'success' | 'error'>>({});
   const [deployDetails, setDeployDetails] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   // ── Initialize from tenant on open ────────────────────────
   useEffect(() => {
@@ -720,6 +741,126 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
     }
   }, [tenant, displayName, editTemplate, editPrimaryColor, editSecondaryColor, license, googleOAuth, dbConfig, envPairs, onSnackbar, onRefetch]);
 
+  // ── Export tenant config ────────────────────────────────
+  const handleExport = useCallback(() => {
+    if (!tenant) return;
+    const config = {
+      exportVersion: '1.0',
+      exportedAt: new Date().toISOString(),
+      tenant: {
+        slug: tenant.slug,
+        displayName,
+        template: editTemplate,
+        primaryColor: editPrimaryColor,
+        secondaryColor: editSecondaryColor,
+      },
+      license: {
+        licenseKey: license.licenseKey,
+        licenseTier: license.licenseTier,
+        validUntil: license.validUntil,
+        features: license.features,
+      },
+      secrets: {
+        setupToken: license.setupToken,
+        adminPin: license.adminPin,
+        openaiApiKey: license.openaiApiKey,
+      },
+      googleOAuth: {
+        clientId: googleOAuth.clientId,
+        clientSecret: googleOAuth.clientSecret,
+        projectId: googleOAuth.projectId,
+        authUri: googleOAuth.authUri,
+        redirectUris: googleOAuth.redirectUris,
+        supportEmail: googleOAuth.supportEmail,
+        gcpAccountEmail: googleOAuth.gcpAccountEmail,
+      },
+      database: {
+        dbUrl: dbConfig.dbUrl,
+        pooledUrl: dbConfig.pooledUrl,
+        directUrl: dbConfig.directUrl,
+      },
+      envPairs: envPairs,
+    };
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tenant-${tenant.slug}-config.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    onSnackbar({ message: `📦 Tenant config exported: tenant-${tenant.slug}-config.json`, severity: 'success' });
+  }, [tenant, displayName, editTemplate, editPrimaryColor, editSecondaryColor, license, googleOAuth, dbConfig, envPairs, onSnackbar]);
+
+  // ── Import tenant config ────────────────────────────────
+  const handleImport = useCallback(async (file: File) => {
+    if (!tenant) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const config = JSON.parse(text);
+      if (!config.exportVersion) {
+        throw new Error('Invalid config file — missing exportVersion');
+      }
+
+      // Restore all fields from imported config
+      if (config.tenant) {
+        if (config.tenant.displayName) setDisplayName(config.tenant.displayName);
+        if (config.tenant.template) {
+          setEditTemplate(config.tenant.template);
+          const tpl = getTemplate(config.tenant.template);
+          setEditPrimaryColor(config.tenant.primaryColor || tpl.defaultColors.primary);
+          setEditSecondaryColor(config.tenant.secondaryColor || tpl.defaultColors.secondary);
+        }
+      }
+      if (config.license) {
+        setLicense((prev) => ({
+          ...prev,
+          licenseKey: config.license.licenseKey || prev.licenseKey,
+          licenseTier: config.license.licenseTier || prev.licenseTier,
+          validUntil: config.license.validUntil || prev.validUntil,
+          features: config.license.features || prev.features,
+        }));
+      }
+      if (config.secrets) {
+        setLicense((prev) => ({
+          ...prev,
+          setupToken: config.secrets.setupToken || prev.setupToken,
+          adminPin: config.secrets.adminPin || prev.adminPin,
+          openaiApiKey: config.secrets.openaiApiKey || prev.openaiApiKey,
+        }));
+      }
+      if (config.googleOAuth) {
+        setGoogleOAuth((prev) => ({
+          ...prev,
+          clientId: config.googleOAuth.clientId || prev.clientId,
+          clientSecret: config.googleOAuth.clientSecret || prev.clientSecret,
+          projectId: config.googleOAuth.projectId || prev.projectId,
+          authUri: config.googleOAuth.authUri || prev.authUri,
+          redirectUris: config.googleOAuth.redirectUris || prev.redirectUris,
+          supportEmail: config.googleOAuth.supportEmail || prev.supportEmail,
+          gcpAccountEmail: config.googleOAuth.gcpAccountEmail || prev.gcpAccountEmail,
+        }));
+      }
+      if (config.database) {
+        setDbConfig({
+          dbUrl: config.database.dbUrl || config.database.pooledUrl || '',
+          pooledUrl: config.database.pooledUrl || config.database.dbUrl || '',
+          directUrl: config.database.directUrl || '',
+        });
+      }
+      if (config.envPairs) {
+        setEnvPairs(config.envPairs);
+      }
+
+      onSnackbar({ message: `📂 Tenant config imported from ${file.name}`, severity: 'success' });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Import failed';
+      onSnackbar({ message: `❌ Import failed: ${msg}`, severity: 'error' });
+    } finally {
+      setImporting(false);
+    }
+  }, [tenant, onSnackbar]);
+
   // ── Deploy handler ────────────────────────────────────────
   const handleDeploy = useCallback(async () => {
     if (!tenant) return;
@@ -777,6 +918,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
   const handleNext = () => setActiveStep((s) => Math.min(s + 1, EDIT_STEPS.length - 1));
   const handleBack = () => setActiveStep((s) => Math.max(s - 1, 0));
   const isLastStep = activeStep === EDIT_STEPS.length - 1;
+  const isSummaryStep = activeStep === EDIT_STEPS.length - 1;
 
   // ── Guard: no tenant ──────────────────────────────────────
   if (!tenant) return null;
@@ -1440,6 +1582,120 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
     </Stack>
   );
 
+  // ── Step 9: Summary ──────────────────────────────────────
+  const renderStepSummary = () => (
+    <Stack spacing={3}>
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+        <RocketLaunchIcon color="primary" />
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          Tenant Configuration Summary
+        </Typography>
+      </Stack>
+      <Typography variant="body2" color="text.secondary">
+        Review all tenant application parameters below. You can export this configuration
+        as a JSON file or import a previously exported file to restore these settings.
+      </Typography>
+
+      {/* Tenant Info */}
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          Tenant Info
+        </Typography>
+        <Stack spacing={0.5}>
+          <SummaryRow label="Slug" value={tenant?.slug || ''} />
+          <SummaryRow label="Display Name" value={displayName || tenant?.displayName || ''} />
+          <SummaryRow label="Template" value={getTemplate(editTemplate).label} />
+          <SummaryRow label="Status" value={tenant?.status || 'draft'} />
+          <SummaryRow label="Primary Color" value={editPrimaryColor} color={editPrimaryColor} />
+          <SummaryRow label="Secondary Color" value={editSecondaryColor} color={editSecondaryColor} />
+        </Stack>
+      </Paper>
+
+      {/* License */}
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          License
+        </Typography>
+        <Stack spacing={0.5}>
+          <SummaryRow label="License Key" value={license.licenseKey || '(auto-generated)'} />
+          <SummaryRow label="Tier" value={license.licenseTier.toUpperCase()} />
+          <SummaryRow label="Valid Until" value={license.validUntil} />
+          <SummaryRow label="Features" value={license.features.join(', ')} />
+          <SummaryRow label="Setup Token" value={license.setupToken ? '✅ configured' : '⚠️ not set'} />
+          <SummaryRow label="Admin PIN" value={license.adminPin ? '✅ configured' : '⚠️ not set'} />
+          <SummaryRow label="OpenAI API Key" value={license.openaiApiKey ? '✅ configured' : '⚠️ not set'} />
+        </Stack>
+      </Paper>
+
+      {/* Google OAuth */}
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          Google OAuth
+        </Typography>
+        <Stack spacing={0.5}>
+          <SummaryRow label="GCP Account Email" value={googleOAuth.gcpAccountEmail} />
+          <SummaryRow label="Client ID" value={googleOAuth.clientId ? '✅ configured' : '⚠️ not set'} />
+          <SummaryRow label="Project ID" value={googleOAuth.projectId || '(auto)'} />
+          <SummaryRow label="Redirect URIs" value={googleOAuth.redirectUris.length > 0 ? googleOAuth.redirectUris.join(', ') : 'none'} />
+        </Stack>
+      </Paper>
+
+      {/* Database */}
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          Database
+        </Typography>
+        <Stack spacing={0.5}>
+          <SummaryRow label="Pooled URL" value={dbConfig.pooledUrl ? (dbConfig.pooledUrl.length > 60 ? dbConfig.pooledUrl.substring(0, 60) + '...' : dbConfig.pooledUrl) : '⚠️ not configured'} />
+          <SummaryRow label="Direct URL" value={dbConfig.directUrl ? (dbConfig.directUrl.length > 60 ? dbConfig.directUrl.substring(0, 60) + '...' : dbConfig.directUrl) : '⚠️ not configured'} />
+        </Stack>
+      </Paper>
+
+      {/* Custom Env & Roles */}
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          Custom Env Vars & Roles
+        </Typography>
+        <Stack spacing={0.5}>
+          <SummaryRow label="Custom Env Vars" value={envPairs.length > 0 ? envPairs.map(p => p.key).join(', ') : 'none'} />
+          <SummaryRow label="Functional Roles" value={rolesList.length > 0 ? rolesList.map(r => r.name).join(', ') : '(loading)'} />
+        </Stack>
+      </Paper>
+
+      {/* Export / Import buttons */}
+      <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleExport}
+          startIcon={<SaveIcon />}
+        >
+          Export Config
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => importFileRef.current?.click()}
+          disabled={importing}
+          startIcon={importing ? <CircularProgress size={16} color="inherit" /> : <CloudUploadIcon />}
+        >
+          {importing ? 'Importing...' : 'Import Config'}
+        </Button>
+        <input
+          ref={importFileRef}
+          type="file"
+          accept=".json"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void handleImport(file);
+            e.target.value = '';
+          }}
+        />
+      </Stack>
+    </Stack>
+  );
+
   // ═══════════════════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════════════════
@@ -1455,6 +1711,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
       case 6: return renderStepDatabase();
       case 7: return renderStepEnv();
       case 8: return renderStepRoles();
+      case 9: return renderStepSummary();
       default: return null;
     }
   };
@@ -1545,7 +1802,7 @@ export function EditTenantModal({ open, tenant, onClose, onRefetch, onSnackbar }
         </Button>
 
         <Box sx={{ flex: 1 }} />
-        {isLastStep ? (
+        {isSummaryStep ? (
           <Button variant="contained" color="primary" size="large" onClick={handleDeploy}
             disabled={!!deployingSlug || saving}
             startIcon={deployingSlug ? <CircularProgress size={20} color="inherit" /> : <RocketLaunchIcon />}
