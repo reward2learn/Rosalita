@@ -124,7 +124,7 @@ export function ReservationsView() {
       {/* Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <FormControl size="small" sx={{ minWidth: 240 }}>
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 240 } }}>
             <OutlinedInput
               placeholder="Search by name, ID, or phone..."
               value={search}
@@ -136,7 +136,7 @@ export function ReservationsView() {
               }
             />
           </FormControl>
-          <FormControl size="small" sx={{ minWidth: 160 }}>
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 } }}>
             <InputLabel>Status</InputLabel>
             <Select
               value={statusFilter}
@@ -155,7 +155,7 @@ export function ReservationsView() {
       </Paper>
 
       {/* Table */}
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
         <Table>
           <TableHead>
             <TableRow>

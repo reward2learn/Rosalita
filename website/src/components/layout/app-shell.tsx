@@ -262,7 +262,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <AppBar position="sticky" elevation={0} color="transparent">
-        <Toolbar sx={{ minHeight: 52 }}>
+        <Toolbar sx={{ minHeight: 52, pt: 'env(safe-area-inset-top, 0px)' }}>
           {/* Hamburger toggle — left aligned */}
           <IconButton
             aria-label="Open navigation"
@@ -317,6 +317,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       sx={{
                         color: 'text.disabled',
                         '&:hover': { color: 'text.primary' },
+                        '&:focus-visible': { color: 'text.primary' },
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -344,7 +345,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         onClose={closeDrawer}
         slotProps={{ paper: { sx: { width: DRAWER_WIDTH, maxWidth: '80vw' } } }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2.5, pb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: { xs: 2, md: 2.5 }, pb: { xs: 1.5, md: 2 } }}>
           <Avatar
             src={user?.picture ?? undefined}
             sx={{ width: 36, height: 36, bgcolor: 'rgba(235, 61, 40, 0.15)', color: 'primary.main' }}
@@ -381,7 +382,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
-                bgcolor: 'rgba(255,255,255,0.04)',
+                bgcolor: 'action.hover',
               },
             }}
           />
@@ -390,7 +391,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {renderNavItems(filteredNavItems, pathname, closeDrawer, isActive, linkSx, 0)}
         </List>
         <Divider />
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5, pb: 'calc(8px + env(safe-area-inset-bottom, 0px))' }}>
           {tier === 'public' ? (
             <Button
               component="a"

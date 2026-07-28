@@ -190,7 +190,7 @@ export function OrdersView() {
       </Paper>
 
       {/* Table */}
-      <TableContainer component={Paper} variant="outlined">
+      <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -229,7 +229,8 @@ export function OrdersView() {
               <TableRow
                 key={order.id}
                 sx={{
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' },
+                  '&:hover': { bgcolor: 'action.hover' },
+                  '&:active': { bgcolor: 'action.selected' },
                   opacity: order.status === 'cancelled' ? 0.6 : 1,
                 }}
               >

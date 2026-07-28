@@ -38,8 +38,9 @@ export function HeroBlock({ config }: { config: Record<string, unknown> }) {
             fontSize: '10px',
             fontWeight: 600,
             color: 'text.primary',
-            bgcolor: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            bgcolor: 'action.hover',
+            border: '1px solid',
+            borderColor: 'divider',
           }}
         />
       ) : null}
@@ -102,11 +103,18 @@ function ReportCard({ href, title }: { href: string; title: string }) {
         p: 3,
         textDecoration: 'none',
         color: 'inherit',
-        bgcolor: 'rgba(255,255,255,0.03)',
+        bgcolor: 'action.hover',
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: 2,
-        transition: 'all 0.25s ease',
+        transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+        '&:focus-visible': {
+          borderColor: 'primary.main',
+          transform: 'translateY(-2px)',
+        },
+        '&:active': {
+          transform: 'translateY(-1px)',
+        },
         '&:hover': {
           borderColor: 'primary.main',
           bgcolor: 'rgba(235, 61, 40, 0.06)',

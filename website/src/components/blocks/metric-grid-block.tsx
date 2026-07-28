@@ -44,7 +44,7 @@ export function MetricGridBlock({ config }: { config: Record<string, unknown> })
       <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 3 }}>
         From barely breaking even to industry-leading margins.
       </Typography>
-      <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+      <TableContainer component={Paper} elevation={0} sx={{ overflowX: 'auto', border: '1px solid', borderColor: 'divider' }}>
         <Table size="small">
           <TableHead>
             <TableRow>

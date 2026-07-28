@@ -104,7 +104,7 @@ export function PnlTableBlock({ config }: { config: Record<string, unknown> }) {
           : 'Select a month on the chart'}
       </Typography>
 
-      <TableContainer component={Paper} elevation={0} sx={{ mb: 4, border: '1px solid', borderColor: 'divider' }}>
+      <TableContainer component={Paper} elevation={0} sx={{ overflowX: 'auto', mb: 4, border: '1px solid', borderColor: 'divider' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -156,7 +156,7 @@ export function PnlTableBlock({ config }: { config: Record<string, unknown> }) {
           P&amp;L detail loads when a month is selected
         </Typography>
       ) : (
-        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+        <TableContainer component={Paper} elevation={0} sx={{ overflowX: 'auto', border: '1px solid', borderColor: 'divider' }}>
           <Table size="small">
             <TableHead>
               <TableRow>

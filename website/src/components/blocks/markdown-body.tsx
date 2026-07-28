@@ -24,7 +24,7 @@ export function MarkdownBody({ markdown }: MarkdownBodyProps) {
         '& code': {
           fontFamily: 'monospace',
           fontSize: '0.9em',
-          bgcolor: 'rgba(255,255,255,0.06)',
+          bgcolor: 'action.hover',
           px: 0.5,
           borderRadius: 0.5,
         },

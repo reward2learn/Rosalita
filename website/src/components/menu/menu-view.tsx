@@ -137,6 +137,7 @@ export function MenuView() {
                     height: '100%',
                     transition: 'box-shadow 0.2s',
                     '&:hover': { boxShadow: 2 },
+                    '&:focus-visible': { boxShadow: 2 },
                     ...(item.isPopular ? { borderColor: 'warning.main', borderWidth: 2 } : {}),
                   }}
                 >

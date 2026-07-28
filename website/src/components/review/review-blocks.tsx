@@ -24,7 +24,7 @@ import { useEffect, useMemo, useState } from 'react';
 const reviewCardSx = {
   border: '1px solid',
   borderColor: 'divider',
-  bgcolor: 'rgba(255,255,255,0.03)',
+  bgcolor: 'action.hover',
   minWidth: 0,
   overflow: 'auto',
 } as const;

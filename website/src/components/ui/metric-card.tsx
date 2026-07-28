@@ -39,9 +39,9 @@ export function MetricCard({
         cursor: onClick ? 'pointer' : 'default',
         border: '1px solid',
         borderColor: active ? 'primary.main' : 'divider',
-        bgcolor: active ? 'rgba(235, 61, 40, 0.06)' : 'rgba(255,255,255,0.03)',
+        bgcolor: active ? 'rgba(235, 61, 40, 0.06)' : 'action.hover',
         boxShadow: active ? (theme) => `0 0 0 1px ${theme.palette.primary.main}` : 'none',
-        transition: 'all 0.25s ease',
+        transition: 'box-shadow 0.25s ease, transform 0.25s ease',
         width: '100%',
         '&:hover': onClick
           ? {
@@ -50,6 +50,7 @@ export function MetricCard({
               transform: 'translateY(-2px)',
             }
           : undefined,
+        '&:focus-visible': onClick ? { borderColor: 'primary.main', transform: 'translateY(-2px)' } : undefined,
       }}
     >
       <Typography
@@ -73,7 +74,7 @@ export function MetricCard({
         {label}
       </Typography>
       {change ? (
-        <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: '0.68rem', color: changeColor }}>
+        <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: { xs: '0.65rem', sm: '0.68rem' }, color: changeColor }}>
           {change}
         </Box>
       ) : null}

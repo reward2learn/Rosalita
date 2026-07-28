@@ -147,13 +147,13 @@ const DEPLOY_STEPS = [
 function SummaryRow({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-      <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 140, fontSize: '0.7rem', color: 'text.secondary' }}>
+      <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 140, fontSize: { xs: '0.65rem', sm: '0.7rem' }, color: 'text.secondary' }}>
         {label}
       </Typography>
       {color && (
         <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: color, border: '1px solid', borderColor: 'divider', flexShrink: 0 }} />
       )}
-      <Typography variant="caption" sx={{ fontSize: '0.7rem', wordBreak: 'break-all', color: value.startsWith('✅') ? 'success.main' : value.startsWith('⚠️') ? 'warning.main' : 'text.primary' }}>
+      <Typography variant="caption" sx={{ fontSize: { xs: '0.65rem', sm: '0.7rem' }, wordBreak: 'break-all', color: value.startsWith('✅') ? 'success.main' : value.startsWith('⚠️') ? 'warning.main' : 'text.primary' }}>
         {value}
       </Typography>
     </Stack>

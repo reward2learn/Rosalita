@@ -284,7 +284,7 @@ export function TenantWizard() {
           {step === 0 ? (
             <Stack spacing={3}>
               {/* AI Scrape Section */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderColor: 'primary.main', borderWidth: 1 }}>
+              <Paper variant="outlined" sx={{ p: { xs: 2, md: 2.5 }, borderColor: 'primary.main', borderWidth: 1 }}>
                 <Stack spacing={2}>
                   <Stack direction="row" sx={{ gap: 1, alignItems: "center" }}>
                     <TravelExploreIcon color="primary" />
@@ -548,7 +548,7 @@ export function TenantWizard() {
                             border: state.primaryColor === color ? '3px solid' : '1px solid',
                             borderColor: state.primaryColor === color ? 'primary.main' : 'divider',
                             cursor: 'pointer',
-                            transition: 'all 0.2s',
+                            transition: 'transform 0.2s, border-color 0.2s',
                             '&:hover': { transform: 'scale(1.1)' },
                           }}
                         />
@@ -641,7 +641,7 @@ export function TenantWizard() {
               <Typography variant="body2" color="text.secondary">
                 Review your tenant configuration before creating. The AI pipeline will run automatically.
               </Typography>
-              <Paper variant="outlined" sx={{ p: 2.5 }}>
+              <Paper variant="outlined" sx={{ p: { xs: 2, md: 2.5 } }}>
                 <Stack spacing={1.5}>
                   <Box>
                     <Typography variant="caption" color="text.secondary">Slug</Typography>
@@ -696,7 +696,7 @@ export function TenantWizard() {
                   ) : null}
                 </Stack>
               </Paper>
-              <Paper variant="outlined" sx={{ p: 2 }}>
+              <Paper variant="outlined" sx={{ p: { xs: 1.5, md: 2 } }}>
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
                   Pipeline (runs automatically after creation):
                 </Typography>
@@ -833,6 +833,7 @@ export function TemplateSelector({
                   borderWidth: isSelected || isCurrent ? 2 : 1,
                   bgcolor: isSelected ? 'rgba(235,61,40,0.06)' : undefined,
                   '&:hover': { boxShadow: 3 },
+                  '&:focus-visible': { boxShadow: 3 },
                 }}
               >
                 <CardActionArea

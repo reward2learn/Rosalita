@@ -31,7 +31,7 @@ export function DocMarkdownBlock({ config, initialMarkdown }: DocMarkdownBlockPr
           p: { xs: 3, md: 6 },
           border: '1px solid',
           borderColor: 'divider',
-          bgcolor: 'rgba(255,255,255,0.03)',
+          bgcolor: 'action.hover',
           lineHeight: 1.8,
         }}
       >

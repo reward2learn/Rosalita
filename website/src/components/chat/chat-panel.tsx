@@ -500,7 +500,7 @@ export function ChatPanel() {
       </Dialog>
 
       <Box component="section" sx={{ maxWidth: 980, mx: 'auto', px: 3, py: 2 }}>
-      <Paper elevation={0} sx={{ p: 2.5, border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
+      <Paper elevation={0} sx={{ p: { xs: 2, md: 2.5 }, border: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}>
         <Stack spacing={2}>
             <Box sx={{ minHeight: 320, maxHeight: 520, overflowY: 'auto', pr: 1 }}>
               {messages.length ? messages.map((msg, index) => (
@@ -538,7 +538,7 @@ export function ChatPanel() {
                       sx={{
                         p: 1.5,
                         pt: msg.role === 'assistant' ? 3 : 1.5,
-                        bgcolor: msg.role === 'user' ? 'primary.main' : 'rgba(255,255,255,0.06)',
+                        bgcolor: msg.role === 'user' ? 'primary.main' : 'action.hover',
                         color: msg.role === 'user' ? 'primary.contrastText' : 'text.primary',
                         whiteSpace: 'pre-wrap',
                       }}
@@ -943,7 +943,7 @@ export function ChatPanel() {
                         border: '1px solid',
                         borderColor: 'divider',
                         borderRadius: 1,
-                        bgcolor: 'rgba(255,255,255,0.04)',
+                        bgcolor: 'action.hover',
                       }}
                     >
                       {dataUrl ? (

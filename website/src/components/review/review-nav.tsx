@@ -80,7 +80,7 @@ export function ReviewNav({ currentSlug }: { currentSlug: string }) {
         sx={{
           border: '1px solid',
           borderColor: 'divider',
-          bgcolor: 'rgba(255,255,255,0.03)',
+          bgcolor: 'action.hover',
           overflow: 'hidden',
         }}
       >

@@ -71,7 +71,7 @@ export function ActionChecklistBlock({ config }: { config: Record<string, unknow
           elevation={0}
           sx={{
             mb: 1.5,
-            bgcolor: 'rgba(255,255,255,0.03)',
+            bgcolor: 'action.hover',
             border: '1px solid',
             borderColor: 'divider',
             '&:before': { display: 'none' },
