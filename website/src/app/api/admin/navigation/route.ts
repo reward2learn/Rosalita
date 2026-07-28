@@ -189,15 +189,6 @@ export async function DELETE(request: Request): Promise<NextResponse> {
   const ids = idsParam.split(',').map((s) => s.trim()).filter(Boolean);
   if (ids.length === 0) return jsonError('No valid IDs provided', 400);
 
-  // Fix 4: Block deletion of static infrastructure items
-  const staticIds = ids.filter(id => id.startsWith('static-'));
-  if (staticIds.length > 0) {
-    return jsonError(
-      `Cannot delete static infrastructure items: ${staticIds.join(', ')}. Static items are managed by the page catalog.`,
-      400,
-    );
-  }
-
   const prisma = getClient();
   try {
     await ensureNavigationTable(prisma);

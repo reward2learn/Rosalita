@@ -125,7 +125,15 @@ export async function seedMissingNavigationFromCatalog(prisma: PrismaClient): Pr
 /**
  * Seed navigation items from the active template in app_settings.
  * Called on every GET /api/navigation to ensure template-driven pages appear.
- * Idempotent: skips items that already exist (by path).
+ *
+ * Strategy: delete ALL existing template items first (clean slate for the current
+ * template), then insert the current template's items. This prevents accumulated
+ * duplicates from prior template switches — paths that overlap between old and
+ * new templates (e.g. /admin, /dashboard, /tasks) were never cleaned up before.
+ *
+ * Non-template items (static infrastructure + user-created) are preserved and
+ * their paths are respected: if a path is already taken by a non-template item,
+ * the template item for that path is skipped.
  */
 export async function seedTemplateNavItems(prisma: PrismaClient): Promise<number> {
   // Read the active template from app_settings
@@ -145,31 +153,37 @@ export async function seedTemplateNavItems(prisma: PrismaClient): Promise<number
   const template = getTemplate(templateId);
   if (!template || template.id === 'default') return 0; // no template nav to seed for generic
 
+  // Get ALL existing items — we need paths from non-template items (static + user-created)
+  // so we don't create template items that clash with them.
   const existing = await prisma.$queryRawUnsafe<{ id: string; path: string }[]>(
     `SELECT id, path FROM navigation_items`
   );
-  const existingPaths = new Set(existing.map((r) => r.path));
 
-  // Clean up stale template items not in the current template
-  const currentPaths = new Set(template.defaultNavItems.map((n) => n.path));
-  const stalePrefix = 'template-';
-  for (const row of existing) {
-    if (row.id.startsWith(stalePrefix) && !currentPaths.has(row.path)) {
-      try {
-        await prisma.$executeRawUnsafe(
-          `DELETE FROM navigation_items WHERE id = $1`,
-          row.id
-        );
-        console.log(`[navigation] Removed stale template item: ${row.id} (${row.path})`);
-      } catch (err) {
-        console.error(`[navigation] Failed to remove stale item ${row.id}:`, err);
-      }
-    }
+  // Paths owned by non-template items (static infrastructure or user-created) must be respected.
+  // Template items cannot take these paths — they'd create invisible duplicates.
+  const nonTemplatePaths = new Set(
+    existing.filter((r) => !r.id.startsWith('template-')).map((r) => r.path)
+  );
+
+  // ── Clean slate: delete ALL existing template items ─────────────────
+  // This is the key fix: instead of only deleting template items whose paths
+  // are absent from the new template (which left behind overlapping paths like
+  // /admin, /dashboard, /tasks), we delete EVERY template item and re-seed
+  // from scratch. This prevents accumulated duplicates across template switches.
+  const templateRows = existing.filter((r) => r.id.startsWith('template-'));
+  if (templateRows.length > 0) {
+    const templateIds = templateRows.map((r) => r.id);
+    await prisma.$executeRawUnsafe(
+      `DELETE FROM navigation_items WHERE id = ANY($1::text[])`,
+      templateIds,
+    );
   }
 
+  // ── Insert current template's items ────────────────────────────────
+  // Skip paths that are already taken by non-template items (static or user-created).
   let inserted = 0;
   for (const nav of template.defaultNavItems) {
-    if (existingPaths.has(nav.path)) continue;
+    if (nonTemplatePaths.has(nav.path)) continue;
     const id = `template-${templateId}-${nav.path.replace(/^\//, '').replace(/\//g, '-')}`;
     try {
       await prisma.$executeRawUnsafe(
