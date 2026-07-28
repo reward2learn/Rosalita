@@ -5,8 +5,8 @@ import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
 import { useGetDashboardDataQuery } from '@/store/apis/dashboard-api';
@@ -57,7 +57,7 @@ export function LeverAccordionBlock({ config }: { config: Record<string, unknown
           }}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'primary.main' }} />}>
-            <Chip label={lever.num} size="small" sx={{ mr: 1.5, bgcolor: 'rgba(235, 61, 40, 0.12)', color: 'primary.main', fontWeight: 700 }} />
+            <Box sx={{ width: 28, height: 28, minWidth: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: (t) => alpha(t.palette.primary.main, 0.12), color: 'primary.main', fontWeight: 700, fontSize: '0.8rem', mr: 1.5, flexShrink: 0 }}>{lever.num}</Box>
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{lever.title}</Typography>
               <Typography variant="body2" color="text.secondary">{lever.summary}</Typography>

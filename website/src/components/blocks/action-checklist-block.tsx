@@ -5,7 +5,6 @@ import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { parseBlockConfig } from '@/lib/schemas/block-config';
@@ -78,15 +77,21 @@ export function ActionChecklistBlock({ config }: { config: Record<string, unknow
           }}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'primary.main' }} />}>
-            <Box sx={{ flex: 1 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                 {phase.title}{' '}
                 <Typography component="span" variant="body2" color="text.secondary">
                   — {phase.period}
                 </Typography>
               </Typography>
+              <Typography
+                variant="caption"
+                color="primary"
+                sx={{ display: 'block', mt: 0.25, fontWeight: 500, lineHeight: 1.3, wordBreak: 'break-word' }}
+              >
+                {phase.impact}
+              </Typography>
             </Box>
-            <Chip label={phase.impact} size="small" color="primary" variant="outlined" sx={{ ml: 1 }} />
           </AccordionSummary>
           <AccordionDetails>
             {phase.actions.map((action) => (
