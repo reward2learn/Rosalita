@@ -31,6 +31,16 @@ import { triggerVercelDeploy, hasVercelToken } from '@/domain/tenant/vercel-api-
 import { getGoogleOAuthCredentials } from '@/lib/auth/google-oauth';
 import { inngest } from '@/lib/inngest';
 
+// ── Helpers ──────────────────────────────────────────────────
+
+/**
+ * Extract Vercel project ID from a deploy hook URL.
+ * Format: https://api.vercel.com/v1/integrations/deploy/{projectId}/{hookId}
+ */
+function extractProjectIdFromDeployHook(url: string): string | undefined {
+  return url.match(/\/deploy\/(prj_[^/]+)/)?.[1] ?? undefined;
+}
+
 export const dynamic = 'force-dynamic';
 
 const deploySchema = z.object({
@@ -238,7 +248,18 @@ export async function POST(
     // 4. Trigger actual Vercel deployment via REST API
     //    This replaces the previous manual CLI step — the API triggers a production
     //    redeployment using the latest source code.
-    const projectId = latest.vercelProjectId || 'prj_kHPW3f3yGArIihBH3J1zJk4wSmhp';
+    //
+    //    Project ID resolution: stored vercelProjectId → deploy hook URL in body metadata
+    //    → deploy hook URL in stored metadata → hardcoded fallback
+    const bodyHooks = (parsed.data.metadata as Record<string, unknown> | undefined)?.hooks as Record<string, unknown> | undefined;
+    const bodyHookUrl = bodyHooks?.deployHookUrl as string | undefined;
+    const storedHooks = (latest.metadata as Record<string, unknown> | null)?.hooks as Record<string, unknown> | undefined;
+    const storedHookUrl = storedHooks?.deployHookUrl as string | undefined;
+    const projectId =
+      latest.vercelProjectId ||
+      extractProjectIdFromDeployHook(bodyHookUrl || '') ||
+      extractProjectIdFromDeployHook(storedHookUrl || '') ||
+      'prj_kHPW3f3yGArIihBH3J1zJk4wSmhp';
     // Read Vercel token from stored metadata (saved by admin via setup), or from env var
     const storedToken = (latest.metadata as Record<string, unknown> | null)?.vercelToken as string | undefined;
     const vercelDeployResult = await triggerVercelDeploy(projectId, slug, { token: storedToken });
