@@ -455,6 +455,31 @@ exports.Prisma.TenantScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.WebhookConfigScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  name: 'name',
+  endpoint: 'endpoint',
+  secret: 'secret',
+  events: 'events',
+  isActive: 'isActive',
+  lastTriggered: 'lastTriggered',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WebhookEventScalarFieldEnum = {
+  id: 'id',
+  configId: 'configId',
+  eventType: 'eventType',
+  payload: 'payload',
+  status: 'status',
+  responseCode: 'responseCode',
+  responseBody: 'responseBody',
+  errorMessage: 'errorMessage',
+  attemptedAt: 'attemptedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -554,7 +579,9 @@ exports.Prisma.ModelName = {
   MonthlyActualDepartment: 'MonthlyActualDepartment',
   DailyMetric: 'DailyMetric',
   MonthlyTarget: 'MonthlyTarget',
-  Tenant: 'Tenant'
+  Tenant: 'Tenant',
+  WebhookConfig: 'WebhookConfig',
+  WebhookEvent: 'WebhookEvent'
 };
 
 /**

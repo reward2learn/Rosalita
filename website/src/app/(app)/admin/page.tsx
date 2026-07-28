@@ -35,6 +35,7 @@ import { SignInPanelGate } from '@/components/auth/sign-in-panel';
 import { BrandConfigTab } from '@/components/ops-admin/brand-config-tab';
 import { NavigationManager } from '@/components/ops-admin/navigation-manager';
 import { TenantInfoTab } from '@/components/ops-admin/tenant-info-tab';
+import { WebhookManager } from '@/components/ops-admin/webhook-manager';
 import { getClientTenantConfig } from '@shared/lib/config/tenant';
 import {
   useListRoleConfigsQuery,
@@ -636,22 +637,25 @@ export default function AdminPage() {
           <Typography variant="h4" sx={{ fontWeight: 800 }}>
             Platform Admin
           </Typography>
-          <Tabs value={tab} onChange={(_e, v) => setTab(v)} variant="scrollable" scrollButtons="auto">
-            <Tab label="Tenant Info" />
-            <Tab label="Navigation" />
-            <Tab label="Brand Config" />
-            <Tab label="Security Groups" />
-            <Tab label="User Accounts" />
-            <Tab label="User Roles" />
-            <Tab label="User Conversations" />
-          </Tabs>
-          {tab === 0 ? <TenantInfoTab /> : null}
-          {tab === 1 ? <NavigationManager /> : null}
-          {tab === 2 ? <BrandConfigTab /> : null}
-          {tab === 3 ? <GroupManager /> : null}
-          {tab === 4 ? <UserManager /> : null}
-          {tab === 5 ? <RoleManager /> : null}
-          {tab === 6 ? <ConversationManager /> : null}
+           <Tabs value={tab} onChange={(_e, v) => setTab(v)} variant="scrollable" scrollButtons="auto">
+             <Tab label="Tenant Info" />
+             <Tab label="Navigation" />
+             <Tab label="Brand Config" />
+             <Tab label="Security Groups" />
+             <Tab label="User Accounts" />
+             <Tab label="User Roles" />
+             <Tab label="User Conversations" />
+             <Tab label="Webhooks" />
+           </Tabs>
+           {tab === 0 ? <TenantInfoTab /> : null}
+           {tab === 1 ? <NavigationManager /> : null}
+           {tab === 2 ? <BrandConfigTab /> : null}
+           {tab === 3 ? <GroupManager /> : null}
+           {tab === 4 ? <UserManager /> : null}
+           {tab === 5 ? <RoleManager /> : null}
+           {tab === 6 ? <ConversationManager /> : null}
+           {tab === 7 ? <WebhookManager /> : null}
+
         </Stack>
       </Box>
     </PlatformAdminGate>

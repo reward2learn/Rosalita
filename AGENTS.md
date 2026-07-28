@@ -94,3 +94,22 @@ This file defines the agent architecture for both **CodeNomad** and **OpenCode**
 - Prices are in **IDR thousands** (98 K = 98,000 IDR)
 - Edit `menu.txt` only for menu text changes
 - Never modify images or spreadsheet files directly
+
+### Legal Investigation & Compliance
+
+| Agent | Role | Permissions |
+|-------|------|-------------|
+| `legal-orchestrator` | Top-level delegator for legal, equity & contract investigation | read-only orchestration |
+| `legal-research-analyst` | Indonesian court precedent & case law research (Putusan MA) | read-only |
+| `equity-compliance-specialist` | Equity shares, PT ownership, fiduciary compliance (UU PT, UU Cipta Kerja) | read-only |
+| `contract-oversight-advisor` | Contract analysis under KUHPerdata, risk assessment, amendments | read-only |
+| `legal-security-oversight` | Regulatory compliance, UU PDP data privacy, anti-fraud, sanctions | read-only |
+
+---
+
+## Workflows (continued)
+
+### Legal Investigation & Compliance
+- **legal_equity_investigation**: legal-research-analyst → equity-compliance-specialist → contract-oversight-advisor → legal-security-oversight → legal-orchestrator
+- **legal_contract_review**: contract-oversight-advisor → legal-research-analyst → equity-compliance-specialist → legal-security-oversight → legal-orchestrator
+- **legal_full_audit**: legal-research-analyst → equity-compliance-specialist → contract-oversight-advisor → legal-security-oversight → legal-orchestrator

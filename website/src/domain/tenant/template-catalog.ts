@@ -319,6 +319,62 @@ export const TEMPLATE_CATALOG: Record<string, TemplateDefinition> = {
     xsdStandard: 'B2MML (Business To Manufacturing)',
   },
 
+  // 11. Reseller Onboarding — focused on partner sign-on, terms acceptance,
+  // automated client generation via delta/template application, product scraping,
+  // resale with commissions/PTIX, OfferCatalog management. Integrates with
+  // delta logic, schema.org generator, OnboardingStepper, and TermsAcceptanceGate.
+  'reseller-onboarding': {
+    id: 'reseller-onboarding',
+    label: 'Reseller / Partner Onboarding',
+    description: 'Partner sign-on portal with terms acceptance, automated client/tenant generation from scraped data, product scraping from social media/websites, AI prompt generation for listings, full resale functionality, commission tracking, PTIX auto-exchange, partner network analytics, and dedicated multi-tenant reseller dashboard.',
+    icon: 'GroupAdd',
+    defaultColors: { primary: '#7c3aed', secondary: '#22d3ee' },
+    defaultPages: [
+      DASHBOARD_PAGE(['hero', 'kpi_cards', 'chart_financial', 'partner_metrics']),
+      {
+        slug: 'network',
+        title: 'My Network',
+        navLabel: 'Network',
+        authTier: 'pin',
+        blockTypes: ['metric_grid', 'dynamic_form'],
+      },
+      {
+        slug: 'onboarding',
+        title: 'Onboard New Partner',
+        navLabel: 'Onboard',
+        authTier: 'pin',
+        blockTypes: ['onboarding-stepper', 'template-selector', 'scrape-form'],
+      },
+      {
+        slug: 'commissions',
+        title: 'Commissions & Payouts',
+        navLabel: 'Commissions',
+        authTier: 'pin',
+        blockTypes: ['pnl_table', 'action_checklist'],
+      },
+      {
+        slug: 'catalog',
+        title: 'Offer Catalog',
+        navLabel: 'Catalog',
+        authTier: 'public',
+        blockTypes: ['offer_catalog'],
+      },
+      SUMMARY_PAGE,
+      TASKS_PAGE,
+      ADMIN_PAGE,
+    ],
+    defaultNavItems: [
+      { title: 'Dashboard', path: '/dashboard', icon: 'Dashboard', authTier: 'public' },
+      { title: 'Network', path: '/network', icon: 'Group', authTier: 'pin' },
+      { title: 'Onboard', path: '/onboarding', icon: 'GroupAdd', authTier: 'pin' },
+      { title: 'Commissions', path: '/commissions', icon: 'Payments', authTier: 'pin' },
+      { title: 'Catalog', path: '/catalog', icon: 'Storefront', authTier: 'public' },
+      { title: 'Tasks', path: '/tasks', icon: 'CheckCircle', authTier: 'pin' },
+      { title: 'Admin', path: '/admin', icon: 'Settings', authTier: 'pin' },
+    ],
+    schemaOrgType: ['Reseller', 'Organization', 'OfferCatalog'],
+    xsdStandard: 'UBL, PartnerML',
+  },
 
   // Alias: nightclub-bar -> financial-analytics (DB may still reference old name)
   'nightclub-bar': {
@@ -373,6 +429,52 @@ export function getTemplate(id: string): TemplateDefinition {
 /** List all available templates. */
 export function listTemplates(): TemplateDefinition[] {
   return Object.values(TEMPLATE_CATALOG);
+}
+
+// ── Reseller Onboarding Utilities ─────────────────────────────
+/** Returns the comprehensive reseller-onboarding template. Used by OnboardingStepper,
+ * TermsAcceptanceGate flows, delta computation, and schema.org JSON-LD generator. */
+export function getResellerOnboardingTemplate(): TemplateDefinition {
+  return getTemplate('reseller-onboarding');
+}
+
+/** Type guard for reseller templates. Integrates with existing delta logic to determine
+ * additive pages (network, commissions, onboarding), color schemes, and schema.org types
+ * (`Reseller`, `Organization`, `OfferCatalog`). */
+export function isResellerTemplate(templateId: string): boolean {
+  const template = getTemplate(templateId);
+  const types = Array.isArray(template.schemaOrgType) 
+    ? template.schemaOrgType 
+    : [template.schemaOrgType];
+  return types.some((t: string) => 
+    t.toLowerCase().includes('reseller') || 
+    t.toLowerCase().includes('offerCatalog')
+  ) || templateId === 'reseller-onboarding' || templateId.includes('reseller');
+}
+
+/** Returns metadata for reseller onboarding flows. Used for automated client generation,
+ * webhook payloads (`reseller.onboarded`), PTIX commission setup, and terms persistence. */
+export function getResellerOnboardingMetadata(baseSlug: string = 'partner') {
+  const template = getResellerOnboardingTemplate();
+  return {
+    template: template.id,
+    label: template.label,
+    schemaOrgType: template.schemaOrgType,
+    defaultColors: template.defaultColors,
+    features: [
+      'partner-sign-on',
+      'terms-acceptance-gate',
+      'automated-client-generation',
+      'product-scraping-orchestrator',
+      'resale-dashboard',
+      'commission-tracking',
+      'ptix-auto-exchange',
+      'offer-catalog'
+    ] as const,
+    onboardingSlug: `${baseSlug}-onboarding`,
+    webhookEvents: ['reseller.onboarded', 'commission.paid', 'partner.performance.updated'],
+    xsdStandard: template.xsdStandard,
+  };
 }
 
 /** Check if a given slug is reserved (cannot be used as a tenant slug). */

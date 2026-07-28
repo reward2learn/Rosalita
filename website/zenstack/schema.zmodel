@@ -581,6 +581,42 @@ model Tenant {
   @@map("tenants")
 }
 
+model WebhookConfig {
+  id            String        @id @default(cuid())
+  provider      String
+  name          String?
+  endpoint      String
+  secret        String?
+  events        String[]
+  isActive      Boolean       @default(true) @map("is_active")
+  lastTriggered DateTime?     @map("last_triggered")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  eventsLog     WebhookEvent[]
+
+  @@allow('all', auth().tier == pin || auth().tier == google)
+  @@map("webhook_configs")
+}
+
+model WebhookEvent {
+  id            String   @id @default(cuid())
+  configId      String   @map("config_id")
+  config        WebhookConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  eventType     String   @map("event_type")
+  payload       Json
+  status        String   @default("pending") // pending, success, failed
+  responseCode  Int?
+  responseBody  String?
+  errorMessage  String?  @map("error_message")
+  attemptedAt   DateTime @default(now()) @map("attempted_at")
+
+  @@index([configId])
+  @@index([status])
+  @@allow('all', auth().tier == pin || auth().tier == google)
+  @@map("webhook_events")
+}
+
 // ── Access policies (ZenStack — enforce in P1 generate) ──
 // Financial writes: auth().tier == pin || auth().tier == google
 // Review parts: auth().tier == google

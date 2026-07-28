@@ -521,3 +521,36 @@ model Tenant {
 
   @@map("tenants")
 }
+
+model WebhookConfig {
+  id            String         @id() @default(cuid())
+  provider      String
+  name          String?
+  endpoint      String
+  secret        String?
+  events        String[]
+  isActive      Boolean        @default(true) @map("is_active")
+  lastTriggered DateTime?      @map("last_triggered")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt() @map("updated_at")
+  eventsLog     WebhookEvent[]
+
+  @@map("webhook_configs")
+}
+
+model WebhookEvent {
+  id           String        @id() @default(cuid())
+  configId     String        @map("config_id")
+  config       WebhookConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  eventType    String        @map("event_type")
+  payload      Json
+  status       String        @default("pending")
+  responseCode Int?
+  responseBody String?
+  errorMessage String?       @map("error_message")
+  attemptedAt  DateTime      @default(now()) @map("attempted_at")
+
+  @@index([configId])
+  @@index([status])
+  @@map("webhook_events")
+}

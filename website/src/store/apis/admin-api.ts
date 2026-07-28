@@ -5,11 +5,12 @@ import type { RoleConfigView } from '@/app/api/admin/roles/route';
 import type { AdminConversationView } from '@/app/api/admin/conversations/route';
 import type { AdminUserView } from '@/app/api/admin/users/route';
 import type { AdminGroupView } from '@/app/api/admin/groups/route';
+import type { WebhookConfigView, WebhookEventView } from '@/app/api/admin/webhooks/route';
 
 export const adminApi = createApi({
   reducerPath: 'adminApi',
   baseQuery,
-  tagTypes: ['RoleConfig', 'AdminConversations', 'AdminUsers', 'AdminGroups', 'SeedData', 'AiContent', 'BrandConfig', 'Navigation'],
+  tagTypes: ['RoleConfig', 'AdminConversations', 'AdminUsers', 'AdminGroups', 'SeedData', 'AiContent', 'BrandConfig', 'Navigation', 'Webhooks', 'WebhookEvents'],
   endpoints: (builder) => ({
     listRoleConfigs: builder.query<ApiEnvelope<{ roles: RoleConfigView[] }>, void>({
       query: () => 'admin/roles',
@@ -166,6 +167,67 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ['Navigation'],
     }),
+
+    // Webhook management
+    listWebhooks: builder.query<ApiEnvelope<{ webhooks: WebhookConfigView[] }>, void>({
+      query: () => 'admin/webhooks',
+      providesTags: ['Webhooks'],
+    }),
+    createWebhook: builder.mutation<
+      ApiEnvelope<{ webhook: WebhookConfigView }>,
+      Partial<WebhookConfigView> & { provider: string; endpoint: string; events: string[] }
+    >({
+      query: (body) => ({
+        url: 'admin/webhooks',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Webhooks'],
+    }),
+    updateWebhook: builder.mutation<
+      ApiEnvelope<{ webhook: WebhookConfigView }>,
+      { id: string } & Partial<WebhookConfigView>
+    >({
+      query: (body) => ({
+        url: 'admin/webhooks',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Webhooks'],
+    }),
+    deleteWebhook: builder.mutation<ApiEnvelope<{ deleted: boolean }>, string>({
+      query: (id) => ({
+        url: `admin/webhooks?id=${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Webhooks'],
+    }),
+    listWebhookEvents: builder.query<
+      ApiEnvelope<{ events: WebhookEventView[]; count: number }>,
+      { id: string; limit?: number }
+    >({
+      query: ({ id, limit = 50 }) => ({
+        url: `admin/webhooks/${id}/events`,
+        params: { limit },
+      }),
+      providesTags: ['WebhookEvents'],
+    }),
+    testWebhook: builder.mutation<
+      ApiEnvelope<{ success: boolean; eventId?: string; message: string }>,
+      { id: string; eventType?: string; samplePayload?: Record<string, unknown> }
+    >({
+      query: (body) => ({
+        url: 'admin/webhooks',
+        method: 'POST',
+        body: {
+          action: 'test',
+          id: body.id,
+          eventType: body.eventType || 'test.webhook',
+          payload: body.samplePayload || { message: 'Test event from admin UI' },
+        },
+      }),
+      invalidatesTags: ['Webhooks', 'WebhookEvents'],
+    }),
   }),
 });
 
@@ -189,4 +251,10 @@ export const {
   useCreateNavigationItemMutation,
   useUpdateNavigationItemsMutation,
   useDeleteNavigationItemsMutation,
+  useListWebhooksQuery,
+  useCreateWebhookMutation,
+  useUpdateWebhookMutation,
+  useDeleteWebhookMutation,
+  useListWebhookEventsQuery,
+  useTestWebhookMutation,
 } = adminApi;

@@ -44,7 +44,8 @@
         "@prisma/client": "6.12.0",
         "@reduxjs/toolkit": "^2.6.0",
         "@sparticuz/chromium": "^133.0.0",
-        "@tenants/shared": "file:../packages/shared",
+        "@tenants/shared": "file:./shared",
+        "@vercel/sdk": "^1.28.11",
         "@zenstackhq/runtime": "2.22.3",
         "ai": "^7.0.37",
         "chart.js": "^4.5.1",
@@ -819,6 +820,8 @@
     "@typescript-eslint/visitor-keys": ["@typescript-eslint/visitor-keys@8.65.0", "", { "dependencies": { "@typescript-eslint/types": "8.65.0", "eslint-visitor-keys": "^5.0.0" } }, "sha512-8C71BQkGjiMmXtop7pHVJu1l2NNShFdkCyD6a2ezzs5vU/L3LRtb69EtcteFwz0mYMPzIgOw0n6OV4VBUWZd7A=="],
 
     "@vercel/oidc": ["@vercel/oidc@3.2.0", "", {}, "sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug=="],
+
+    "@vercel/sdk": ["@vercel/sdk@1.28.11", "", { "dependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "sha512-PhTD59TflxX/fk+lbWzJoW76aIieADDlCJgaww2avwzbuULS76PqMZb2AWyKNX7pqeu7Al/F4l5OT7xqDKi2mw=="],
 
     "@vitejs/plugin-react": ["@vitejs/plugin-react@4.7.0", "", { "dependencies": { "@babel/core": "^7.28.0", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-beta.27", "@types/babel__core": "^7.20.5", "react-refresh": "^0.17.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA=="],
 
@@ -1860,7 +1863,7 @@
 
     "strip-literal/js-tokens": ["js-tokens@9.0.1", "", {}, "sha512-mxa9E9ITFOt0ban3j6L5MpjwegGz6lBQmM1IJkWeBZGcMxto50+eWdjC/52xDbS2vy0k7vIMK0Fe2wfL9OQSpQ=="],
 
-    "tokenizmyapp/@tenants/shared": ["@tenants/shared@file:packages/shared", { "dependencies": { "@emotion/react": "^11.14.0", "@emotion/styled": "^11.14.1", "@mui/icons-material": "^9.1.1", "@mui/material": "^9.1.2", "@reduxjs/toolkit": "^2.6.0", "@zenstackhq/runtime": "2.22.3", "chart.js": "^4.5.1", "react": "^19.0.0", "react-chartjs-2": "^5.3.1", "react-dom": "^19.0.0", "react-hook-form": "^7.54.0", "react-redux": "^9.2.0", "xlsx": "^0.18.5", "zod": "^3.24.0" }, "devDependencies": { "@types/node": "^22.10.0", "typescript": "^5.7.0" } }],
+    "tokenizmyapp/@tenants/shared": ["@tenants/shared@file:tokenizmyapp/shared", { "dependencies": { "@emotion/react": "^11.14.0", "@emotion/styled": "^11.14.1", "@mui/icons-material": "^9.1.1", "@mui/material": "^9.1.2", "@reduxjs/toolkit": "^2.6.0", "@zenstackhq/runtime": "2.22.3", "chart.js": "^4.5.1", "react": "^19.0.0", "react-chartjs-2": "^5.3.1", "react-dom": "^19.0.0", "react-hook-form": "^7.54.0", "react-redux": "^9.2.0", "xlsx": "^0.18.5", "zod": "^3.24.0" }, "devDependencies": { "@types/node": "^22.10.0", "typescript": "^5.7.0" } }],
 
     "vite/postcss": ["postcss@8.5.22", "", { "dependencies": { "nanoid": "^3.3.16", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-KBDEIpLrvpv16pp3K0Fw+UCoZfopFjjgeB+0tA/aaThfEE74kKDLrgg603YvOWJyg3+WYtyq3xYsQWsIyZlPqQ=="],
 
