@@ -120,7 +120,7 @@ async function handleGoogleRedirect(request: Request, url: URL): Promise<NextRes
   const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
   const state = `${redirectTo}::${nonce}`;
   const origin = getOrigin(request);
-  const redirectUri = `${origin}/api/auth/callback/google`;
+  const redirectUri = `${origin}/api/auth?action=google-callback`;
 
   const authUrl = buildGoogleAuthUrl(config, { redirectUri, state });
   return NextResponse.redirect(authUrl);
@@ -156,7 +156,7 @@ async function handleGoogleCallback(request: Request, url: URL): Promise<NextRes
         code,
         client_id: config.clientId,
         client_secret: config.clientSecret,
-        redirect_uri: `${origin}/api/auth/callback/google`,
+        redirect_uri: `${origin}/api/auth?action=google-callback`,
         grant_type: 'authorization_code',
       }),
     });
