@@ -107,7 +107,7 @@ function parseCliArgs(): CliArgs {
   // Default redirect URIs
   if (redirectUris.length === 0) {
     redirectUris.push(`https://${slug}.vercel.app`);
-    redirectUris.push(`https://${slug}.vercel.app/api/auth?action=google-callback`);
+    redirectUris.push(`https://${slug}.vercel.app/api/auth/callback/google`);
   }
 
   return {

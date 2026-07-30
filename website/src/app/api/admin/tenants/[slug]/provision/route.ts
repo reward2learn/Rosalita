@@ -93,7 +93,7 @@ export async function POST(
           displayName: tenant.displayName || slug,
           redirectUris: parsed.data.redirectUris || [
             `https://${slug}.vercel.app`,
-            `https://${slug}.vercel.app/api/auth?action=google-callback`,
+            `https://${slug}.vercel.app/api/auth/callback/google`,
           ],
           adminEmail: parsed.data.email || guard.session.email || 'admin@tokenizmyapp.com',
           logoPath: parsed.data.logoPath,

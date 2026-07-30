@@ -21,6 +21,7 @@ This file defines the agent architecture for both **CodeNomad** and **OpenCode**
 |-------|------|-------------|
 | `business_analyst` | Menu & pricing analysis | read-only |
 | `copywriter` | Menu copy, descriptions, promo text | edit menu.txt only |
+| `tenant-config-validator` | Tenant config validation, Flight Check diagnostics, OAuth/env/DB troubleshooting | read-only |
 | `data-analyst` | Cashflow data review & insights | read-only |
 | `cfo` | Financial review, profitability | read-only |
 | `coo` | Operations management | edit menu.txt only |
