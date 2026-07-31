@@ -403,6 +403,32 @@ export const TEMPLATE_CATALOG: Record<string, TemplateDefinition> = {
     xsdStandard: 'FpML, FIXML',
   },
 
+  // 12. Platform Admin — designed for the root config / control-plane app (tokenizmyapp)
+  //     Provides tenant lifecycle management, deployment monitoring, system operations.
+  'platform-admin': {
+    id: 'platform-admin',
+    label: 'Platform Admin',
+    description: 'Central administration dashboard for managing tenant applications, platform configuration, system operations, and user management across all tenant instances.',
+    icon: 'AdminPanelSettings',
+    defaultColors: { primary: '#1a237e', secondary: '#00bcd4' },
+    defaultPages: [
+      DASHBOARD_PAGE(['hero', 'kpi_cards', 'metric_grid']),
+      { slug: 'ops-admin', title: 'System Admin', navLabel: 'Ops Admin', authTier: 'pin', blockTypes: ['ops_admin_tabs', 'z_report_form', 'costs_form'] },
+      SUMMARY_PAGE,
+      TASKS_PAGE,
+      ADMIN_PAGE,
+    ],
+    defaultNavItems: [
+      { title: 'Dashboard', path: '/dashboard', icon: 'Dashboard', authTier: 'public' },
+      { title: 'System Admin', path: '/ops-admin', icon: 'AdminPanelSettings', authTier: 'pin' },
+      { title: 'Summary', path: '/summary', icon: 'Description', authTier: 'google' },
+      { title: 'Tasks', path: '/tasks', icon: 'CheckCircle', authTier: 'pin' },
+      { title: 'Admin', path: '/admin', icon: 'Settings', authTier: 'pin' },
+    ],
+    schemaOrgType: ['SoftwareApplication', 'WebApplication'],
+    xsdStandard: 'schema.org',
+  },
+
   // Default (minimal — kept for backward compatibility)
   default: {
     id: 'default',
