@@ -114,6 +114,24 @@
 | UC-SEC-02 | JWT session header injection | session | Proxy validates `redruby.session` JWT once per API request; strips external X-Session-* headers; injects X-Session-Tier, X-Session-Sub, X-Session-Groups, X-Session-Permissions, X-Session-Verified via `NextResponse.next({ request: { headers } })` | Guards use fast path via header check; 2-3 HMAC calls → 1 per request |
 | UC-SEC-03 | Server-side auth redirect | session | Proxy checks page auth tier via public slug list; redirects unauthenticated users to `/dashboard?redirect_reason=auth_required` for non-public pages | No client-side spinner flash; redirect happens before RSC payload |
 | UC-SEC-04 | Rewrite consolidation | public | 7 API rewrites moved from `next.config.mjs` → `src/proxy.ts`: OAuth callback, monthly-actuals, pos-scan/parse, voice, conversations, reports | Rewrites applied in proxy before auth checks |
+| UC-SEC-05 | Group/route security independent of Role rows | session | `requireGroup`, `requireGroupAny`, `requireCapability` | `SecurityGroup`, `UserGroup` | Nav + API gating uses security-group memberships keyed by user `sub`; the `Role` table is never consulted |
+
+### Roles & task security (functional role catalog)
+
+| ID | Use case | Auth | Route / API | Models | Acceptance |
+|----|----------|------|-------------|--------|------------|
+| UC-ROLE-01 | Functional role catalog | pin/google (platform admin) | GET/PUT/DELETE `/api/admin/roles` | `Role` | Role = `code` + display `name` only; **no email / person fields** |
+| UC-ROLE-02 | Person-to-role mapping | sign-in | `PERSONS` registry (`src/domain/security/persons.ts`) | `UserAccount.roleCode` | Google/PIN sign-in maps identity to functional role via the registry, never via the roles table |
+| UC-ROLE-03 | Task ownership by role + user | session | GET/POST/PATCH `/api/tasks` | `Task`, `TaskAssignment`, `TaskUserAssignment`, `Role` | Viewer scoped via session `sub` / `roleCode`; role-match OR user-account match (no email matching) |
+| UC-ROLE-04 | Role PIN configuration | platform admin | POST `/api/admin/roles` | `Secret` (`USER_PIN_<sub>` / `ADMIN_PIN`) | PIN secret key derived from PERSONS mapping, not role email |
+| UC-ROLE-05 | User-scoped task assignment | platform admin | POST `/api/tasks/user-assignment`; GET `/api/admin/users` (`taskIds`) | `TaskUserAssignment` | Admin assigns any task to a specific user in the User Accounts tab; signed-in user sees the task + priority even without a role match; PATCH ownership extends to user-assigned tasks |
+
+### Admin & Config workspace
+
+| ID | Use case | Auth | Implementation | Acceptance |
+|----|----------|------|----------------|------------|
+| UC-ADMIN-01 | Workspace section navigation | pin | `/admin` (Platform Admin) and `/config` (Config) use a single dropdown `Select` instead of a `Tabs` strip | Same sections/indices reachable; single compact control, mobile-friendly |
+| UC-ADMIN-02 | Responsive tenant wizard | pin | `TenantWizard` dialog: vertical `Stepper` on mobile, current horizontal stepper on non-mobile (`useMediaQuery` < `sm`) | Wizard usable on phones; unchanged layout on desktop |
 
 ### Performance (P9+ optimization)
 
@@ -162,6 +180,7 @@
 | P8 | UC-OPS-01, UC-AI-*, UC-DOC-01–02 |
 | P9 | UC-AUTH-*, UC-RPT-*, E2E all tiers |
 | P9+ | UC-SEC-*, UC-PERF-*, UC-PDF-*, UC-CSS-01, UC-BA-01 |
+| V2.1 (current) | UC-ROLE-05, UC-ADMIN-01, UC-ADMIN-02 |
 
 ---
 
