@@ -21,3 +21,4 @@ logs/
 .env*
 node_modules
 wasm/validator/target/
+.DS_Store
