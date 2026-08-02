@@ -1,6 +1,6 @@
 # RedRuby-FPA — AGENTS.md
 
-**Dual-purpose project**: Prestix.vip / Promohub web application (`website/`) + Rosalita Cantina restaurant operations.
+**Dual-purpose project**: Prestix.vip / Promohub web application (`tokenizmyapp/`) + Rosalita Cantina restaurant operations.
 
 This file defines the agent architecture for both **CodeNomad** and **OpenCode** orchestrators.
 
