@@ -1,0 +1,650 @@
+Install workflow
+npmpnpmyarnbun
+npm i workflow
+
+Configure Next.js
+Wrap your next.config.ts with withWorkflow(). This enables usage of the "use workflow" and "use step" directives.
+
+next.config.ts
+
+import { withWorkflow } from "workflow/next";
+import type { NextConfig } from "next";
+const nextConfig: NextConfig = {
+  // … rest of your Next.js config
+};
+export default withWorkflow(nextConfig);
+
+Setup IntelliSense for TypeScript (Optional)
+
+Configure Proxy Handler (if applicable)
+Create Your First Workflow
+Create a new file for our first workflow:
+
+workflows/user-signup.ts
+
+import { sleep } from "workflow";
+export async function handleUserSignup(email: string) {
+ "use workflow";
+ const user = await createUser(email);
+ await sendWelcomeEmail(user);
+ await sleep("5s"); // Pause for 5s - doesn't consume any resources
+ await sendOnboardingEmail(user);
+ console.log("Workflow is complete! Run 'npx workflow web' to inspect your run")
+ return { userId: user.id, status: "onboarded" };
+}
+We'll fill in those functions next, but let's take a look at this code:
+
+We define a workflow function with the directive "use workflow". Think of the workflow function as the orchestrator of individual steps.
+The Workflow SDK's sleep function allows us to suspend execution of the workflow without using up any resources. A sleep can be a few seconds, hours, days, or even months long.
+Create Your Workflow Steps
+Let's now define those missing functions.
+
+workflows/user-signup.ts
+
+import { FatalError } from "workflow"
+// Our workflow function defined earlier
+async function createUser(email: string) {
+  "use step";
+  console.log(`Creating user with email: ${email}`);
+  // Full Node.js access - database calls, APIs, etc.
+  return { id: crypto.randomUUID(), email };
+}
+async function sendWelcomeEmail(user: { id: string; email: string; }) {
+  "use step";
+  console.log(`Sending welcome email to user: ${user.id}`);
+  if (Math.random() < 0.3) {
+  // By default, steps will be retried for unhandled errors
+   throw new Error("Retryable!");
+  }
+}
+async function sendOnboardingEmail(user: { id: string; email: string}) {
+ "use step";
+  if (!user.email.includes("@")) {
+    // To skip retrying, throw a FatalError instead
+    throw new FatalError("Invalid Email");
+  }
+ console.log(`Sending onboarding email to user: ${user.id}`);
+}
+Taking a look at this code:
+
+Business logic lives inside steps. When a step is invoked inside a workflow, it gets enqueued to run on a separate request while the workflow is suspended, just like sleep.
+If a step throws an error, like in sendWelcomeEmail, the step will automatically be retried until it succeeds (or hits the step's max retry count).
+Steps can throw a FatalError if an error is intentional and should not be retried.
+We'll dive deeper into workflows, steps, and other ways to suspend or handle events in Foundations.
+
+Create Your Route Handler
+To invoke your new workflow, we'll need to add your workflow to a POST API Route Handler, app/api/signup/route.ts, with the following code:
+
+app/api/signup/route.ts
+
+import { start } from "workflow/api";
+import { handleUserSignup } from "@/workflows/user-signup";
+import { NextResponse } from "next/server";
+export async function POST(request: Request) {
+ const { email } = await request.json();
+ // Executes asynchronously and doesn't block your app
+ await start(handleUserSignup, [email]);
+ return NextResponse.json({
+  message: "User signup workflow started",
+ });
+}
+This Route Handler creates a POST request endpoint at /api/signup that will trigger your workflow.
+
+Workflows can be triggered from API routes, Server Actions, or any server-side code.
+
+Run in development
+To start your development server, run the following command in your terminal in the Next.js root directory:
+
+npm run dev
+
+Once your development server is running, you can trigger your workflow by running this command in the terminal:
+
+curl -X POST --json '{"email":"hello@example.com"}' http://localhost:3000/api/signup
+
+Check the Next.js development server logs to see your workflow execute, as well as the steps that are being processed.
+
+Additionally, you can use the Workflow SDK CLI or Web UI to inspect your workflow runs and steps in detail.
+
+# Open the observability Web UI
+npx workflow web
+# or if you prefer a terminal interface, use the CLI inspect command
+npx workflow inspect runs
+
+Workflow SDK Web UI
+
+Deploying to production
+Workflow SDK apps currently work best when deployed to Vercel and need no special configuration.
+
+Enable Fluid compute before deploying. Workflow is designed to take advantage of Fluid compute for efficient suspension and resumption. Without Fluid compute enabled, each workflow resume incurs a separate function cold start, which can result in significantly higher costs.
+Check the Deploying section to learn how your workflows can be deployed elsewhere.
+
+Troubleshooting
+Next.js 16.1+ compatibility
+If you see this error when upgrading to Next.js 16.1 or later:
+
+Build error occurred
+Error: Cannot find module 'next/dist/lib/server-external-packages.json'
+
+Upgrade to workflow@4.0.1-beta.26 or later:
+
+npmpnpmyarnbun
+npm install workflow@latest
+
+Turborepo caching
+If you're using Turborepo in a monorepo, you need to include the generated Workflow routes in your cache outputs. The Workflow SDK generates route handlers at app/.well-known/workflow/ (or src/app/.well-known/workflow/ if your project uses the src directory) during the build process, and these files must be cached alongside your Next.js build output.
+
+Add the following to your turbo.json:
+
+turbo.json
+
+{
+  "tasks": {
+    "build": {
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        // Include whichever path matches your project layout
+        "app/.well-known/workflow/**",
+        "src/app/.well-known/workflow/**"
+      ]
+    }
+  }
+}
+Without this configuration, you may experience intermittent issues where workflows fail to register properly on cache hits, while working correctly on cache misses.
+
+start() says it received an invalid workflow function
+If you see this error:
+
+'start' received an invalid workflow function. Ensure the Workflow Development Kit is configured correctly and the function includes a 'use workflow' directive.
+
+Check both of these first:
+
+The workflow function includes "use workflow".
+Your next.config.ts is wrapped with withWorkflow().
+See start-invalid-workflow-function for full examples and fixes.
+
+API Reference
+
+Copy page
+
+Complete reference for all Workflow SDK functions and primitives by package.
+
+All the functions and primitives that come with Workflow SDK by package.
+
+Workflow Globals
+Global APIs available inside workflow functions, including deterministic APIs, Web Platform APIs, and environment variables.
+
+workflow
+Core workflow primitives including steps, context management, streaming, webhooks, and error handling.
+
+workflow/api
+API reference for runtime functions from the workflow/api package.
+
+workflow/runtime
+Runtime functions for resolving the World instance and the low-level World SDK.
+
+workflow/observability
+Utilities to hydrate step I/O, parse display names, and decrypt workflow data.
+
+workflow/next
+Next.js integration for Workflow SDK that automatically configures bundling and runtime support.
+
+workflow/nitro
+Nitro module for workflow bundling and runtime support.
+
+workflow/nuxt
+Nuxt module for workflow bundling and runtime support.
+
+workflow/sveltekit
+SvelteKit Vite plugin for workflow bundling and runtime support.
+
+workflow/astro
+Astro integration for workflow bundling and runtime support.
+
+workflow/vite
+Standalone Vite plugin for workflow bundling and runtime support.
+
+workflow/nest
+NestJS module for workflow bundling and runtime support.
+
+workflow/errors
+Semantic error types for handling workflow storage backend failures.
+
+@workflow/serde
+Serialization symbols for custom class serialization in workflows.
+
+@workflow/ai
+Helpers for integrating AI SDK for building AI-powered workflows.
+
+@workflow/vitest
+Vitest plugin and test helpers for integration testing workflows in-process.
+
+
+workflow/api
+
+Copy page
+
+Runtime functions to inspect runs, start workflows, and manage hooks.
+
+API reference for runtime functions from the workflow/api package.
+
+Functions
+The API package is for access and introspection of workflow data to inspect runs, start new runs, and manage hooks.
+
+start()
+Start/enqueue a new workflow run.
+
+resumeHook()
+Resume a workflow by sending a payload to a hook.
+
+resumeWebhook()
+Resume a workflow by sending a Request to a webhook.
+
+getHookByToken()
+Get hook details and metadata by its token.
+
+getRun()
+Get workflow run status and metadata without waiting for completion.
+
+Looking for getWorld() and the World SDK? They are exported from workflow/runtime — see the workflow/runtime reference.
+
+workflow/runtime
+
+Copy page
+
+Runtime functions for accessing the World instance and wiring up workflow infrastructure.
+
+API reference for runtime functions from the workflow/runtime package.
+
+The runtime package provides low-level access to the workflow runtime — resolving the World instance that backs storage, queuing, and streaming, and wiring up workflow infrastructure in custom server environments.
+
+Functions
+getWorld()
+Async: resolve the World instance for storage, queuing, and streaming backends.
+
+World SDK
+Low-level API for inspecting runs, steps, events, hooks, streams, and queues.
+
+Infrastructure Functions
+These functions are primarily used by framework adapters and custom world setups, and are rarely needed in application code:
+
+createWorld()
+Create a World instance from environment configuration.
+
+setWorld()
+Override the cached World instance with a custom World.
+
+getWorldHandlers()
+Build-time-safe access to the World's queue handlers.
+
+workflowEntrypoint()
+Create the HTTP route handler that executes workflow runs.
+
+stepEntrypoint
+The HTTP route handler that executes step functions.
+
+healthCheck()
+Check the health of a deployment's workflow infrastructure.workflow/runtime
+
+Copy page
+
+Runtime functions for accessing the World instance and wiring up workflow infrastructure.
+
+API reference for runtime functions from the workflow/runtime package.
+
+The runtime package provides low-level access to the workflow runtime — resolving the World instance that backs storage, queuing, and streaming, and wiring up workflow infrastructure in custom server environments.
+
+Functions
+getWorld()
+Async: resolve the World instance for storage, queuing, and streaming backends.
+
+World SDK
+Low-level API for inspecting runs, steps, events, hooks, streams, and queues.
+
+Infrastructure Functions
+These functions are primarily used by framework adapters and custom world setups, and are rarely needed in application code:
+
+createWorld()
+Create a World instance from environment configuration.
+
+setWorld()
+Override the cached World instance with a custom World.
+
+getWorldHandlers()
+Build-time-safe access to the World's queue handlers.
+
+workflowEntrypoint()
+Create the HTTP route handler that executes workflow runs.
+
+stepEntrypoint
+The HTTP route handler that executes step functions.
+
+healthCheck()
+Check the health of a deployment's workflow infrastructure.
+
+workflow/observability
+
+Copy page
+
+Utilities to hydrate serialized step I/O and parse machine-readable workflow names for display.
+
+API reference for observability utilities from the workflow/observability package.
+
+The observability package provides utilities for working with workflow data in observability and debugging tools — hydrating serialized step I/O for display, and parsing machine-readable names into display-friendly formats.
+
+import {
+  hydrateResourceIO,
+  observabilityRevivers,
+  hydrateData,
+  parseStepName,
+  parseWorkflowName,
+  parseClassName,
+} from "workflow/observability";
+
+Data Hydration
+hydrateResourceIO()
+Hydrate the serialized data fields of a run, step, hook, or event for display.
+
+observabilityRevivers
+Standard revivers for deserializing workflow data types (Date, Map, Set, streams, etc.).
+
+hydrateData()
+Hydrate a single serialized value (lower-level than hydrateResourceIO).
+
+Name Parsing
+parseStepName()
+Parse a machine-readable step name into display-friendly components.
+
+parseWorkflowName()
+Parse a machine-readable workflow name into display-friendly components.
+
+parseClassName()
+Parse a machine-readable class ID into display-friendly components.
+
+Encrypted Data
+When a World stores encrypted data, the hydration utilities intentionally leave encrypted values untouched: hydrateData() and hydrateResourceIO() return encrypted fields as raw Uint8Array values so observability tools can detect them and decide how to render them (for example, the Workflow CLI shows an "Encrypted" placeholder). Decryption is handled by the runtime and the World implementation — see Encryption for how keys are managed.
+
+
+workflow/next
+
+Copy page
+
+Next.js integration for automatic bundling and runtime configuration.
+
+Next.js integration for Workflow SDK that automatically configures bundling and runtime support.
+
+Functions
+withWorkflow
+Configures webpack/turbopack loaders to transform workflow code ("use step"/"use workflow" directives)
+
+
+@workflow/ai
+
+Copy page
+
+Helpers for building AI-powered workflows with the AI SDK.
+
+Helpers for integrating AI SDK for building AI-powered workflows.
+
+Classes
+DurableAgent
+Deprecated — use AI SDK's WorkflowAgent. Reference kept for existing @workflow/ai/agent imports.
+
+WorkflowChatTransport
+Deprecated — use AI SDK's WorkflowChatTransport from @ai-sdk/workflow. Reference kept for existing @workflow/ai imports.
+
+WorkflowChatTransport
+
+Copy page
+
+Chat transport with automatic reconnection and recovery from interrupted streams.
+
+WorkflowChatTransport from @workflow/ai is deprecated. AI SDK ships a 1:1 port — use WorkflowChatTransport from @ai-sdk/workflow instead. This reference is kept for existing applications that still import it from @workflow/ai.
+
+A chat transport implementation for the AI SDK that provides reliable message streaming with automatic reconnection to interrupted streams. This transport is a drop-in replacement for the default AI SDK transport, enabling seamless recovery from network issues, page refreshes, or Vercel Function timeouts.
+
+WorkflowChatTransport implements the ChatTransport interface from the AI SDK and is designed to work with workflow-based chat applications. It requires endpoints that return the x-workflow-run-id header to enable stream resumption.
+
+import { useChat } from "@ai-sdk/react";
+import { WorkflowChatTransport } from "@workflow/ai";
+export default function Chat() {
+  const { messages, sendMessage } = useChat({
+    transport: new WorkflowChatTransport(),
+  });
+  return (
+    <div>
+      {messages.map((m) => (
+        <div key={m.id}>{m.content}</div>
+      ))}
+    </div>
+  );
+}
+
+API Signature
+Class
+Name	Type	Description
+api	any	
+fetch	any	
+onChatSendMessage	any	
+onChatEnd	any	
+maxConsecutiveErrors	any	
+initialStartIndex	any	
+prepareSendMessagesRequest	any	
+prepareReconnectToStreamRequest	any	
+sendMessages	(options: SendMessagesOptions<UI_MESSAGE> & ChatRequestOptions) => Promise<ReadableStream<UIMessageChunk>>	Sends messages to the chat endpoint and returns a stream of response chunks. This method handles the entire chat lifecycle including: - Sending messages to the /api/chat endpoint - Streaming response chunks - Automatic reconnection if the stream is interrupted
+sendMessagesIterator	any	
+reconnectToStream	(options: ReconnectToStreamOptions & ChatRequestOptions) => Promise<ReadableStream<UIMessageChunk> | null>	Reconnects to an existing chat stream that was previously interrupted. This method is useful for resuming a chat session after network issues, page refreshes, or Vercel Function timeouts.
+reconnectToStreamIterator	any	
+onFinish	any	
+WorkflowChatTransportOptions
+Name	Type	Description
+api	string	API endpoint for chat requests Defaults to /api/chat if not provided
+fetch	{ (input: RequestInfo | URL, init?: RequestInit | undefined): Promise<Response>; (input: string | Request | URL, init?: RequestInit | undefined): Promise<...>; }	Custom fetch implementation to use for HTTP requests. Defaults to the global fetch function if not provided.
+onChatSendMessage	OnChatSendMessage<UI_MESSAGE>	Callback invoked after successfully sending messages to the chat endpoint. Useful for tracking chat history and inspecting response headers.
+onChatEnd	OnChatEnd	Callback invoked when a chat stream ends (receives a "finish" chunk). Useful for cleanup operations or state updates.
+maxConsecutiveErrors	number	Maximum number of consecutive errors allowed during reconnection attempts. Defaults to 3 if not provided.
+initialStartIndex	number	Default startIndex to use when reconnecting to a stream without a known chunk position (i.e. the initial reconnection, not a retry). Negative values read from the end of the stream (e.g. -10 fetches the last 10 chunks), which is useful for resuming a chat UI after a page refresh without replaying the full conversation. Can be overridden per-call via ReconnectToStreamOptions.startIndex. Defaults to 0 (replay from the beginning).
+prepareSendMessagesRequest	PrepareSendMessagesRequest<UI_MESSAGE>	Function to prepare the request for sending messages. Allows customizing the API endpoint, headers, credentials, and body.
+prepareReconnectToStreamRequest	PrepareReconnectToStreamRequest	Function to prepare the request for reconnecting to a stream. Allows customizing the API endpoint, headers, and credentials.
+Key Features
+Automatic Reconnection: Automatically recovers from interrupted streams with configurable retry limits
+Workflow Integration: Seamlessly works with workflow-based endpoints that provide the x-workflow-run-id header
+Customizable Requests: Allows intercepting and modifying requests via prepareSendMessagesRequest and prepareReconnectToStreamRequest
+Stream Callbacks: Provides hooks for tracking chat lifecycle via onChatSendMessage and onChatEnd
+Custom Fetch: Supports custom fetch implementations for advanced use cases
+Good to Know
+The transport expects chat endpoints to return the x-workflow-run-id header in the response to enable stream resumption
+By default, the transport posts to /api/chat and reconnects via /api/chat/{runId}/stream
+The onChatSendMessage callback receives the full response object, allowing you to extract and store the workflow run ID for session resumption
+Stream interruptions are automatically detected when a "finish" chunk is not received in the initial response
+The maxConsecutiveErrors option controls how many reconnection attempts are made before giving up (default: 3)
+initialStartIndex (constructor option) sets the default chunk position for the first reconnection attempt (e.g. after a page refresh). Subsequent retries within the same reconnection loop always resume from the last received chunk. Negative values (e.g. -20) read from the end of the stream, which is useful for showing only recent output without replaying the full conversation. startIndex (per-call option on reconnectToStream) overrides initialStartIndex for a single reconnection
+When using a negative initialStartIndex, the reconnection endpoint must return the x-workflow-stream-tail-index response header (via readable.getTailIndex()). The transport reads this header to compute absolute chunk positions for retries. Without it, startIndex is assumed to be 0, replaying the entire stream
+Examples
+Basic Chat Setup
+"use client";
+import { useChat } from "@ai-sdk/react";
+import { WorkflowChatTransport } from "@workflow/ai";
+import { useState } from "react";
+export default function BasicChat() {
+  const [input, setInput] = useState("");
+  const { messages, sendMessage } = useChat({
+    transport: new WorkflowChatTransport(),
+  });
+  return (
+    <div>
+      <div className="space-y-4">
+        {messages.map((m) => (
+          <div key={m.id}>
+            <strong>{m.role}:</strong> {m.content}
+          </div>
+        ))}
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage({ text: input });
+          setInput("");
+        }}
+      >
+        <input
+          value={input}
+          placeholder="Say something..."
+          onChange={(e) => setInput(e.currentTarget.value)}
+        />
+      </form>
+    </div>
+  );
+}
+
+With Session Persistence and Resumption
+"use client";
+import { useChat } from "@ai-sdk/react";
+import { WorkflowChatTransport } from "@workflow/ai";
+import { useMemo, useState } from "react";
+export default function ChatWithResumption() {
+  const [input, setInput] = useState("");
+  const activeWorkflowRunId = useMemo(() => {
+    if (typeof window === "undefined") return;
+    return localStorage.getItem("active-workflow-run-id") ?? undefined;
+  }, []);
+  const { messages, sendMessage } = useChat({
+    resume: !!activeWorkflowRunId,
+    transport: new WorkflowChatTransport({
+      onChatSendMessage: (response, options) => {
+        // Save chat history to localStorage
+        localStorage.setItem(
+          "chat-history",
+          JSON.stringify(options.messages)
+        );
+        // Extract and store the workflow run ID for session resumption
+        const workflowRunId = response.headers.get("x-workflow-run-id");
+        if (workflowRunId) {
+          localStorage.setItem("active-workflow-run-id", workflowRunId);
+        }
+      },
+      onChatEnd: ({ chatId, chunkIndex }) => {
+        console.log(`Chat ${chatId} completed with ${chunkIndex} chunks`);
+        // Clear the active run ID when chat completes
+        localStorage.removeItem("active-workflow-run-id");
+      },
+    }),
+  });
+  return (
+    <div>
+      <div className="space-y-4">
+        {messages.map((m) => (
+          <div key={m.id}>
+            <strong>{m.role}:</strong> {m.content}
+          </div>
+        ))}
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage({ text: input });
+          setInput("");
+        }}
+      >
+        <input
+          value={input}
+          placeholder="Say something..."
+          onChange={(e) => setInput(e.currentTarget.value)}
+        />
+      </form>
+    </div>
+  );
+}
+
+With Custom Request Configuration
+"use client";
+import { useChat } from "@ai-sdk/react";
+import { WorkflowChatTransport } from "@workflow/ai";
+import { useState } from "react";
+export default function ChatWithCustomConfig() {
+  const [input, setInput] = useState("");
+  const { messages, sendMessage } = useChat({
+    transport: new WorkflowChatTransport({
+      prepareSendMessagesRequest: async (config) => {
+        return {
+          ...config,
+          api: "/api/chat",
+          headers: {
+            ...config.headers,
+            "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`,
+            "X-Custom-Header": "custom-value",
+          },
+          credentials: "include",
+        };
+      },
+      prepareReconnectToStreamRequest: async (config) => {
+        return {
+          ...config,
+          headers: {
+            ...config.headers,
+            "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`,
+          },
+          credentials: "include",
+        };
+      },
+      maxConsecutiveErrors: 5,
+    }),
+  });
+  return (
+    <div>
+      <div className="space-y-4">
+        {messages.map((m) => (
+          <div key={m.id}>
+            <strong>{m.role}:</strong> {m.content}
+          </div>
+        ))}
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage({ text: input });
+          setInput("");
+        }}
+      >
+        <input
+          value={input}
+          placeholder="Say something..."
+          onChange={(e) => setInput(e.currentTarget.value)}
+        />
+      </form>
+    </div>
+  );
+}
+
+Mid-part resumes
+A workflow stream is a flat sequence of chunks, but the AI SDK's UI protocol groups chunks into logical parts: a text-start opens a text part that subsequent text-deltas extend and a text-end closes, and the same shape applies to reasoning-* and tool-input-*. The AI SDK client enforces that grammar — a reasoning-delta whose reasoning-start was never seen throws and breaks the chat.
+
+A non-zero startIndex (in particular a negative initialStartIndex) resolves to a chunk offset with no awareness of those part boundaries, so it can land in the middle of an open part. When that happens, WorkflowChatTransport will drop chunks that reference a part it didn't see a start for and log a one-time warning. The chat keeps working, but any partial part overlapping the resume cursor is discarded. Tool calls are an exception: tool-input-available / tool-input-error chunks are self-contained (they carry the full input), so a tool call is recovered as soon as one of those chunks appears in the resumed window — only its streamed input deltas are lost.
+
+To preserve those partial parts, rewind to a step boundary on the server before returning the readable. start-step / finish-step chunks are the natural seams — no UI part is ever open across them. Sketch:
+
+app/api/chat/[id]/stream/route.ts
+
+const run = getRun(id);
+const tailIndex = await run.getReadable().getTailIndex();
+let resolved = startIndex < 0
+  ? Math.max(0, tailIndex + 1 + startIndex)
+  : startIndex;
+if (startIndex !== 0) {
+  // Walk back from `resolved` to the most recent start-step (or chunk 0),
+  // capping the lookback so a single huge step can't trigger an unbounded scan.
+  const LOOKBACK = 200;
+  const probe = run.getReadable({ startIndex: Math.max(0, resolved - LOOKBACK) });
+  let i = Math.max(0, resolved - LOOKBACK);
+  let lastBoundary = i;
+  for await (const chunk of probe as unknown as AsyncIterable<{ type: string }>) {
+    if (i >= resolved) break;
+    if (chunk.type === "start-step") lastBoundary = i;
+    i++;
+  }
+  resolved = lastBoundary;
+}
+return createUIMessageStreamResponse({
+  stream: run.getReadable({ startIndex: resolved }),
+  headers: { "x-workflow-stream-tail-index": String(tailIndex) },
+});

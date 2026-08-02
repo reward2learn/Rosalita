@@ -98,6 +98,7 @@
         "@reduxjs/toolkit": "^2.6.0",
         "@sparticuz/chromium": "^133.0.0",
         "@tenants/shared": "file:./shared",
+        "@vercel/sdk": "^1.28.11",
         "@zenstackhq/runtime": "2.22.3",
         "ai": "^7.0.37",
         "chart.js": "^4.5.1",

@@ -1,5 +1,0 @@
-# Legacy Node handlers at repo root — Next.js App Router uses src/app/api
-/api/
-
-# Environment files (use Vercel dashboard/env vars instead)
-.env*.local
