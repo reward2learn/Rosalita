@@ -21,3 +21,6 @@ logs/
 .env*
 node_modules
 wasm/validator/target/
+
+# Large archives — never commit
+*.zip
