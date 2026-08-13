@@ -1,60 +1,109 @@
 # RedRuby-FPA — AGENTS.md
 
-**Dual-purpose project**: Prestix.vip / Promohub web application (`tokenizmyapp/`) + Rosalita Cantina restaurant operations.
+**Dual-purpose project**: Prestix / Promohub / TokenizMyApp (`tokenizmyapp/`) + Rosalita Cantina restaurant operations.
 
 This file defines the agent architecture for both **CodeNomad** and **OpenCode** orchestrators.
 
 ---
 
-## CodeNomad Agent Architecture
+## Environment (current)
+
+| Path | Purpose |
+|------|---------|
+| `tokenizmyapp/` | **Next.js 16 application root** — App Router, components, API, ZenStack |
+| `.codenomad/` | CodeNomad orchestration (`nomadworks.yaml` + agents/) |
+| `CodeNomad/` | CodeNomad tool source — **never modify** |
+| `.opencode/` | OpenCode config, agents, context |
+| `menu.txt` | Restaurant menu (IDR thousands) |
+| `docs/` | Diagnostics & migration docs |
+| `docs/CODENOMAD_TUNNEL.md` | Cloudflare tunnel: **https://nomad.prestix.vip** (alias `codenomad.prestix.vip`) → `:9899` |
+| `scripts/start-codenomad-http.sh` | Start CodeNomad on `127.0.0.1:9899` |
+| `scripts/start-cloudflare-tunnel.sh` | Start `cloudflared` connector |
+
+> There is **no** active `website/` app directory. Use `tokenizmyapp/` for all app work.
+> Public CodeNomad: **https://nomad.prestix.vip** (Cloudflare Access + Tunnel).
+---
+
+## OpenCode primary agents
+
+| Agent | When to use |
+|-------|-------------|
+| `opencoder` | **Default** — app feature work; delegates with `Task({ subagent_type })` |
+| `openagent` | Light Q&A / routing |
+| `project-manager` | Restaurant menu/pricing only — **not coding** |
+| `legal-orchestrator` | Equity / contracts / Indonesian law |
+
+### Task tool schema (critical)
+
+Every Task call **must** include `subagent_type`:
+
+```
+Task({
+  subagent_type: "website-ui",
+  description: "Template selection UI",
+  prompt: "Implement Multi-App Suite option in tokenizmyapp/..."
+})
+```
+
+Missing `subagent_type` → `SchemaError(Missing key at ["subagent_type"])`.
+
+---
+
+## CodeNomad / OpenCode Agent Architecture
 
 ### Orchestrator Layer
 
 | Agent | Role | Mode |
 |-------|------|------|
-| `project_manager` | Orchestrates restaurant ops workflows | subagent |
-| `website_migration_commander` | Orchestrates website migration phases | subagent |
+| `opencoder` | App feature orchestration | primary |
+| `project_manager` / `project-manager` | Restaurant ops workflows | primary (OpenCode) / subagent (NomadWorks) |
+| `website_migration_commander` | Migration phases — **COMPLETE / archival** | disabled in OpenCode |
 
 ### Restaurant Operations
 
 | Agent | Role | Permissions |
 |-------|------|-------------|
-| `business_analyst` | Menu & pricing analysis | read-only |
-| `copywriter` | Menu copy, descriptions, promo text | edit menu.txt only |
-| `tenant-config-validator` | Tenant config validation, Flight Check diagnostics, OAuth/env/DB troubleshooting | read-only |
-| `data-analyst` | Cashflow data review & insights | read-only |
-| `cfo` | Financial review, profitability | read-only |
-| `coo` | Operations management | edit menu.txt only |
-| `reviewer` | Quality gate before menu changes | read-only gate |
+| `business-analyst` | Menu & pricing analysis | read-only |
+| `copywriter` | Menu copy, descriptions, promo text | edit `menu.txt` only |
+| `tenant-config-validator` | Tenant / Flight Check / OAuth / env / DB | read-only |
+| `data-analyst` | Cashflow insights | read-only |
+| `cfo` | Financial review | read-only |
+| `coo` | Operations management | edit `menu.txt` only |
+| `reviewer` | Quality gate | read-only gate |
 
 ### AI Content Generation
 
 | Agent | Role | Permissions |
 |-------|------|-------------|
-| `ai_content_generator` | 3-phase AI gen (BR → ES → Dashboard Data) | read-only orchestration |
-| `ai_content_reviewer` | Quality review of generated content | read-only |
+| `ai-content-generator` | 3-phase AI gen (BR → ES → Dashboard Data) | read-only orchestration |
+| `ai-content-reviewer` | Quality review of generated content | read-only |
 
-### Website Application Development
+### Website Application Development (`tokenizmyapp/`)
+
+| Agent (`subagent_type`) | Role | Write scope |
+|-------------------------|------|-------------|
+| `website-nextjs` | App Router pages, layouts | `tokenizmyapp/src/app/` |
+| `website-ui` | MUI v9 components, theme | `tokenizmyapp/src/components/`, `theme/` |
+| `website-db` | ZenStack schema, seed | `tokenizmyapp/zenstack/` |
+| `website-api` | API routes, Zod, SSE | `tokenizmyapp/src/app/api/` |
+| `website-state` | RTK Query + slices + RHF — no Zustand | `tokenizmyapp/src/store/` |
+| `website-auth` | JWT cookies, Google OAuth, PIN | `tokenizmyapp/src/lib/auth/` |
+| `website-testing` | Vitest + RTL | `tokenizmyapp` tests |
+| `website-deploy` | Vercel / env / build gate | read-only |
+
+### Website Migration (archival)
+
+Migration P0–P9 shipped. Prefer `website-*` app agents above for new work. Migration agents remain under `.opencode/agent/website-migration/` for historical tasks only.
+
+### Legal Investigation & Compliance
 
 | Agent | Role | Permissions |
 |-------|------|-------------|
-| `website_nextjs` | Next.js 16 App Router pages, layouts, middleware | write website/src/app/ |
-| `website_ui` | MUI v9 components, theme — no Tailwind | write website/src/components/, theme/ |
-| `website_db` | ZenStack v2 schema, Prisma, seed scripts | write website/zenstack/ |
-| `website_api` | API route handlers, auth, Zod validation, SSE | write website/src/app/api/ |
-| `website_state` | RTK Query (11 APIs) + uiSlice + chatStreamSlice + RHF — no Zustand | write website/src/store/ |
-| `website_auth` | JWT cookie auth (jose), Google OAuth, PIN | write website/src/lib/auth/ |
-| `website_testing` | Vitest + RTL | write website/src/__tests__/ |
-| `website_deploy` | Vercel deployment, env config, build | read-only |
-
-### Website Migration (Legacy → Current)
-
-| Agent | Role | Permissions |
-|-------|------|-------------|
-| `website_migration_commander` | Phase orchestration (MIGRATION COMPLETE — P0–P9 shipped) | read-only orchestration |
-| `website_use_case_analyst` | USE-CASES.md derivation & validation (archival) | read-only docs |
-| `website_legacy_api_analyst` | Legacy API audit & inventory (archival) | read-only docs |
-| `website_migration_planner` | Roadmap + TaskManager manifests (archival) | read-only planning |
+| `legal-orchestrator` | Top-level legal delegator | read-only orchestration |
+| `legal-research-analyst` | Putusan MA / case law | read-only |
+| `equity-compliance-specialist` | PT ownership / UU PT | read-only |
+| `contract-oversight-advisor` | KUHPerdata contracts | read-only |
+| `legal-security-oversight` | UU PDP / anti-fraud | read-only |
 
 ---
 
@@ -68,49 +117,22 @@ This file defines the agent architecture for both **CodeNomad** and **OpenCode**
 ### AI Content
 - **ai_content_generation**: generator (3 phases) → reviewer
 
-### Website
-- **website_feature**: db → api → state → ui → nextjs → testing → deploy
+### Website / App
+- **website_feature**: db → api → state → ui → nextjs → testing → deploy  
+  Orchestrated by `opencoder` via Task(`subagent_type`).
 
----
-
-## Important Paths
-
-| Path | Purpose |
-|------|---------|
-| `website/` | **Next.js 16 application root** — App Router, components, API |
-| `.codenomad/` | CodeNomad orchestration config (nomadworks.yaml + agents/) |
-| `CodeNomad/` | CodeNomad tool source code |
-| `menu.txt` | Restaurant menu (IDR thousands) |
-| `.opencode/` | OpenCode configuration and context |
-| `docs/` | Documentation, diagnostics, migration docs |
-| `*.xlsx` | Financial workbooks (cashflow, budgets) |
-| `*.md` (root) | AI-generated Business Review and Executive Summary files |
+### Legal
+- **legal_equity_investigation**: research → equity → contract → security → orchestrator
+- **legal_contract_review**: contract → research → equity → security → orchestrator
+- **legal_full_audit**: research → equity → contract → security → orchestrator
 
 ---
 
 ## Constraints
 
-- **Never modify** `CodeNomad/` source — it is the orchestrator tool, not part of this project
-- **website/ is the app directory** — all Next.js development happens inside `website/`
+- **Never modify** `CodeNomad/` source
+- **App directory is `tokenizmyapp/`** — all Next.js development happens there
 - Prices are in **IDR thousands** (98 K = 98,000 IDR)
 - Edit `menu.txt` only for menu text changes
 - Never modify images or spreadsheet files directly
-
-### Legal Investigation & Compliance
-
-| Agent | Role | Permissions |
-|-------|------|-------------|
-| `legal-orchestrator` | Top-level delegator for legal, equity & contract investigation | read-only orchestration |
-| `legal-research-analyst` | Indonesian court precedent & case law research (Putusan MA) | read-only |
-| `equity-compliance-specialist` | Equity shares, PT ownership, fiduciary compliance (UU PT, UU Cipta Kerja) | read-only |
-| `contract-oversight-advisor` | Contract analysis under KUHPerdata, risk assessment, amendments | read-only |
-| `legal-security-oversight` | Regulatory compliance, UU PDP data privacy, anti-fraud, sanctions | read-only |
-
----
-
-## Workflows (continued)
-
-### Legal Investigation & Compliance
-- **legal_equity_investigation**: legal-research-analyst → equity-compliance-specialist → contract-oversight-advisor → legal-security-oversight → legal-orchestrator
-- **legal_contract_review**: contract-oversight-advisor → legal-research-analyst → equity-compliance-specialist → legal-security-oversight → legal-orchestrator
-- **legal_full_audit**: legal-research-analyst → equity-compliance-specialist → contract-oversight-advisor → legal-security-oversight → legal-orchestrator
+- OpenCode Task calls must always include `subagent_type`

@@ -1,0 +1,15 @@
+// Initialize schema with tenant-specific data and ensure compatibility across all tenants
+
+const initialSchema = generateDefaultTemplate();
+
+// Add Suite Mode toggle in wizard Step 1 template selection UI (task-017-03)
+addSuiteToggleToWizardStepOne()
+
+// Create SuitePreviewCard component for departmental app previews (task-017-04)
+createSuitePreviewCardComponent()
+
+// Update wizard Review step (Step 4) with suite breakdown table + pipeline steps (task-017-05)
+updateWizardReviewStepWithSuiteBreakdown()
+
+// Type-check, lint, verify compilation across all changes (task-017-06)
+performTypeCheckLintVerifyCompilation()
