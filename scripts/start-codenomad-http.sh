@@ -65,7 +65,18 @@ echo "  Local:     http://${HOST}:${PORT}"
 echo "  Public:    https://nomad.prestix.vip"
 echo "  Alias:     https://codenomad.prestix.vip"
 echo "  Workspace: ${ROOT}"
+echo "  Default agent: project-manager (multi-agent Task assignment)"
+echo "  OpenCode CLI default remains: opencoder"
 echo ""
+
+# CodeNomad entry → project-manager. OPENCODE_CONFIG_CONTENT merges after
+# project .opencode/opencode.json (which keeps default_agent=opencoder for
+# standalone OpenCode). CodeNomad also injects its plugin into this env.
+OVERLAY="${ROOT}/.codenomad/opencode-defaults.json"
+if [[ -f "$OVERLAY" ]]; then
+  export OPENCODE_CONFIG_CONTENT
+  OPENCODE_CONFIG_CONTENT="$(cat "$OVERLAY")"
+fi
 
 # Prefer globally installed package (matches prior npx usage).
 if command -v codenomad >/dev/null 2>&1 || command -v npx >/dev/null 2>&1; then

@@ -126,11 +126,11 @@ workflows:
       - button: Deploy in tenant admin UI
     actors:
       - platform-admin (via /admin)
-      - website_migration_commander (orchestrator)
-      - website_db (schema/codegen)
-      - website_api (Inngest handlers)
-      - website_ui (admin components)
-      - website_deploy (Vercel)
+      - website-migration-commander (orchestrator)
+      - website-db (schema/codegen)
+      - website-api (Inngest handlers)
+      - website-ui (admin components)
+      - website-deploy (Vercel)
     steps:
       1. /admin-interaction:
           actor: platform-admin
@@ -152,14 +152,14 @@ workflows:
           output: amendmentPlan {newPages: [...], newModels: [...]}
 
       3. ai-schema-generation:
-          actor: website_db + ai_content_generator
+          actor: website-db + ai-content-generator
           action: generateSchemaFromPrompt(prompt, newTemplate) → compileToZModel + compileToPageCatalog
           tools: Vercel AI SDK, schema-generator.ts
           output: updated schema.zmodel snippet, page-catalog updates
           safety: mock mode, review generated models before apply
 
       4. db-migrations:
-          actor: website_db
+          actor: website-db
           action: ZenStack migrate on tenant Neon branch/DB
           constraints: 
             - @@map to existing tables
@@ -168,7 +168,7 @@ workflows:
           output: New domain models (e.g. reservations, menu_items)
 
       5. codegen-and-seed:
-          actor: website_nextjs + website_ui + website_state
+          actor: website-nextjs + website-ui + website-state
           actions:
             - Update page-catalog.ts or seed AppPage with new defaultPages
             - Regenerate/enable components for new blockTypes
@@ -177,13 +177,13 @@ workflows:
           constraints: No Zustand, use RTK Query + uiSlice + chatStreamSlice + RHF
 
       6. vercel-deploy:
-          actor: website_deploy
+          actor: website-deploy
           action: Trigger Vercel deploy for tenant project (using vercel_project_id)
           post: Update tenant status=live, app_url
           verification: Health check + test new pages
 
       7. review-and-notify:
-          actor: ai_content_reviewer + platform-admin
+          actor: ai-content-reviewer + platform-admin
           actions:
             - Regenerate Business Review/Executive Summary if template affects content
             - Notify tenant owner of new capabilities

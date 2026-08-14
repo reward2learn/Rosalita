@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tokenizmyapp-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "tokenizmyapp", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

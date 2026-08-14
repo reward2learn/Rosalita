@@ -24,13 +24,23 @@ This file defines the agent architecture for both **CodeNomad** and **OpenCode**
 > Public CodeNomad: **https://nomad.prestix.vip** (Cloudflare Access + Tunnel).
 ---
 
-## OpenCode primary agents
+## Dual entrypoints (orchestrators)
+
+| Entry | Primary agent | Use for |
+|-------|---------------|---------|
+| **CodeNomad** (UI / `scripts/start-codenomad-http.sh`) | `project-manager` | Multi-agent Task assignment to **all** registered subagents |
+| **OpenCode** (CLI / TUI) | `opencoder` | App coding director — same Task stack, coding-first prompts |
+
+CodeNomad overlay: `.codenomad/opencode-defaults.json` sets `default_agent: project-manager` via `OPENCODE_CONFIG_CONTENT`.  
+Standalone OpenCode keeps `.opencode/opencode.json` → `default_agent: opencoder`.
+
+### Primary agents
 
 | Agent | When to use |
 |-------|-------------|
-| `opencoder` | **Default** — app feature work; delegates with `Task({ subagent_type })` |
+| `project-manager` | **CodeNomad default** — multi-agent orchestrator; `Task` to any subagent (does not edit files itself) |
+| `opencoder` | **OpenCode default** — app feature director; `Task({ subagent_type })` to `website-*` |
 | `openagent` | Light Q&A / routing |
-| `project-manager` | Restaurant menu/pricing only — **not coding** |
 | `legal-orchestrator` | Equity / contracts / Indonesian law |
 
 ### Task tool schema (critical)
@@ -53,11 +63,13 @@ Missing `subagent_type` → `SchemaError(Missing key at ["subagent_type"])`.
 
 ### Orchestrator Layer
 
-| Agent | Role | Mode |
-|-------|------|------|
-| `opencoder` | App feature orchestration | primary |
-| `project_manager` / `project-manager` | Restaurant ops workflows | primary (OpenCode) / subagent (NomadWorks) |
-| `website_migration_commander` | Migration phases — **COMPLETE / archival** | disabled in OpenCode |
+| Agent | Role | Mode / entry |
+|-------|------|----------------|
+| `project-manager` | Multi-agent Task assignment to all subagents | primary — **CodeNomad default** |
+| `opencoder` | App feature orchestration (`website-*`) | primary — **OpenCode default** |
+| `website-migration-commander` | Migration phases — **COMPLETE / archival** | disabled in OpenCode |
+
+**ID rule:** NomadWorks agent keys = OpenCode agent ids = Task `subagent_type` (hyphens only).
 
 ### Restaurant Operations
 
@@ -135,4 +147,5 @@ Migration P0–P9 shipped. Prefer `website-*` app agents above for new work. Mig
 - Prices are in **IDR thousands** (98 K = 98,000 IDR)
 - Edit `menu.txt` only for menu text changes
 - Never modify images or spreadsheet files directly
-- OpenCode Task calls must always include `subagent_type`
+- OpenCode Task calls must always include `subagent_type` with a **hyphenated** agent id
+- `project-manager` (CodeNomad) may Task **any** registered subagent (`permission.task: *`); it must not edit files itself — specialists write
