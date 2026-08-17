@@ -393,6 +393,19 @@ large run on an empty balance can create arbitrarily large arrears. Options are 
 ceiling, a hard debt limit past which generation is refused outright, or writing bad debt off
 at some threshold. Decide before this is exposed to self-serve customers.
 
+**Also open — `MIN_CREDITS_TO_START` is still 1.** The gate therefore stops only a completely
+empty org: an org with a single credit passes it, runs a job costing hundreds, and the balance
+of the cost becomes debt. That is safe (nothing is given away) but it means arrears are the
+normal path rather than the exceptional one. Raising the floor to a realistic figure is a
+pricing decision, which is why the code has not picked one.
+
+**Credit exemption.** The platform owner (`DEFAULT_PLATFORM_ADMIN_EMAIL`, extensible via
+`CREDIT_EXEMPT_EMAILS`) is neither gated nor charged — they pay the providers directly, so
+billing them in their own currency is circular. Exempt usage is still recorded as a zero-delta
+`ai_generation_exempt` ledger row, so the cost stays visible without ever touching a grant or
+creating arrears. Keyed on identity rather than the platform-admin *role*, because every tenant
+seeds its own admins and exempting the role would hand every customer a free AI budget.
+
 Platform-level generation with no tenant (building a custom template) is charged to the
 default organization via `resolvePlatformOrgId()` rather than left free — an unmetered path
 is exactly the unbounded spend this phase closes. When the platform grows past one
@@ -467,14 +480,29 @@ without dropping the plan, and the daily cron enforces expiry. Repeat failures o
 invoice do not restart the clock. The plan drop is deliberately not in the webhook — cutting
 a customer off on the first failed charge punishes an expired card.
 
-**Not done:**
-- **Inline Elements UI (§4.6).** The server half is ready — `/topup` returns a client secret
-  and the publishable key — but no React component consumes it yet. Hosted Checkout for plan
-  changes works end to end without it.
-- **Custom-domain disconnection on downgrade (§4.4).** `downgradeToFree()` marks the plan and
-  clears the linkage but does not yet call the domain routes.
-- **Nothing has been exercised against Stripe.** No test-mode account, no price ids, no real
-  webhook delivery. The exit criteria are unmet until that run happens.
+**Since built** (this section previously listed these as outstanding):
+- **Inline Elements UI (§4.6).** `stripe-topup-dialog.tsx` consumes the `/topup` client secret
+  with `<Elements>` + `<PaymentElement>`; wired into the AI Credits tab. No card data reaches
+  our servers. The split in §4.6 now holds: Elements inline for top-ups, hosted Checkout for
+  plan changes from Settings.
+- **Custom-domain disconnection on downgrade (§4.4).** `disconnectCustomDomains()` runs inside
+  the downgrade path in `stripe-webhook-service.ts`. It keeps the `.vercel.app` subdomain so a
+  downgraded site stays reachable rather than going dark.
+
+**Still not done — this is the whole of what blocks Phase 4:**
+- **Nothing has been exercised against Stripe.** No test-mode account configured, no price ids
+  set, no real webhook delivery. Every line above is unproven: it typechecks and it passes unit
+  tests against fakes, but no Stripe object has ever been created by it.
+
+  This is not a coding task. It needs, in order: `stripe login`; products and prices created per
+  plan × interval; `STRIPE_PRICE_<PLAN>_<INTERVAL>` set for each; `STRIPE_SECRET_KEY`,
+  `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` and `CRON_SECRET` set; then
+  `stripe listen --forward-to localhost:3000/api/webhooks/stripe` while walking the upgrade →
+  downgrade → fail → recover cycle. The `stripe_events` table and the server logs are the
+  evidence — the exit criteria are met when that table shows each event processed exactly once.
+
+  `stripeConfigError()` refuses to start on the two mistakes most likely here: a live key
+  outside production, and a webhook secret that is not a `whsec_`.
 
 **Configuration required:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `CRON_SECRET`, and one `STRIPE_PRICE_<PLAN>_<INTERVAL>`
@@ -515,6 +543,22 @@ telemetry, so it comes last.
 **Exit criteria:** a deployed tenant app's real Vercel/Neon consumption appears in a
 per-app, per-day usage table that reconciles against the providers' own dashboards.
 
+#### Status — not started, and deliberately so
+
+No `UsageRecord`, no `CloudBalance`, no collector. The Cloud Credits tab is an honest empty
+state rather than a mock.
+
+**Blocked on §5.3, which is a business decision.** If we resell Vercel and Neon capacity this
+phase is a billing system: rate cards derived from our COGS, balances that can go negative,
+auto top-up, dunning. If tenants connect their own provider accounts it is a reporting system:
+read the APIs, show the numbers, charge nothing. The models, the collector and the entire UI
+differ between those two. Starting before the answer means building one and discarding it.
+
+Worth noting the answer is partly forced: the platform currently provisions Neon databases and
+Vercel projects **on our accounts**, so today we are already reselling — we simply are not
+measuring or charging for it. That is the unbounded cost this phase exists to close, and it is
+the one remaining uncapped spend now that AI is metered.
+
 ---
 
 ### Phase 6 — Billing UI
@@ -530,6 +574,25 @@ Mirror the IA (it is genuinely good): **Settings → Billing → [Plan | AI Cred
   **Included vs Additional** usage table, filterable by **app / date range / grouped by day**.
 - Reuse existing components: `TenantAiProviderForm` is the closest existing pattern for
   the tab layout; `AppRow` for per-app usage rows.
+
+#### Status — built, two gaps
+
+`billing-panel.tsx` renders the four-tab IA under Settings → Billing, resolved from the tenant
+via `tenant-billing-tab.tsx` (billing belongs to the Organization, not the Tenant).
+
+Done: Plan tab with the monthly/yearly toggle and current-plan marker, driving hosted Checkout;
+AI Credits with the balance, the arrears banner, plan/purchase/promo grant breakdown, the
+`$25/$50/$100` top-up row backed by inline Elements, and the **Grants table (Start / Expires /
+Amount / Remaining)** the roadmap said not to skip; Invoices from Stripe.
+
+**Cloud Credits is deliberately an empty state, not a mock.** Phase 5 has no collector, so
+there is no usage data; a populated table there would imply metering that does not exist.
+
+**Not done:**
+- **Auto-reload UI.** Nothing in the panel configures it, because the underlying behaviour
+  does not exist either — see the Phase 3 note below.
+- **Usage history tab.** The AI Credits tab shows grants but not consumption. The ledger holds
+  every debit with model, tokens and reason, so this is a table over data that already exists.
 
 ---
 
@@ -591,24 +654,49 @@ Mirror the IA (it is genuinely good): **Settings → Billing → [Plan | AI Cred
     `Organization.referredBy` field, and retrofitting attribution after launch loses the
     cohort. Add the column in Phase 1 even if the programme ships much later.
 
+#### Status — not started
+
+Nothing in this phase exists: no prompt-first landing, no signup carousel, no attribution
+capture, no `/changelog`, `/utilities`, `/status`, `llms.txt` or `/mcp`. The largest remaining
+build in the roadmap, and the only one needing no decision before it can start.
+
+`Organization.referredBy` **does** exist (item 10 was taken in Phase 1) — the column is there
+and unwritten. That makes item 3 the cheapest thing here and the most time-sensitive: every
+signup that lands before capture exists is a cohort that cannot be reconstructed.
+
+**Adjacent work already done, outside this roadmap.** Item 1 assumes the template catalogue is
+what pre-fills the quick-start pills. That catalogue now also carries an assistant persona per
+template, and a provisioned app is stamped with its template identity at deploy time — so an
+app generated from the funnel arrives with an assistant that knows its industry rather than a
+generic one. Custom templates built by the admin chat tool are generated from the
+administrator's own brief and are selectable in the Create New App wizard.
+
 ---
 
 ## 4. Sequencing summary
 
-| Phase | Deliverable | Blocks | Risk |
+| Phase | Deliverable | Status | What remains |
 |---|---|---|---|
-| 1 | Organization layer | everything | Low — additive |
-| 2 | Plans + entitlements | 3,4 | Low — Free default breaks nothing |
-| 3 | **AI credits + metering** | 4 | **Medium — highest value; caps unbounded AI cost** |
-| 4 | Stripe | 5 | Medium — webhook idempotency is the trap |
-| 5 | Cloud credits | — | **High — depends on external usage APIs** |
-| 6 | Billing UI | — | Low |
-| 7 | Funnel/SEO | — | Low — parallelisable with everything |
+| 1 | Organization layer | **Done** | — |
+| 2 | Plans + entitlements | **Done** | — |
+| 3 | AI credits + metering | **Done** | Two policy calls: debt cap, `MIN_CREDITS_TO_START` |
+| 4 | Stripe | **Code done, unproven** | The test-mode run. Nothing else. |
+| 5 | Cloud credits | **Not started** | Blocked on §5.3 — resell or bring-your-own |
+| 6 | Billing UI | **Done bar two tabs** | Auto-reload UI (needs Phase 4), usage history |
+| 7 | Funnel/SEO | **Not started** | All ten items |
 
-**Recommended first cut:** Phases 1 → 2 → 3. That yields a working plan/entitlement system
-and *caps AI spend*, which is the currently-unbounded cost, without needing Stripe or
-usage telemetry. Phase 5 is the only phase gated on third-party data availability and
-should be scoped only after 1–3 are live.
+**Where the work actually is now.** Phases 1–3 and 6 are code-complete. Phase 4 is
+code-complete but has never touched Stripe, so it is the one place where "written" and
+"working" are not the same claim — and it is a configuration task, not a coding one.
+
+That makes Phase 7 the largest remaining *build*, and Phase 5 the largest remaining
+*unknown*. They are independent: Phase 7 is parallelisable with everything and needs no
+decision to start; Phase 5 cannot sensibly start until §5.3 is answered, because the answer
+decides whether it is a billing system or a reporting one.
+
+**Two items in Phase 7 are worth doing regardless of the rest of it**, because they are cheap
+now and expensive to retrofit: attribution capture (§7.3 — the column exists, the capture does
+not, and cohorts cannot be reconstructed later) and `llms.txt` (§7.8).
 
 ---
 
