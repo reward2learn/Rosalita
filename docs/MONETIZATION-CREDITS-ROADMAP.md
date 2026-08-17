@@ -336,6 +336,71 @@ it directly caps the cost that is currently unbounded.
 **Exit criteria:** generation decrements a balance; hitting zero blocks cleanly with an
 actionable message; ledger reconciles to the balance.
 
+#### Status — implemented
+
+All seven items are built except the **charging half of auto-reload (item 6)**, which cannot
+be completed before Phase 4: topping up mid-run requires a payment method, and none exists
+until Stripe.
+
+**Item 6's actual goal — never fail mid-run — is met without payment, via debt.** A
+generation that outruns its balance completes and records the overage as debt; the *next*
+generation is blocked until it is settled, and any new grant settles it automatically. So
+work in progress is never interrupted and nothing is given away. Auto-reload, once Stripe
+lands, becomes an optimisation on top: settle the debt without the customer being blocked
+first.
+
+Debt is represented as ledger entries with `grant_id IS NULL` (the schema already reserves
+that for balance-level entries) rather than as negative grants, which would corrupt both
+the balance sum and expiry handling. Incurring writes a negative marker; settling writes an
+offsetting positive one, so the markers net to zero and outstanding debt stays derivable
+from the ledger alone with no extra table.
+
+This closed a live revenue leak: the gate required a balance of 1, a real generation costs
+many, and `meterAiUsage` was reading past `consumed` — collecting 1 credit for a 400-credit
+job and reporting that it had charged 400.
+
+The reconciliation invariant is correspondingly:
+
+    SUM(ledger.delta) === SUM(grants.remaining) − outstandingDebt
+
+Debt is the only credit movement with no matching grant change, so it is exactly the gap
+between the two sums. With nothing owed this reduces to the simple `ledger === grants` form.
+
+Metering is wired at every platform-key AI call site: `content-generator.ts`,
+`chat-with-session-tools.ts`, `app-pack-generator.ts`, `schema-generator.ts` and
+`custom-template-generator.ts`. Pre-flight gates guard tenant creation, schema generation,
+chat, app-pack materialization and custom-template builds.
+
+`reconcileCredits()` implements the ledger invariant named in the exit criteria:
+`SUM(ledger.delta)` must equal `SUM(grants.remaining)` across **all** grants, expired ones
+included — expiry makes credits unspendable, it does not un-grant them. It is returned with
+every balance read so drift surfaces where the numbers are used.
+
+**Decisions taken by default** (§5 was never answered; these are reversible and are what the
+code does today):
+
+| § | Decision taken | Where |
+|---|---|---|
+| 5.1 | BYOK is **not** charged credits — only platform-key usage is metered | `meterAiUsage`, `keySource === 'db'` short-circuit |
+| 5.2 | Per-model rate card, exact-then-longest-prefix match, unknown models billed at ≥ the flagship rate | `src/lib/billing/credit-rates.ts` |
+| 5.6 | Pack bonuses are issued as a **separate `promo` grant**, never merged into the purchase | `redeemCreditPack` |
+| 5.7 | Top-ups are **not** gated behind a paid plan; the $25 floor exists as data only | `CREDIT_PACK_MIN_PRICE_CENTS`, unenforced |
+| — | Over-consumption becomes **debt**, blocking the next run rather than the current one | `consumeCredits({ allowDebt })`, `settleDebt` |
+
+**Open, and it is a policy question, not a code one:** there is no story yet for an org that
+accrues debt and walks away. Nothing caps how deep a single generation can go — one very
+large run on an empty balance can create arbitrarily large arrears. Options are a per-run
+ceiling, a hard debt limit past which generation is refused outright, or writing bad debt off
+at some threshold. Decide before this is exposed to self-serve customers.
+
+Platform-level generation with no tenant (building a custom template) is charged to the
+default organization via `resolvePlatformOrgId()` rather than left free — an unmetered path
+is exactly the unbounded spend this phase closes. When the platform grows past one
+organization, that function is the seam where the acting admin's own org should be resolved.
+
+⚠️ **The rate card is a calibration reference, not a commercial decision.** Tune it against
+actual provider spend before charging anyone.
+
 ---
 
 ### Phase 4 — Payments (Stripe)
@@ -366,6 +431,56 @@ actionable message; ledger reconciles to the balance.
 
 **Exit criteria:** full upgrade → downgrade → fail → recover cycle works against Stripe
 test mode, driven only by webhooks.
+
+#### Status — server side implemented, not yet run against Stripe
+
+Built: `stripe-client.ts` (client, price catalog, plan ranking), `stripe-service.ts` (customers,
+hosted Checkout, in-place plan change, top-up PaymentIntents), `stripe-webhook-service.ts`
+(idempotent event processing and all handlers), `/api/webhooks/stripe`, the checkout and
+top-up admin routes, and `/api/cron/dunning` registered daily in `vercel.json`.
+
+**Webhooks are the only writer of billing state.** `stripe-service.ts` never applies the
+change it just requested, even though the API response contains it — if a response is lost
+the customer has still paid, and only a webhook-driven design converges. The same rule puts
+credit grants behind `invoice.paid` and `payment_intent.succeeded` rather than behind the
+request that started them: credits follow money, never the reverse.
+
+**Idempotency is claim-then-process.** The Stripe event id is the primary key of
+`stripe_events`, and processing claims the row with an INSERT — a concurrent redelivery loses
+the race and returns without doing the work. Checking for existence and then inserting would
+leave a window where two retries both grant the same pack. A handler that throws *un-claims*
+the event so Stripe's retry does real work instead of being dropped as a duplicate; a handler
+that simply does not recognise the event type stays claimed and ACKs.
+
+Route status codes are a control channel for Stripe's retry logic: 400 for a bad signature
+(permanent — retrying cannot fix it), 503 when Stripe is unconfigured, 500 only for genuinely
+transient failures, 200 for processed, duplicate and knowingly-ignored alike.
+
+Proration follows §4.3 exactly: upgrades use `create_prorations` with
+`billing_cycle_anchor: 'unchanged'` (without the anchor hold, an upgrade resets the cycle and
+hands out a free extension); downgrades use `proration_behavior: 'none'` and are recorded
+locally as `pending_plan_id` for the UI. Plans are ranked **by price**, which is what makes
+"cheaper-but-higher-tier counts as a downgrade" fall out automatically.
+
+Dunning is split: `invoice.payment_failed` opens the 7-day window and marks `past_due`
+without dropping the plan, and the daily cron enforces expiry. Repeat failures on the same
+invoice do not restart the clock. The plan drop is deliberately not in the webhook — cutting
+a customer off on the first failed charge punishes an expired card.
+
+**Not done:**
+- **Inline Elements UI (§4.6).** The server half is ready — `/topup` returns a client secret
+  and the publishable key — but no React component consumes it yet. Hosted Checkout for plan
+  changes works end to end without it.
+- **Custom-domain disconnection on downgrade (§4.4).** `downgradeToFree()` marks the plan and
+  clears the linkage but does not yet call the domain routes.
+- **Nothing has been exercised against Stripe.** No test-mode account, no price ids, no real
+  webhook delivery. The exit criteria are unmet until that run happens.
+
+**Configuration required:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `CRON_SECRET`, and one `STRIPE_PRICE_<PLAN>_<INTERVAL>`
+per purchasable plan (e.g. `STRIPE_PRICE_PRO_MONTHLY`). Price ids live in the environment
+because they differ between test and live mode — hardcoding them would let a deploy to the
+wrong mode silently charge the wrong amounts.
 
 ---
 
