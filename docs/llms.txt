@@ -1,0 +1,51 @@
+# TokenizMyApp llms.txt
+
+## Product
+**TokenizMyApp** is a multi-tenant platform for building and managing AI-powered business applications.
+
+## Capabilities
+- Multi-tenant provisioning with isolated Neon PostgreSQL databases per tenant
+- Suite mode: multiple apps per tenant sharing one database
+- AI provider abstraction (OpenAI / Vercel AI Gateway / OpenCode Zen)
+- Per-tenant AI provider + key + model configuration
+- AI content generation pipeline (business reviews, executive summaries, dashboard data)
+- Organization-level billing with plan tiers (Free, Pro, Business, Enterprise)
+- AI credit metering and gating for build-time generation
+- Stripe integration for payments and credit top-ups
+- Custom domain support, RBAC, and role-based access control
+- Multi-app suites per tenant
+- Google OAuth authentication
+
+## Use Cases
+- Business dashboard and financial review
+- AI chat assistant for tenant operations
+- App pack generation from natural language prompts
+- Template-based app creation
+- Revenue tracking and credit management
+- Custom domain publishing
+
+## Plans
+- **Free**: 15 AI credits/month, 1 tenant, 1 app
+- **Pro**: 50 AI credits/month, 3 tenants, 5 apps per tenant, custom domains
+- **Business**: 50 AI credits/month, 10 tenants, unlimited apps, RBAC, teammates
+- **Enterprise**: Negotiated limits, SSO/SAML, dedicated support, custom integrations
+
+## Authentication
+- Google OAuth (SIWE) for tenant sign-in
+- JWT cookie-based authentication with tier claims (pin|google)
+- Platform admin exemption from credit gating
+
+## Deployment
+- Vercel deployments per tenant
+- Neon PostgreSQL databases provisioned per tenant
+- Custom domain mapping available on Pro+ plans
+
+## Contact
+- Platform admin email: configurable via `DEFAULT_PLATFORM_ADMIN_EMAIL`
+- Credit exemption: `CREDIT_EXEMPT_EMAILS` list
+
+## Version
+- Current session: 2026-08-18
+
+---
+*This llms.txt file makes the product legible to AI assistants that increasingly mediate discovery. For more information, see the Monetization & Credits Roadmap at docs/MONETIZATION-CREDITS-ROADMAP.md.*
