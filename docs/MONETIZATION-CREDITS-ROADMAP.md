@@ -562,9 +562,9 @@ Gateway). Uncollected resources read **"Not metered"**, never "0" — deployed a
 real Vercel and Neon capacity on our accounts, so a zero would tell an operator something
 false. The AI Gateway row is populated from the credit ledger, which Phase 3 already meters.
 
-**STILL BLOCKED — the collector.** The usage source is now chosen and verified; what
-remains is the implementation and two decisions. This remains the one uncapped spend on
-the platform.
+**COLLECTOR IMPLEMENTED — `918c03c`, deployed 2026-08-18.** The cron now meters both
+providers and debits the operator org's cloud balance. What follows is the decision
+record; the open items are the Stripe keys and the Vercel attribution upgrade path.
 
 **Usage source — decided 2026-08-18, both endpoints tested live:**
 
@@ -584,14 +584,20 @@ the platform.
   in `Tenant.dbUrl`'s hostname. **Blocked on credentials**: the current `NEON_API_KEY` is
   rejected on every endpoint (expired or revoked) — a new org-scoped key is required.
 
-**Open decisions before implementation:**
-1. **Vercel attribution.** Team-level charges cannot be split per tenant by the provider.
-   Options: (a) record them as platform overhead on the operator org, per-resource per-day;
-   (b) build per-app metering from log drains (a project of its own); (c) defer Vercel rows
-   until (b). The roadmap's per-app exit criterion is not achievable from the billing API.
-2. **Rate card.** The FOCUS payload carries billed cost directly (no rate card needed for
-   Vercel); Neon needs the documented per-plan rates. Pass-through at provider cost is the
-   defensible default; per-plan multipliers remain a pricing decision.
+**Decisions made 2026-08-18:**
+1. **Vercel attribution — (a) platform overhead.** Team-level charges cannot be split per
+   tenant by the provider (no ResourceId, empty Tags). Recorded on the operator org
+   (slug `default`) with `app_id='vercel'`. The per-app exit criterion is not achievable
+   from the billing API; log-drain metering (option b) remains the upgrade path.
+2. **Rate card — pass-through at provider cost.** Vercel rows carry the FOCUS billed cost
+   in `usage_records.cost_cents` (new nullable column). Neon on the Free plan costs
+   nothing; the documented Launch rates ($0.106/CU-hr, $0.35/GB-mo, $0.10/GB past 500 GB)
+   are the ceiling if the account upgrades. Per-plan multipliers remain a pricing decision.
+3. **Neon source — Free-plan project endpoint.** `GET /projects/{id}` returns
+   current-billing-period totals (compute_time_seconds, data_transfer_bytes,
+   data_storage_bytes_hour). The consumption_history v2 API requires a Launch plan.
+   All tenant databases are endpoints inside one project, so this is platform overhead
+   too; per-branch attribution becomes possible after an upgrade.
 
 **Other blockers unchanged:** `CRON_SECRET` is not set in production, so the cron cannot
 run at all until that is fixed.
