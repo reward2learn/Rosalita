@@ -543,7 +543,23 @@ telemetry, so it comes last.
 **Exit criteria:** a deployed tenant app's real Vercel/Neon consumption appears in a
 per-app, per-day usage table that reconciles against the providers' own dashboards.
 
-#### Status — not started, and deliberately so
+#### Status — decided, still not built *(revised 2026-08-18)*
+
+**§5.3 is answered: we resell.** That was already true in practice — the platform
+provisions Neon databases and Vercel projects on our accounts — so the phase is a billing
+system, not a reporting one, and the models/collector/UI below are the right shape.
+
+A first collector was written and then withdrawn. It polled `GET /v9/projects/{id}` and
+read a `.metrics` field that endpoint does not return, and it wrote to `usage_records` and
+`cloud_balances`, neither of which is declared in the zmodel or created by any runtime
+helper — every insert would have failed with 42P01. `/api/cron/cloud-credits` now answers
+200 with `metered: false` and carries the three missing pieces in its header comment:
+a real usage source, the storage, and a rate card. Note also that `CRON_SECRET` is not set
+in production, so the cron cannot run at all until that is fixed.
+
+What follows is unchanged and still accurate as the plan.
+
+#### Original status note — not started, and deliberately so
 
 No `UsageRecord`, no `CloudBalance`, no collector. The Cloud Credits tab is an honest empty
 state rather than a mock.
@@ -590,7 +606,11 @@ there is no usage data; a populated table there would imply metering that does n
 
 **Not done:**
 - **Auto-reload UI.** Nothing in the panel configures it, because the underlying behaviour
-  does not exist either — see the Phase 3 note below.
+  does not exist either — see the Phase 3 note below. An attempt at the controls was
+  written and removed on 2026-08-18: `autoReload` was initialised false with no control
+  ever setting it, so the whole subtree was unreachable and rendered as a permanent
+  "Auto-reload: Disabled" line promising a feature with no column, no endpoint and no
+  stored payment method behind it. Building it needs those three things first.
 - **Usage history tab.** The AI Credits tab shows grants but not consumption. The ledger holds
   every debit with model, tokens and reason, so this is a table over data that already exists.
 
@@ -654,15 +674,35 @@ there is no usage data; a populated table there would imply metering that does n
     `Organization.referredBy` field, and retrofitting attribution after launch loses the
     cohort. Add the column in Phase 1 even if the programme ships much later.
 
-#### Status — not started
+#### Status — partly done *(revised 2026-08-18)*
 
-Nothing in this phase exists: no prompt-first landing, no signup carousel, no attribution
-capture, no `/changelog`, `/utilities`, `/status`, `llms.txt` or `/mcp`. The largest remaining
-build in the roadmap, and the only one needing no decision before it can start.
+**Item 1 — done.** The `home` page in `page-catalog.ts` is now `marketing_hero` →
+`customer_proof` → `product_showcase`: a single prompt box with quick-start pills sourced
+from the template catalogue, no signup wall in front of it. `/` answers 200 to an anonymous
+visitor; it previously 307'd into a sign-in wall, so the marketing page could not be reached
+at all. `customer_proof` renders nothing until real customers agree to appear — an empty
+section is honest, invented testimonials are not.
 
-`Organization.referredBy` **does** exist (item 10 was taken in Phase 1) — the column is there
-and unwritten. That makes item 3 the cheapest thing here and the most time-sensitive: every
-signup that lands before capture exists is a cohort that cannot be reconstructed.
+**Item 3 — done, and this was the time-sensitive one.** `OrgAttribution { orgId, channel,
+capturedAt }` exists with `orgId` unique and a cascade to `Organization`. The capture is
+live: `POST /api/admin/organizations` takes an explicit `channel`, falls back to
+`utm_source`, and floors at `admin_console` rather than `unknown`. Worth recording that the
+model shipped a week before the capture did, and in between every row read the literal
+`unknown` — the column existing is not the same as the cohort being recorded.
+
+**Item 8 — blocked, and not on effort.** `llms.txt` is written at `docs/llms.txt` but is not
+served: `/llms.txt` answers 307 into `?redirect_reason=auth_required`. `proxy.ts` gates every
+non-API path on `PUBLIC_SLUGS = {dashboard, terms-of-service, privacy-policy}` plus the root,
+so `/changelog`, `/utilities` and `/status` will each behave identically once written. Widen
+that set — or serve these from `public/` outside the matcher — before writing any of the
+pages, or the work is invisible to exactly the crawlers it targets.
+
+**Items 2, 4, 5, 6, 9 — not started.** Signup carousel, paywall placement, publish flow,
+branded auth-failure page, MCP server.
+
+**Item 10 — column only.** `Organization.referredBy` exists and is still never written; the
+affiliate programme itself is deferred. Attribution (item 3) covers the marketing channel,
+not the referring affiliate — these are two different fields and only one of them is live.
 
 **Adjacent work already done, outside this roadmap.** Item 1 assumes the template catalogue is
 what pre-fills the quick-start pills. That catalogue now also carries an assistant persona per
@@ -675,28 +715,52 @@ administrator's own brief and are selectable in the Create New App wizard.
 
 ## 4. Sequencing summary
 
+*Revised 2026-08-18, against the deployed tree at `608eedb`.*
+
 | Phase | Deliverable | Status | What remains |
 |---|---|---|---|
 | 1 | Organization layer | **Done** | — |
 | 2 | Plans + entitlements | **Done** | — |
-| 3 | AI credits + metering | **Done** | Two policy calls: debt cap, `MIN_CREDITS_TO_START` |
-| 4 | Stripe | **Code done, unproven** | The test-mode run. Nothing else. |
-| 5 | Cloud credits | **Not started** | Blocked on §5.3 — resell or bring-your-own |
+| 3 | AI credits + metering | **Done** | — (both policy calls made and shipped) |
+| 4 | Stripe | **Code done, not configured** | Credentials in Vercel, then the test-mode run |
+| 5 | Cloud credits | **Decided, not built** | Everything. §5.3 answered: we resell. |
 | 6 | Billing UI | **Done bar two tabs** | Auto-reload UI (needs Phase 4), usage history |
-| 7 | Funnel/SEO | **Not started** | All ten items |
+| 7 | Funnel/SEO | **Partly done** | Items 2, 4, 5, 6, 9; item 8 blocked by the proxy |
 
-**Where the work actually is now.** Phases 1–3 and 6 are code-complete. Phase 4 is
-code-complete but has never touched Stripe, so it is the one place where "written" and
-"working" are not the same claim — and it is a configuration task, not a coding one.
+**Where the work actually is now.** Phases 1–3 and 6 are code-complete, and Phase 3's two
+open policy calls are closed: `DEFAULT_DEBT_CEILING = 50` and the per-job `CREDIT_FLOORS`
+(chat 1 … tenant provisioning 30) are in `credit-service.ts`.
 
-That makes Phase 7 the largest remaining *build*, and Phase 5 the largest remaining
-*unknown*. They are independent: Phase 7 is parallelisable with everything and needs no
-decision to start; Phase 5 cannot sensibly start until §5.3 is answered, because the answer
-decides whether it is a billing system or a reporting one.
+**Phase 4 is further from working than "unproven" suggested.** Production carries 52
+environment variables and *not one of them is a Stripe key* — no secret key, no webhook
+secret, no price ids. `stripeReadiness()` therefore reports not-ready, and every payment
+path in the deployed app is inert: plan upgrades, top-ups, invoices. `CRON_SECRET` is
+absent too, so `/api/cron/dunning` has answered 503 on every scheduled run since it
+shipped — past-due downgrades have never once been enforced. This is still configuration
+rather than code, but it is a longer list than one test run.
 
-**Two items in Phase 7 are worth doing regardless of the rest of it**, because they are cheap
-now and expensive to retrofit: attribution capture (§7.3 — the column exists, the capture does
-not, and cohorts cannot be reconstructed later) and `llms.txt` (§7.8).
+**Phase 5 is unblocked and untouched.** §5.3 is answered — we resell, which was already
+true in practice since tenants are provisioned onto our Vercel and Neon accounts. The
+collector written for it polled a Vercel field that does not exist and wrote to two tables
+declared nowhere, so it now stands as a documented stub that returns `metered: false`.
+`UsageRecord` and `CloudBalance` are still not in the zmodel. This remains the one
+uncapped spend on the platform.
+
+**Phase 7 is no longer "not started".** Items 1 and 3 shipped:
+
+- **Item 1 — prompt-first landing.** `marketing_hero` + `customer_proof` +
+  `product_showcase` are the `home` page in `page-catalog.ts`, and `/` now answers 200 to
+  an anonymous visitor instead of redirecting into a sign-in wall. The proof block is
+  deliberately empty until real customers agree to appear.
+- **Item 3 — attribution capture.** `OrgAttribution` exists with a real channel reaching
+  the row; the time-sensitive item is closed.
+
+**Item 8 has a structural blocker worth knowing before anyone starts it.** `llms.txt` is
+written (`docs/llms.txt`) but not served: `/llms.txt` answers 307 into the sign-in
+redirect. `proxy.ts` gates on `PUBLIC_SLUGS = {dashboard, terms-of-service, privacy-policy}`
+plus the root, so *every* asset this item plans — `/changelog`, `/utilities`, `/status` —
+will be auth-gated the same way. One change to that set unblocks the whole item; without
+it, writing the pages accomplishes nothing.
 
 ---
 
@@ -707,8 +771,9 @@ not, and cohorts cannot be reconstructed later) and `llms.txt` (§7.8).
    it is a differentiator Hercules cannot match.)
 2. **Credit ↔ token rate card** — per-model, and does it change when the tenant's chosen
    model changes? (Our multi-provider design makes cost genuinely variable per model.)
-3. **Who owns the tenant's Neon/Vercel cost** — we resell, or they connect their own
-   accounts? This determines whether Phase 5 is *billing* or merely *reporting*.
+3. ~~**Who owns the tenant's Neon/Vercel cost**~~ — **ANSWERED 2026-08-18: we resell.**
+   Phase 5 is a billing system. The answer was partly forced: tenants are already
+   provisioned onto our accounts, so we resell today and simply do not measure it.
 4. **Currency/tax** — Stripe Tax, and are we invoicing in USD only?
 5. **Existing `metadata.config.license.*`** — migrate into the new Subscription model, or
    leave the vestigial field and ignore it? (Recommend: migrate then delete, to avoid two
