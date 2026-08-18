@@ -562,11 +562,39 @@ Gateway). Uncollected resources read **"Not metered"**, never "0" — deployed a
 real Vercel and Neon capacity on our accounts, so a zero would tell an operator something
 false. The AI Gateway row is populated from the credit ledger, which Phase 3 already meters.
 
-**STILL BLOCKED — the collector.** No usage source has been chosen, so nothing fills the
-provider rows. `/api/cron/cloud-credits` still answers 200 with `metered: false` and
-carries the three missing pieces in its header comment: a real usage source, the storage,
-and a rate card. Note also that `CRON_SECRET` is not set in production, so the cron cannot
-run at all until that is fixed. This remains the one uncapped spend on the platform.
+**STILL BLOCKED — the collector.** The usage source is now chosen and verified; what
+remains is the implementation and two decisions. This remains the one uncapped spend on
+the platform.
+
+**Usage source — decided 2026-08-18, both endpoints tested live:**
+
+- **Vercel: `GET /v1/billing/charges?teamId=&from=&to=`** — the FOCUS v1.3 billing export
+  (new Feb 2026), streamed JSONL, 1-day granularity, max one year. Works with the existing
+  `VERCEL_TOKEN`; the `vercel usage` CLI returns the same team-level rollup. **Team-level
+  only**: the payload carries no `ResourceId` and `Tags` is always empty, so charges cannot
+  be attributed to the tenant app that caused them — the earlier draft's per-project dream
+  (`GET /v9/projects/{id}` `.metrics`) was chasing a field that still does not exist. Live
+  sample over 3 days: Build CPU Minutes $10.16 (2,904 min), Fluid Active CPU $0.15,
+  Function Invocations $0.02 (31,514 invocations), Fast Origin Transfer $0.02.
+- **Neon: `GET /consumption_history/v2/projects?org_id=&from=&to=&granularity=daily&metrics=`**
+  — per-project, invoice-aligned consumption (compute_unit_seconds, root/child/instant/
+  snapshot storage byte-months, public/private transfer, extra branches), daily granularity
+  limited to 60 days, documented rates per plan ($0.106/CU-hr Launch, $0.35/GB-mo storage,
+  $0.10/GB public transfer past 500 GB). Attribute to tenants via the project id embedded
+  in `Tenant.dbUrl`'s hostname. **Blocked on credentials**: the current `NEON_API_KEY` is
+  rejected on every endpoint (expired or revoked) — a new org-scoped key is required.
+
+**Open decisions before implementation:**
+1. **Vercel attribution.** Team-level charges cannot be split per tenant by the provider.
+   Options: (a) record them as platform overhead on the operator org, per-resource per-day;
+   (b) build per-app metering from log drains (a project of its own); (c) defer Vercel rows
+   until (b). The roadmap's per-app exit criterion is not achievable from the billing API.
+2. **Rate card.** The FOCUS payload carries billed cost directly (no rate card needed for
+   Vercel); Neon needs the documented per-plan rates. Pass-through at provider cost is the
+   defensible default; per-plan multipliers remain a pricing decision.
+
+**Other blockers unchanged:** `CRON_SECRET` is not set in production, so the cron cannot
+run at all until that is fixed.
 
 #### Original status note — not started, and deliberately so
 
