@@ -543,21 +543,30 @@ telemetry, so it comes last.
 **Exit criteria:** a deployed tenant app's real Vercel/Neon consumption appears in a
 per-app, per-day usage table that reconciles against the providers' own dashboards.
 
-#### Status — decided, still not built *(revised 2026-08-18)*
+#### Status — storage and presentation done, collector still blocked *(revised 2026-08-18, against `60a45d6`)*
 
 **§5.3 is answered: we resell.** That was already true in practice — the platform
 provisions Neon databases and Vercel projects on our accounts — so the phase is a billing
 system, not a reporting one, and the models/collector/UI below are the right shape.
 
-A first collector was written and then withdrawn. It polled `GET /v9/projects/{id}` and
-read a `.metrics` field that endpoint does not return, and it wrote to `usage_records` and
-`cloud_balances`, neither of which is declared in the zmodel or created by any runtime
-helper — every insert would have failed with 42P01. `/api/cron/cloud-credits` now answers
-200 with `metered: false` and carries the three missing pieces in its header comment:
-a real usage source, the storage, and a rate card. Note also that `CRON_SECRET` is not set
-in production, so the cron cannot run at all until that is fixed.
+**The models now exist.** `UsageRecord` (idempotent on `[tenantSlug, resource, periodStart]`,
+indexed on `[orgId, periodStart]`) and `CloudBalance` (`orgId` unique, `balanceCents` may go
+negative, `autoTopUpThreshold`/`autoTopUpAmount` nullable) are declared in the zmodel with
+`@@map` names, `@@allow` rules and the `updated_at` column registered in
+`db-updated-at.ts` — the previous attempt wrote to both tables without declaring either,
+and every insert would have failed with 42P01.
 
-What follows is unchanged and still accurate as the plan.
+**The Cloud Credits tab renders over them.** `cloud-credits-tab.tsx` shows the per-resource
+table (function invocations, function duration, bandwidth, db storage, db compute, AI
+Gateway). Uncollected resources read **"Not metered"**, never "0" — deployed apps consume
+real Vercel and Neon capacity on our accounts, so a zero would tell an operator something
+false. The AI Gateway row is populated from the credit ledger, which Phase 3 already meters.
+
+**STILL BLOCKED — the collector.** No usage source has been chosen, so nothing fills the
+provider rows. `/api/cron/cloud-credits` still answers 200 with `metered: false` and
+carries the three missing pieces in its header comment: a real usage source, the storage,
+and a rate card. Note also that `CRON_SECRET` is not set in production, so the cron cannot
+run at all until that is fixed. This remains the one uncapped spend on the platform.
 
 #### Original status note — not started, and deliberately so
 
@@ -591,18 +600,36 @@ Mirror the IA (it is genuinely good): **Settings → Billing → [Plan | AI Cred
 - Reuse existing components: `TenantAiProviderForm` is the closest existing pattern for
   the tab layout; `AppRow` for per-app usage rows.
 
-#### Status — built, two gaps
+#### Status — six tabs, one gap left *(revised 2026-08-18, against `60a45d6`)*
 
-`billing-panel.tsx` renders the four-tab IA under Settings → Billing, resolved from the tenant
-via `tenant-billing-tab.tsx` (billing belongs to the Organization, not the Tenant).
+`billing-panel.tsx` renders the six-tab IA under Settings → Billing, resolved from the tenant
+via `tenant-billing-tab.tsx` (billing belongs to the Organization, not the Tenant):
+**Plan | AI Credits | Cloud Credits | Billing Details | Payment Methods | Invoices**.
 
 Done: Plan tab with the monthly/yearly toggle and current-plan marker, driving hosted Checkout;
 AI Credits with the balance, the arrears banner, plan/purchase/promo grant breakdown, the
 `$25/$50/$100` top-up row backed by inline Elements, and the **Grants table (Start / Expires /
 Amount / Remaining)** the roadmap said not to skip; Invoices from Stripe.
 
-**Cloud Credits is deliberately an empty state, not a mock.** Phase 5 has no collector, so
-there is no usage data; a populated table there would imply metering that does not exist.
+**Usage history — done.** `credit-usage-table.tsx` renders every ledger movement with sign as
+the grammar: positive is credit arriving, negative is generation spending it, zero is an
+exempt run rendered as "Exempt" rather than "0". It reads both token naming conventions
+(prompt/completion and input/output), since metering has used each at different times.
+
+**Payment methods — done.** `payment-methods-tab.tsx` manages cards via **SetupIntent**, not
+PaymentIntent: the point is a card usable later without the customer present, which is what
+auto-reload needs. Both mutating paths re-list the customer's cards and reject an id that is
+not among them; removing the default is blocked while another card exists. No card data
+touches this server.
+
+**Billing details — done.** Eight nullable columns on Organization (billingEmail, billingName,
+billingCountry, billingLine1/2, billingCity, billingPostal, taxId), all optional. Field-to-
+column pairs live in a table rather than eight hand-written if blocks. Tax id is printed on
+invoices and does nothing else — Stripe Tax stays off (stated assumption, reversible).
+
+**Cloud Credits — renders over real models now.** `cloud-credits-tab.tsx` shows the
+per-resource table; uncollected resources read "Not metered", never "0". See Phase 5 for the
+collector that is still missing.
 
 **Not done:**
 - **Auto-reload UI.** Nothing in the panel configures it, because the underlying behaviour
@@ -610,9 +637,10 @@ there is no usage data; a populated table there would imply metering that does n
   written and removed on 2026-08-18: `autoReload` was initialised false with no control
   ever setting it, so the whole subtree was unreachable and rendered as a permanent
   "Auto-reload: Disabled" line promising a feature with no column, no endpoint and no
-  stored payment method behind it. Building it needs those three things first.
-- **Usage history tab.** The AI Credits tab shows grants but not consumption. The ledger holds
-  every debit with model, tokens and reason, so this is a table over data that already exists.
+  stored payment method behind it. Two of the three prerequisites now exist — the
+  `autoTopUpThreshold`/`autoTopUpAmount` columns on `CloudBalance` and stored payment
+  methods via SetupIntent — so the remaining blocker is the charging behaviour itself
+  (Phase 4 must be configured and exercised first).
 
 ---
 
@@ -715,7 +743,7 @@ administrator's own brief and are selectable in the Create New App wizard.
 
 ## 4. Sequencing summary
 
-*Revised 2026-08-18, against the deployed tree at `608eedb`.*
+*Revised 2026-08-18, against the deployed tree at `60a45d6`.*
 
 | Phase | Deliverable | Status | What remains |
 |---|---|---|---|
@@ -723,8 +751,8 @@ administrator's own brief and are selectable in the Create New App wizard.
 | 2 | Plans + entitlements | **Done** | — |
 | 3 | AI credits + metering | **Done** | — (both policy calls made and shipped) |
 | 4 | Stripe | **Code done, not configured** | Credentials in Vercel, then the test-mode run |
-| 5 | Cloud credits | **Decided, not built** | Everything. §5.3 answered: we resell. |
-| 6 | Billing UI | **Done bar two tabs** | Auto-reload UI (needs Phase 4), usage history |
+| 5 | Cloud credits | **Storage + UI done, collector blocked** | The collector: a usage source, then the cron |
+| 6 | Billing UI | **Done bar auto-reload** | Auto-reload UI (needs Phase 4 configured) |
 | 7 | Funnel/SEO | **Partly done** | Items 2, 4, 5, 6, 9; item 8 blocked by the proxy |
 
 **Where the work actually is now.** Phases 1–3 and 6 are code-complete, and Phase 3's two
@@ -739,12 +767,14 @@ absent too, so `/api/cron/dunning` has answered 503 on every scheduled run since
 shipped — past-due downgrades have never once been enforced. This is still configuration
 rather than code, but it is a longer list than one test run.
 
-**Phase 5 is unblocked and untouched.** §5.3 is answered — we resell, which was already
-true in practice since tenants are provisioned onto our Vercel and Neon accounts. The
-collector written for it polled a Vercel field that does not exist and wrote to two tables
-declared nowhere, so it now stands as a documented stub that returns `metered: false`.
-`UsageRecord` and `CloudBalance` are still not in the zmodel. This remains the one
-uncapped spend on the platform.
+**Phase 5 is unblocked and half-built.** §5.3 is answered — we resell, which was already
+true in practice since tenants are provisioned onto our Vercel and Neon accounts.
+`UsageRecord` and `CloudBalance` are now in the zmodel (the earlier attempt wrote to both
+without declaring either), the Cloud Credits tab renders the per-resource table over them,
+and the AI Gateway row is fed from the Phase 3 ledger. What is still missing is the
+collector itself: no usage source has been chosen, so `/api/cron/cloud-credits` still
+answers `metered: false` and the provider rows stay empty. This remains the one uncapped
+spend on the platform.
 
 **Phase 7 is no longer "not started".** Items 1 and 3 shipped:
 
